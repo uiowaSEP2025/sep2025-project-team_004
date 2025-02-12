@@ -1,0 +1,155 @@
+This is the initial template settings
+cookiecutter https://github.com/pydanny/cookiecutter-django.git
+project_name [My Awesome Project]: ICanopyBackend
+project_slug [icanopybackend]: sep2025-project-team_004
+description [Behold My Awesome Project!]: Django backend for SEP Team04 project
+author_name [Daniel Roy Greenfeld]: change later
+domain_name [example.com]: changelater.com
+email [change-later@changelater.com]: change@later.com
+version [0.1.0]: 0.0.1
+Select open_source_license:
+1 - MIT
+2 - BSD
+3 - GPLv3
+4 - Apache Software License 2.0
+5 - Not open source
+Choose from 1, 2, 3, 4, 5 [1]: 3
+Select username_type:
+1 - username
+2 - email
+Choose from 1, 2 [1]: 2
+timezone [UTC]: UTC
+windows [n]: y
+Select editor:
+1 - None
+2 - PyCharm
+3 - VS Code
+Choose from 1, 2, 3 [1]: 3
+use_docker [n]: y
+Select postgresql_version:
+1 - 16
+2 - 15
+3 - 14
+4 - 13
+5 - 12
+Choose from 1, 2, 3, 4, 5 [1]: 1
+Select cloud_provider:
+1 - AWS
+2 - GCP
+3 - Azure
+4 - None
+Choose from 1, 2, 3, 4 [1]: 1
+Select mail_service:
+1 - Mailgun
+2 - Amazon SES
+3 - Mailjet
+4 - Mandrill
+5 - Postmark
+6 - Sendgrid
+7 - Brevo
+8 - SparkPost
+9 - Other SMTP
+Choose from 1, 2, 3, 4, 5, 6, 7, 8, 9 [1]: 1
+use_async [n]: y
+use_drf [n]: y
+Select frontend_pipeline:
+1 - None
+2 - Django Compressor
+3 - Gulp
+4 - Webpack
+Choose from 1, 2, 3, 4 [1]: 1
+use_celery [n]: y
+use_mailpit [n]: y
+use_sentry [n]: y
+use_whitenoise [n]: y
+use_heroku [n]: n
+Select ci_tool:
+1 - None
+2 - Travis
+3 - Gitlab
+4 - Github
+5 - Drone
+Choose from 1, 2, 3, 4, 5 [1]: 4
+keep_local_envs_in_vcs [y]: n
+debug [n]: y
+Traceback (most recent call last):
+  File "/var/folders/r2/2cwc59291mb04wl4x1pt01f40000gn/T/tmps940z9u4.py", line 19, in <module>
+    assert project_slug.isidentifier(), "'{}' project slug is not a valid Python identifier.".format(project_slug)
+AssertionError: 'sep2025-project-team_004' project slug is not a valid Python identifier.
+ERROR: Stopping generation because pre_gen_project hook script didn't exit successfully
+Hook script failed (exit status: 1)
+(base) ws@wireless-nat-inside backend % ls                                                             
+(base) ws@wireless-nat-inside backend % cookiecutter https://github.com/pydanny/cookiecutter-django.git
+You've downloaded /Users/ws/.cookiecutters/cookiecutter-django before. Is it okay to delete and re-download it? [yes]: yes
+project_name [My Awesome Project]: ICanopyBackend
+project_slug [icanopybackend]: sep2025_project_team_004
+description [Behold My Awesome Project!]: Django backend for SEP Team04 project
+author_name [Daniel Roy Greenfeld]: change later
+domain_name [example.com]: changelater.com
+email [change-later@changelater.com]: change@later.com
+version [0.1.0]: 0.0.1
+Select open_source_license:
+1 - MIT
+2 - BSD
+3 - GPLv3
+4 - Apache Software License 2.0
+5 - Not open source
+Choose from 1, 2, 3, 4, 5 [1]: 3
+Select username_type:
+1 - username
+2 - email
+Choose from 1, 2 [1]: 2
+timezone [UTC]: UTC
+windows [n]: y
+Select editor:
+1 - None
+2 - PyCharm
+3 - VS Code
+Choose from 1, 2, 3 [1]: 3
+use_docker [n]: y
+Select postgresql_version:
+1 - 16
+2 - 15
+3 - 14
+4 - 13
+5 - 12
+Choose from 1, 2, 3, 4, 5 [1]: 1
+Select cloud_provider:
+1 - AWS
+2 - GCP
+3 - Azure
+4 - None
+Choose from 1, 2, 3, 4 [1]: 1
+Select mail_service:
+1 - Mailgun
+2 - Amazon SES
+3 - Mailjet
+4 - Mandrill
+5 - Postmark
+6 - Sendgrid
+7 - Brevo
+8 - SparkPost
+9 - Other SMTP
+Choose from 1, 2, 3, 4, 5, 6, 7, 8, 9 [1]: 1 
+use_async [n]: y
+use_drf [n]: y
+Select frontend_pipeline:
+1 - None
+2 - Django Compressor
+3 - Gulp
+4 - Webpack
+Choose from 1, 2, 3, 4 [1]: 1
+use_celery [n]: y
+use_mailpit [n]: y
+use_sentry [n]: y
+use_whitenoise [n]: y
+use_heroku [n]: n
+Select ci_tool:
+1 - None
+2 - Travis
+3 - Gitlab
+4 - Github
+5 - Drone
+Choose from 1, 2, 3, 4, 5 [1]: 4
+keep_local_envs_in_vcs [y]: n
+debug [n]: y
