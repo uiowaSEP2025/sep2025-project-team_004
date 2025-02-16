@@ -1,0 +1,78 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  frontend-tests:
+    name: Run Jest Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile  # Set working directory to mobile/
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Jest Tests
+        run: npm test -- --coverage
+
+  backend-tests:
+    name: Run Django Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+
+    defaults:
+      run:
+        working-directory: backend  # Set working directory to backend/
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.10
+
+      - name: Install Dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Apply Migrations
+        run: |
+          source venv/bin/activate
+          python manage.py migrate
+
+      - name: Run Django Tests
+        run: |
+          source venv/bin/activate
+          python manage.py test
