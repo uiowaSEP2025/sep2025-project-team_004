@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useRouter } from 'expo-router';
 
 export const unstable_settings = {
   title: 'Profile',
@@ -20,6 +21,7 @@ export const unstable_settings = {
 };
 
 export default function Profile() {
+  const router = useRouter();
   return (
     <SafeAreaView style={styles.container}>
       {/* Header Bar */}
@@ -61,10 +63,12 @@ export default function Profile() {
           </Text>
         </View>
 
-        <View style={styles.infoItem}>
-          <Text style={styles.infoTitle}>Payment Information</Text>
-          <Text style={styles.infoSubtitle}>You have x cards</Text>
-        </View>
+        <TouchableOpacity onPress={() => router.push('/payment-method')}>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoTitle}>Payment Information</Text>
+            <Text style={styles.infoSubtitle}>Visa ending in 1234</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* More items */}
         <View style={styles.infoItem}>
