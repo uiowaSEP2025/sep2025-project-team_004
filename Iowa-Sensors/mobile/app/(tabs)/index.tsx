@@ -50,23 +50,35 @@ export default function HomeScreen() {
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity 
-        testID="login-button"
-        style={styles.button} 
-        onPress={handleLogin}
-        accessibilityRole="button" 
-      >
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
+<View style={styles.buttonContainer}>
+  <TouchableOpacity 
+    testID="login-button"
+    style={styles.button} 
+    onPress={handleLogin}
+    accessibilityRole="button" 
+  >
+    <Text style={styles.buttonText}>Login</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    testID="register-button"
+    style={styles.button}
+    onPress={() => navigation.navigate("register")}
+    accessibilityRole="button" 
+  >
+    <Text style={styles.buttonText}>Register</Text>
+  </TouchableOpacity>
+</View>
+
 
       <TouchableOpacity
-        testID="register-button"
+        testID="forgot-button"
         style={styles.registerButton}
-        onPress={() => navigation.navigate("register")}
-        accessibilityRole="button" 
-      >
-        <Text style={styles.registerText}>Don't have an account? Register</Text>
-      </TouchableOpacity>
+        onPress={() => navigation.navigate("forgot")}
+        accessibilityRole="button"
+        >
+        <Text style={styles.registerText}>Forgot Password?</Text>
+        </TouchableOpacity>
     </View>
   );
 }
@@ -86,7 +98,7 @@ const styles = StyleSheet.create({
     color: "black",
   },
   input: {
-    width: Dimensions.get("window").width * 0.5,
+    width: Dimensions.get("window").width * 0.305,
     padding: 12,
     borderWidth: 1,
     borderColor: "#ccc",
@@ -94,17 +106,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: "#fff",
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', // or 'center', or any alignment you prefer
+    alignItems: 'center',
+  },
   button: {
-    backgroundColor: "blue",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    width: Dimensions.get("window").width * 0.5,
+    // Your button styles
+    padding: 10,
+    backgroundColor: '#007BFF',
+    marginHorizontal: 5, // Add some horizontal margin between buttons
+    borderRadius: 5,
+    width: Dimensions.get("window").width * 0.15,
+
   },
   buttonText: {
-    color: "white",
-    fontWeight: "bold",
+    color: '#fff',
     fontSize: 16,
+    textAlign: 'center',
   },
   registerButton: {
     marginTop: 15,
