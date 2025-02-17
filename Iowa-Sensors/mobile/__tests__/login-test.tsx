@@ -36,7 +36,7 @@ describe("LoginScreen", () => {
     expect(getByPlaceholderText("Email")).toBeTruthy();
     expect(getByPlaceholderText("Password")).toBeTruthy();
     expect(getByTestId("login-button")).toBeTruthy();
-    expect(getByText("Don't have an account? Register")).toBeTruthy();
+    expect(getByText("Register")).toBeTruthy();
   });
 
   it("updates email and password inputs", () => {
