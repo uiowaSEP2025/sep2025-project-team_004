@@ -68,6 +68,6 @@ describe("LoginScreen", () => {
     const { getByTestId } = renderWithNavigation();
     const registerButton = getByTestId("register-button");
     fireEvent.press(registerButton);
-    expect(mockedNavigate).toHaveBeenCalledWith("Register");
+    expect(mockedNavigate).toHaveBeenCalledWith("register");
   });
 });
