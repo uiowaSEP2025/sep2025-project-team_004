@@ -13,11 +13,6 @@ import {
 import { useRouter } from 'expo-router';
 
 
-// Hide system header
-export const unstable_settings = {
-    headerShown: false,
-};
-
 export default function PaymentMethod() {
   const router = useRouter();
   
@@ -34,13 +29,16 @@ export default function PaymentMethod() {
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Payment method</Text>
-        <View style={styles.headerRight}>
-          <ImageBackground
-            style={styles.headerIconImage}
-            source={require('@/assets/images/add-icon.png')} 
-            resizeMode="cover"
-          />
-        </View>
+        <TouchableOpacity
+            onPress={() => router.push('/add-payment')}
+            style={styles.headerRight}
+        >
+            <ImageBackground
+                style={styles.headerIconImage}
+                source={require('@/assets/images/add-icon.png')}
+                resizeMode="cover"
+            />
+        </TouchableOpacity>
       </View>
 
       {/* Main content */}
