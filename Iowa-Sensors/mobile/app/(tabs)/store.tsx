@@ -1,9 +1,16 @@
-import React from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 
 
-
+// Define the Product Type
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  image_url?: string; // Optional field for product images
+}
 
 const categories = [
   { id: "1", name: "Popular", icon: "star" },
@@ -13,14 +20,27 @@ const categories = [
   { id: "5", name: "Other", icon: "more-horiz" },
 ];
 
-const products = [
-  { id: "1", name: "WiFi Air Sensor", price: 120, image: require("../../assets/images/react-logo.png") },
-  { id: "2", name: "Lora Soil Sensor", price: 225, image: require("../../assets/images/react-logo.png") },
-  { id: "3", name: "Battery Replacement", price: 20, image: require("../../assets/images/react-logo.png") },
-  { id: "4", name: "Tool Kit", price: 50, image: require("../../assets/images/react-logo.png") },
-];
-
 export default function StoreScreen() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/products/")
+      .then(response => response.json())
+      .then((data: Product[]) => { 
+        setProducts(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error("Error fetching products:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="blue" style={{ marginTop: 20 }} />;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -41,11 +61,15 @@ export default function StoreScreen() {
       <FlatList
         data={products}
         numColumns={2}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <View style={styles.productCard}>
-            <Image source={item.image} style={styles.productImage} />
+            {item.image_url ? (
+              <Image source={{ uri: item.image_url }} style={styles.productImage} />
+            ) : (
+              <Image source={require("../../assets/images/react-logo.png")} style={styles.productImage} />
+            )}
             <Text style={styles.productName}>{item.name}</Text>
             <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
             <TouchableOpacity style={styles.cartButton}>
