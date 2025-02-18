@@ -4,6 +4,7 @@ import { MaterialIcons, Feather } from "@expo/vector-icons";
 
 
 
+
 const categories = [
   { id: "1", name: "Popular", icon: "star" },
   { id: "2", name: "Air", icon: "air" },
