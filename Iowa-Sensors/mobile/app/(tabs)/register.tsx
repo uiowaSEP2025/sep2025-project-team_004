@@ -1,4 +1,3 @@
-// app/RegisterScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -13,14 +12,16 @@ import { useNavigation } from "@react-navigation/native";
 export default function RegisterScreen() {
   const navigation = useNavigation();
 
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleRegister = () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
       setError("Please fill out all fields.");
       return;
     }
@@ -42,10 +43,26 @@ export default function RegisterScreen() {
 
       <TextInput
         style={styles.input}
-        placeholder="Name"
+        placeholder="First Name"
         placeholderTextColor="#888"
-        value={name}
-        onChangeText={setName}
+        value={firstName}
+        onChangeText={setFirstName}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Last Name"
+        placeholderTextColor="#888"
+        value={lastName}
+        onChangeText={setLastName}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        placeholderTextColor="#888"
+        value={username}
+        onChangeText={setUsername}
       />
 
       <TextInput
