@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React from 'react';
+import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
