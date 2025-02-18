@@ -1,7 +1,7 @@
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { NavigationContainer } from "@react-navigation/native";
-import RegisterScreen from "../app/(tabs)/register"; 
+import RegisterScreen from "../app/register"; 
 
 // Create a mocked goBack function
 const mockedGoBack = jest.fn();
