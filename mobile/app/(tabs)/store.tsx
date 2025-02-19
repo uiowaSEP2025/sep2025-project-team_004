@@ -25,7 +25,7 @@ export default function StoreScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/products/")
+    fetch("http://localhost:8000/api/store/products/")
       .then(response => response.json())
       .then((data: Product[]) => { 
         setProducts(data);
@@ -63,20 +63,25 @@ export default function StoreScreen() {
         numColumns={2}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.grid}
-        renderItem={({ item }) => (
-          <View style={styles.productCard}>
-            {item.image_url ? (
-              <Image source={{ uri: item.image_url }} style={styles.productImage} />
-            ) : (
-              <Image source={require("../../assets/images/react-logo.png")} style={styles.productImage} />
-            )}
-            <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
-            <TouchableOpacity style={styles.cartButton}>
-              <MaterialIcons name="shopping-cart" size={20} color="gray" />
-            </TouchableOpacity>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const price = Number(item.price) || 0;  // Convert to number, default to 0 if undefined
+        
+          return (
+            <View style={styles.productCard}>
+              {item.image_url ? (
+                <Image source={{ uri: item.image_url }} style={styles.productImage} />
+              ) : (
+                <Image source={require("../../assets/images/react-logo.png")} style={styles.productImage} />
+              )}
+              <Text style={styles.productName}>{item.name}</Text>
+              <Text style={styles.productPrice}>${price.toFixed(2)}</Text> 
+              <TouchableOpacity style={styles.cartButton}>
+                <MaterialIcons name="shopping-cart" size={20} color="gray" />
+              </TouchableOpacity>
+            </View>
+          );
+        }}
+        
       />
     </View>
   );
