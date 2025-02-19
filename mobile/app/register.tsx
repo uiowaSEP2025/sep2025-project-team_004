@@ -20,6 +20,17 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
+  const validateEmail = () => {
+    // Check if the email contains an '@'
+    if (!email.includes('@')) {
+      setErrorMessage('Please enter a valid email address with an "@" symbol.');
+    } else {
+      setErrorMessage('');
+      
+      console.log('Email is valid:', email);
+    }
+  };
+
   const handleRegister = () => {
     if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
       setError("Please fill out all fields.");
@@ -149,3 +160,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 });
+function setErrorMessage(arg0: string) {
+  throw new Error("Function not implemented.");
+}
+
