@@ -52,12 +52,57 @@ export default function PaymentMethod() {
     }
     setExpiry(formatted);
   };
+  
+  const handleAddCard = async () => {
+    const digits = cardNumber.replace(/\D/g, '');
+    if (digits.length < 16) {
+      // TODO: add more verification here to check card number
+      // I skipped for now it's easy to do test.
+      // I feel like it is better to check this on server side
+      Alert.alert("Invalid Card Number", "Please enter a valid card number.");
+      return;
+    }
+    const last4 = digits.slice(-4);
 
-  // Add card, for now, just return
-  const handleAddCard = () => {
-    //TODO: Add the card, talk to the backend, verfy the card, get feedback, show status, and return
-    navigation.goBack();
+    const newCard = {
+      last4,
+      expiry,
+      cardHolder,
+    };
+
+    // Add a new card
+    try {
+      const stored = await AsyncStorage.getItem('storedCards');
+      let storedCards = stored ? JSON.parse(stored) : [];
+
+      // Duplication detection：if last4, expiry, cardHolder are same, then reject
+      const duplicate = storedCards.find(
+        (card: any) =>
+          card.last4 === newCard.last4 &&
+          card.expiry === newCard.expiry &&
+          card.cardHolder === newCard.cardHolder
+      );
+      if (duplicate) {
+        Alert.alert("Duplicate Card", "This card has already been added.");
+        //should I verify with the server to avoid bugs?
+        navigation.goBack();
+        return;
+      }
+
+      // Add new card and save to AsyncStorage
+      storedCards.push(newCard);
+      await AsyncStorage.setItem('storedCards', JSON.stringify(storedCards));
+
+      Alert.alert("Card Added", "Your card has been added successfully.");
+
+      //TODO: Add the card, talk to the backend, verfy the card, get feedback, show status, and return
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error storing card", error);
+      Alert.alert("Error", "There was an error adding your card.");
+    }
   };
+
 
   return (
     <SafeAreaView style={styles.container}>
