@@ -90,6 +90,7 @@ export default function PaymentMethod() {
       last4,
       expiry,
       cardHolder,
+      cardType: detectedCardType,
     };
 
     // Add a new card
@@ -134,14 +135,13 @@ export default function PaymentMethod() {
         <View style={styles.screen}>
           {/* Header */}
           <View style={styles.header}>
-            {/* TODO: change onPress */}
-            <TouchableOpacity onPress={handleAddCard}>
-              <ImageBackground
-                style={styles.backIcon}
-                source={require('@/assets/images/back-arrow.png')}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <ImageBackground
+              style={styles.backIcon}
+              source={require('@/assets/images/back-arrow.png')}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
             <Text style={styles.headerTitle} numberOfLines={1}>
               Add payment method
             </Text>
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     color: '#303030',
   },
   addText: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#007AFF',
   },
   // Card

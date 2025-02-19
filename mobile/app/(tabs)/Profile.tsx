@@ -208,7 +208,6 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSansBold', 
     fontWeight: '700',
     fontSize: 20,
-    fontWeight: '700',
     color: '#232323',
   },
   email: {
@@ -237,7 +236,6 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSansBold', 
     fontWeight: '700',
     fontSize: 16,
-    fontWeight: '600',
     color: '#232323',
     marginBottom: 4,
   },

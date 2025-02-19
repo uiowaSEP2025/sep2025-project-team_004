@@ -18,6 +18,7 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     NunitoSans: require('../assets/fonts/NunitoSans-VariableFont_YTLC,opsz,wdth,wght.ttf'),
     NunitoSansBold: require('../assets/fonts/NunitoSans_7pt-Bold.ttf'),
+    MerriweatherBold: require('../assets/fonts/Merriweather-Bold.ttf'),
   });
 
   useEffect(() => {
