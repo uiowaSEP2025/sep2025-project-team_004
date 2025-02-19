@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   ImageBackground,
   SafeAreaView,
   ScrollView,
@@ -21,6 +22,27 @@ export default function PaymentMethod() {
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [expiry, setExpiry] = useState('');
+  // Get card type
+  const getCardType = (number: string) => {
+    const sanitized = number.replace(/\s/g, '');
+    if (sanitized.length === 16) {
+      // Choose：mastercard、discover、amex、visa-default // maybe find a new png to show unknown
+      if (/^5[1-5]/.test(sanitized)) return 'mastercard';
+      if (/^6(?:011|5)/.test(sanitized)) return 'discover';
+      if (/^3[47]/.test(sanitized)) return 'amex';
+      if (/^4/.test(sanitized)) return 'visa';
+      return 'visa';
+    }
+    return '';
+  };
+  //logo mapping
+  const cardLogos: { [key: string]: any } = {
+    amex: require('@/assets/images/card-logo/amex.png'),
+    discover: require('@/assets/images/card-logo/discover.png'),
+    mastercard: require('@/assets/images/card-logo/mastercard.png'),
+    visa: require('@/assets/images/card-logo/visa.png'),
+  };
+
 
   // Process the card number, start with “*”
   const totalDigits = 16;
@@ -104,6 +126,8 @@ export default function PaymentMethod() {
   };
 
 
+  const detectedCardType = getCardType(sanitizedCardNumber);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentInsetAdjustmentBehavior="automatic">
@@ -128,14 +152,22 @@ export default function PaymentMethod() {
             </TouchableOpacity>
           </View>
 
-          {/* Credit Card Display */}
+          {/* Card info display */}
           <View style={styles.cardContainer}>
             <View style={styles.card}>
-              {/* Card Number */}
+              {/* card number */}
               <View style={styles.cardNumberContainer}>
                 <Text style={styles.masked}>{formattedCardNumber}</Text>
+                {/* If there is a card type, display logo */}
+                {detectedCardType ? (
+                  <Image
+                    style={styles.cardLogo}
+                    source={cardLogos[detectedCardType]}
+                    resizeMode="contain"
+                  />
+                ) : null}
               </View>
-              {/* Card info */}
+              {/* more info display at bot 2 col: CARD HOLDER EXP DATE */}
               <View style={styles.cardDetails}>
                 <View style={styles.detailsColumn}>
                   <Text style={styles.label}>CARD HOLDER</Text>
@@ -257,6 +289,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  cardLogo: {
+    position: 'absolute',
+    top: 20,
+    right: 0,
+    width: 80,
+    height: 80,
   },
   // Card button info - 2 col
   cardDetails: {
