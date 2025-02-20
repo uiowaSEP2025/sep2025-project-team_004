@@ -9,9 +9,22 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "email", "first_name", "last_name", "password"]
         extra_kwargs = {"password": {"write_only": True}}
 
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is already registered.")
+        return value
+
+    def validate_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        if not any(char.isdigit() for char in value):
+            raise serializers.ValidationError("Password must contain at least one number.")
+        if not any(char.isalpha() for char in value):
+            raise serializers.ValidationError("Password must contain at least one letter.")
+        return value
+
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
+        return User.objects.create_user(**validated_data)
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()

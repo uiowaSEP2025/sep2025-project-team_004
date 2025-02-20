@@ -10,19 +10,20 @@ from .serializers import UserSerializer
 User = get_user_model()
 
 class UserViewSet(viewsets.ModelViewSet):
-    """Handles creating, retrieving, updating, and deleting users."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    
 
 @method_decorator(csrf_exempt, name="dispatch")
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        print("Incoming POST request to /api/users/register/")
+        print("Parsed data:", request.data)
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            user.set_password(serializer.validated_data["password"])
-            user.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "User registered successfully!"}, status=status.HTTP_201_CREATED)
+        print("Validation errors:", serializer.errors)
+        return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)

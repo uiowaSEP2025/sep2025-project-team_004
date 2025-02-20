@@ -1,37 +1,74 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Alert,
+} from "react-native";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../types";
 
 export default function RegisterScreen() {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(""); // Not needed in backend, but keeping it for UI
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleRegister = async () => {
-    if (!firstName || !lastName || !username || !email || !password) {
-      Alert.alert("Error", "Please fill in all fields.");
+    
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      setError("Please fill out all fields.");
       return;
     }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setError("");
 
     setLoading(true);
 
     try {
+      
       const response = await fetch("http://127.0.0.1:8000/api/users/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ first_name: firstName, last_name: lastName, username, email, password }),
+        body: JSON.stringify({
+          name: `${firstName} ${lastName}`,
+          email: email,
+          password: password,
+        }),
       });
-
+      
       const data = await response.json();
+      console.log("Backend response:", data);
+
       if (response.ok) {
-        Alert.alert("Success", "Account created successfully!");
+        navigation.navigate("index")
+        Alert.alert("Success", "Account created successfully!", [
+          { text: "OK" }, 
+        ]);
       } else {
-        Alert.alert("Error", data.error || "Failed to register.");
+        
+        let errorMessage = "Failed to register.";
+        if (data.errors) {
+          errorMessage = Object.values(data.errors).flat().join("\n");
+        }
+        setError(errorMessage);
       }
     } catch (error) {
-      Alert.alert("Error", "Something went wrong.");
+      console.error("Registration error:", error);
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -39,23 +76,109 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Register</Text>
-      <TextInput placeholder="First Name" value={firstName} onChangeText={setFirstName} style={styles.input} />
-      <TextInput placeholder="Last Name" value={lastName} onChangeText={setLastName} style={styles.input} />
-      <TextInput placeholder="Username" value={username} onChangeText={setUsername} style={styles.input} />
-      <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} keyboardType="email-address" />
-      <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
-      <TouchableOpacity onPress={handleRegister} style={styles.button} disabled={loading}>
+      <Text testID="register-title" style={styles.title}>
+        Register
+      </Text>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+      <TextInput
+        style={styles.input}
+        placeholder="First Name"
+        placeholderTextColor="#888"
+        value={firstName}
+        onChangeText={setFirstName}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Last Name"
+        placeholderTextColor="#888"
+        value={lastName}
+        onChangeText={setLastName}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="#888"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        placeholderTextColor="#888"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Confirm Password"
+        placeholderTextColor="#888"
+        secureTextEntry
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? "Registering..." : "Register"}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, styles.backButton]}
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={styles.buttonText}>Back to Login</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, justifyContent: "center", backgroundColor: "#fff" },
-  header: { fontSize: 24, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
-  input: { height: 40, borderColor: "#ccc", borderWidth: 1, borderRadius: 5, paddingHorizontal: 10, marginBottom: 10 },
-  button: { backgroundColor: "#007bff", padding: 10, borderRadius: 5, alignItems: "center" },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  input: {
+    width: Dimensions.get("window").width * 0.5,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  button: {
+    backgroundColor: "blue",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    width: Dimensions.get("window").width * 0.5,
+    marginVertical: 5,
+  },
+  backButton: {
+    backgroundColor: "gray",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  errorText: {
+    color: "red",
+    marginBottom: 10,
+    textAlign: "center",
+  },
 });
