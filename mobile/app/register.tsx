@@ -6,33 +6,27 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "./types";
 
 export default function RegisterScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(""); // Not needed in backend, but keeping it for UI
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const validateEmail = () => {
-    // Check if the email contains an '@'
-    if (!email.includes('@')) {
-      setErrorMessage('Please enter a valid email address with an "@" symbol.');
-    } else {
-      setErrorMessage('');
-      
-      console.log('Email is valid:', email);
-    }
-  };
-
-  const handleRegister = () => {
-    if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
+  const handleRegister = async () => {
+    
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       setError("Please fill out all fields.");
       return;
     }
@@ -41,8 +35,43 @@ export default function RegisterScreen() {
       return;
     }
     setError("");
-    // TODO: Add registration logic (e.g., API call)
-    navigation.goBack();
+
+    setLoading(true);
+
+    try {
+      
+      const response = await fetch("http://127.0.0.1:8000/api/users/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${firstName} ${lastName}`,
+          email: email,
+          password: password,
+        }),
+      });
+      
+      const data = await response.json();
+      console.log("Backend response:", data);
+
+      if (response.ok) {
+        navigation.navigate("index")
+        Alert.alert("Success", "Account created successfully!", [
+          { text: "OK" }, 
+        ]);
+      } else {
+        
+        let errorMessage = "Failed to register.";
+        if (data.errors) {
+          errorMessage = Object.values(data.errors).flat().join("\n");
+        }
+        setError(errorMessage);
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,14 +95,6 @@ export default function RegisterScreen() {
         placeholderTextColor="#888"
         value={lastName}
         onChangeText={setLastName}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
-        placeholderTextColor="#888"
-        value={username}
-        onChangeText={setUsername}
       />
 
       <TextInput
@@ -104,8 +125,8 @@ export default function RegisterScreen() {
         onChangeText={setConfirmPassword}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Register</Text>
+      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+        <Text style={styles.buttonText}>{loading ? "Registering..." : "Register"}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -158,6 +179,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     marginBottom: 10,
+    textAlign: "center",
   },
 });
 function setErrorMessage(arg0: string) {

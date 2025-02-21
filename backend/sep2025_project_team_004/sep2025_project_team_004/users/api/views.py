@@ -1,26 +1,29 @@
-from rest_framework import status
-from rest_framework.decorators import action
-from rest_framework.mixins import ListModelMixin
-from rest_framework.mixins import RetrieveModelMixin
-from rest_framework.mixins import UpdateModelMixin
+from django.contrib.auth import get_user_model
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.viewsets import GenericViewSet
-
-from sep2025_project_team_004.users.models import User
-
+from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny
 from .serializers import UserSerializer
 
+User = get_user_model()
 
-class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericViewSet):
-    serializer_class = UserSerializer
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    lookup_field = "pk"
+    serializer_class = UserSerializer
+    
 
-    def get_queryset(self, *args, **kwargs):
-        assert isinstance(self.request.user.id, int)
-        return self.queryset.filter(id=self.request.user.id)
+@method_decorator(csrf_exempt, name="dispatch")
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
 
-    @action(detail=False)
-    def me(self, request):
-        serializer = UserSerializer(request.user, context={"request": request})
-        return Response(status=status.HTTP_200_OK, data=serializer.data)
+    def post(self, request):
+        print("Incoming POST request to /api/users/register/")
+        print("Parsed data:", request.data)
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({"message": "User registered successfully!"}, status=status.HTTP_201_CREATED)
+        print("Validation errors:", serializer.errors)
+        return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)

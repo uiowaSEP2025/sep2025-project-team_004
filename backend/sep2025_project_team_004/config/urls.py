@@ -10,6 +10,8 @@ from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
+from sep2025_project_team_004.store.views import ProductListView
+
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
@@ -21,8 +23,9 @@ urlpatterns = [
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
     # User management
-    path("users/", include("sep2025_project_team_004.users.urls", namespace="users")),
+    path("api/users/", include("sep2025_project_team_004.users.api.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
+    path("api/store/", include("sep2025_project_team_004.store.urls")),
     # Your stuff: custom urls includes go here
     # ...
     # Media files
