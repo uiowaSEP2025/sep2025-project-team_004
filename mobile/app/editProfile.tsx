@@ -1,84 +1,57 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Dimensions } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from './types';
 
 const EditProfilePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
-  const [username] = useState('john_doe'); 
-  const [firstName] = useState('John'); 
-  const [lastName] = useState('Doe'); 
+  const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
 
-  // Form Validation
-  const validateForm = () => {
-    if (!phone || !address || !city || !state || !zipCode) {
-      Alert.alert('Error', 'Please fill out all required fields.');
-      return false;
-    }
-
-    // Phone Number Validation (Basic)
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(phone)) {
-      Alert.alert('Error', 'Please enter a valid phone number (10 digits).');
-      return false;
-    }
-
-    // Zip Code Validation (Basic US Format)
-    const zipRegex = /^[0-9]{5}$/;
-    if (!zipRegex.test(zipCode)) {
-      Alert.alert('Error', 'Please enter a valid zip code (5 digits).');
-      return false;
-    }
-
-    return true;
-  };
-
-  // Handle Save
-  const handleSave = () => {
-    if (validateForm()) {
-      Alert.alert('Success', 'Profile updated successfully!');
-      // TODO: Implement save functionality (e.g., API call or state update)
-    }
-  };
-
-  // Handle Cancel
-  const handleCancel = () => {
-    Alert.alert('Cancel Changes', 'Discard all changes?', [
-      { text: 'No', style: 'cancel' },
-      {
-        text: 'Yes',
-        style: 'destructive',
-        onPress: () => {
-          setPhone('');
-          setAddress('');
-          setCity('');
-          setState('');
-          setZipCode('');
-          navigation.goBack();
+  const fetchUserProfile = async () => {
+    try {
+      const token = "YOUR_AUTH_TOKEN"; 
+      const response = await fetch('http://127.0.0.1:8000/api/users/profile/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-      },
-    ]);
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setUsername(userData.username);
+        setFirstName(userData.first_name);
+        setLastName(userData.last_name);
+        setPhone(userData.phone);
+        setAddress(userData.address);
+        setCity(userData.city);
+        setState(userData.state);
+        setZipCode(userData.zip_code);
+      } else {
+        Alert.alert('Error', 'Failed to load user profile.');
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      Alert.alert('Error', 'An error occurred while loading user profile.');
+    }
   };
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Edit Profile</Text>
-
       <View style={styles.form}>
         <Text style={styles.label}>Username:</Text>
         <TextInput
@@ -89,15 +62,19 @@ const EditProfilePage: React.FC = () => {
 
         <Text style={styles.label}>First Name:</Text>
         <TextInput
-          style={[styles.input, styles.readOnly]}
+          style={styles.input}
           value={firstName}
+          onChangeText={setFirstName}
+          placeholder="First Name"
           editable={false}
         />
 
         <Text style={styles.label}>Last Name:</Text>
         <TextInput
-          style={[styles.input, styles.readOnly]}
+          style={styles.input}
           value={lastName}
+          onChangeText={setLastName}
+          placeholder="Last Name"
           editable={false}
         />
 
@@ -144,15 +121,6 @@ const EditProfilePage: React.FC = () => {
           keyboardType="number-pad"
           maxLength={5}
         />
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.buttonText}>Save</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-            <Text style={styles.buttonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </ScrollView>
   );
@@ -163,23 +131,18 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 20,
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    textAlign: 'center',
   },
   form: {
-    width: '100%',
-    alignItems: 'center',
+    marginBottom: 20,
   },
   label: {
     fontSize: 16,
     marginBottom: 5,
-    color: '#333',
   },
   input: {
     borderWidth: 1,
@@ -187,37 +150,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     marginBottom: 15,
-    fontSize: 16,
-    width: Dimensions.get("window").width * 0.2,
-    alignContent: 'center',
-    alignSelf: 'center',
   },
   readOnly: {
     backgroundColor: '#f0f0f0',
-    color: '#888',
-    width: Dimensions.get("window").width * 0.2,
-    alignContent: 'center',
-    alignSelf: 'center',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  saveButton: {
-    backgroundColor: '#28a745',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  cancelButton: {
-    backgroundColor: '#dc3545',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
   },
 });
 

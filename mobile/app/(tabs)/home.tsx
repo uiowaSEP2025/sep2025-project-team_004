@@ -34,13 +34,13 @@ const WelcomePage: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with Profile Icon */}
+      
       <View style={styles.header}>
         <TouchableOpacity style={styles.profileIcon} onPress={handleMenuToggle}>
           <Text style={styles.profileIconText}>P</Text>
         </TouchableOpacity>
 
-        {/* Animated Menu */}
+       
         {menuVisible && (
           <Animated.View
             style={[
@@ -91,7 +91,7 @@ const WelcomePage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff', // Add a background color to avoid black screen
+    backgroundColor: '#fff', 
   },
   header: {
     height: 60,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingRight: 16,
     position: 'relative',
-    zIndex: 2, // Ensures the header is above the content
+    zIndex: 2, 
   },
   profileIcon: {
     width: 40,
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff', // Add background to ensure consistent color
+    backgroundColor: '#fff', 
   },
   welcomeText: {
     fontSize: 24,
