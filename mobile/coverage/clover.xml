@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1739975494134" clover="3.2.0">
+  <project timestamp="1739975494135" name="All files">
+    <metrics statements="67" coveredstatements="64" conditionals="43" coveredconditionals="34" methods="11" coveredmethods="10" elements="121" coveredelements="108" complexity="0" loc="67" ncloc="67" packages="4" files="7" classes="7"/>
+    <package name="app.(tabs)">
+      <metrics statements="56" coveredstatements="54" conditionals="28" coveredconditionals="26" methods="9" coveredmethods="8"/>
+      <file name="forgot.tsx" path="/Users/ws/Desktop/SWE Project/GroupProject/sep2025-project-team_004/mobile/app/(tabs)/forgot.tsx">
+        <metrics statements="22" coveredstatements="22" conditionals="10" coveredconditionals="10" methods="2" coveredmethods="2"/>
+        <line num="8" count="29" type="stmt"/>
+        <line num="10" count="29" type="stmt"/>
+        <line num="11" count="29" type="stmt"/>
+        <line num="12" count="29" type="stmt"/>
+        <line num="13" count="29" type="stmt"/>
+        <line num="14" count="29" type="stmt"/>
+        <line num="16" count="29" type="stmt"/>
+        <line num="17" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="21" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="25" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="27" count="1" type="stmt"/>
+        <line num="29" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="37" count="29" type="stmt"/>
+        <line num="76" count="1" type="stmt"/>
+      </file>
+      <file name="index.tsx" path="/Users/ws/Desktop/SWE Project/GroupProject/sep2025-project-team_004/mobile/app/(tabs)/index.tsx">
+        <metrics statements="14" coveredstatements="12" conditionals="6" coveredconditionals="4" methods="4" coveredmethods="3"/>
+        <line num="15" count="7" type="stmt"/>
+        <line num="17" count="7" type="stmt"/>
+        <line num="18" count="7" type="stmt"/>
+        <line num="19" count="7" type="stmt"/>
+        <line num="21" count="7" type="stmt"/>
+        <line num="22" count="1" type="cond" truecount="2" falsecount="2"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="25" count="1" type="stmt"/>
+        <line num="27" count="0" type="stmt"/>
+        <line num="30" count="7" type="stmt"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="77" count="0" type="stmt"/>
+        <line num="86" count="1" type="stmt"/>
+      </file>
+      <file name="register.tsx" path="/Users/ws/Desktop/SWE Project/GroupProject/sep2025-project-team_004/mobile/app/(tabs)/register.tsx">
+        <metrics statements="20" coveredstatements="20" conditionals="12" coveredconditionals="12" methods="3" coveredmethods="3"/>
+        <line num="13" count="20" type="stmt"/>
+        <line num="15" count="20" type="stmt"/>
+        <line num="16" count="20" type="stmt"/>
+        <line num="17" count="20" type="stmt"/>
+        <line num="18" count="20" type="stmt"/>
+        <line num="19" count="20" type="stmt"/>
+        <line num="20" count="20" type="stmt"/>
+        <line num="21" count="20" type="stmt"/>
+        <line num="23" count="20" type="stmt"/>
+        <line num="24" count="3" type="cond" truecount="8" falsecount="0"/>
+        <line num="25" count="1" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="28" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="29" count="1" type="stmt"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="32" count="1" type="stmt"/>
+        <line num="34" count="1" type="stmt"/>
+        <line num="37" count="20" type="stmt"/>
+        <line num="102" count="1" type="stmt"/>
+        <line num="110" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="components">
+      <metrics statements="3" coveredstatements="3" conditionals="11" coveredconditionals="6" methods="1" coveredmethods="1"/>
+      <file name="ThemedText.tsx" path="/Users/ws/Desktop/SWE Project/GroupProject/sep2025-project-team_004/mobile/components/ThemedText.tsx">
+        <metrics statements="3" coveredstatements="3" conditionals="11" coveredconditionals="6" methods="1" coveredmethods="1"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="constants">
+      <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <file name="Colors.ts" path="/Users/ws/Desktop/SWE Project/GroupProject/sep2025-project-team_004/mobile/constants/Colors.ts">
+        <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="7" count="1" type="stmt"/>
+        <line num="9" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="hooks">
+      <metrics statements="5" coveredstatements="4" conditionals="4" coveredconditionals="2" methods="1" coveredmethods="1"/>
+      <file name="useColorScheme.ts" path="/Users/ws/Desktop/SWE Project/GroupProject/sep2025-project-team_004/mobile/hooks/useColorScheme.ts">
+        <metrics statements="0" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      </file>
+      <file name="useThemeColor.ts" path="/Users/ws/Desktop/SWE Project/GroupProject/sep2025-project-team_004/mobile/hooks/useThemeColor.ts">
+        <metrics statements="5" coveredstatements="4" conditionals="4" coveredconditionals="2" methods="1" coveredmethods="1"/>
+        <line num="13" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="14" count="1" type="stmt"/>
+        <line num="16" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="17" count="0" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>

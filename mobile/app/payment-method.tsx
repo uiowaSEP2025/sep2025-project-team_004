@@ -101,7 +101,7 @@ export default function PaymentMethod() {
     <SafeAreaView style={styles.container}>
       {/* Header Bar */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerIcon}>
+        <TouchableOpacity testID="back-button" onPress={() => router.back()} style={styles.headerIcon}>
           <ImageBackground
             style={styles.backIcon}
             source={require('@/assets/images/back-arrow.png')}
@@ -109,7 +109,7 @@ export default function PaymentMethod() {
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Payment method</Text>
-        <TouchableOpacity onPress={() => router.push('/add-payment')} style={styles.headerRight}>
+        <TouchableOpacity testID="add-payment-button"onPress={() => router.push('/add-payment')} style={styles.headerRight}>
           <ImageBackground
             style={styles.headerIconImage}
             source={require('@/assets/images/add-icon.png')}
@@ -155,11 +155,15 @@ export default function PaymentMethod() {
               </View>
               {/* default and delete */}
               <View style={styles.defaultContainer}>
-                <TouchableOpacity onPress={() => handleSetDefault(index)} style={styles.checkbox}>
-                  {card.default && <View style={styles.checked} />}
-                </TouchableOpacity>
+              <TouchableOpacity
+                testID={`default-checkbox-${index}`}
+                onPress={() => handleSetDefault(index)}
+                style={styles.checkbox}
+              >
+                {card.default && <View style={styles.checked} />}
+              </TouchableOpacity>
                 <Text style={styles.defaultText}>Use as default payment method</Text>
-                <TouchableOpacity onPress={() => confirmDelete(index)} style={styles.defaultDeleteButton}>
+                <TouchableOpacity testID={`delete-button-${index}`} onPress={() => confirmDelete(index)} style={styles.defaultDeleteButton}>
                   <Image
                     source={require('@/assets/images/delete.png')}
                     style={styles.defaultDeleteIcon}
