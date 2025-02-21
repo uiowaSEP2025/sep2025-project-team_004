@@ -10,6 +10,7 @@ import {
 import PaymentMethod from '../app/payment-method';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import { getCardLogo } from '../app/payment-method';
 
 // Mock png feedback，avoid require() returns null
 jest.mock('@/assets/images/back-arrow.png', () => 'back-arrow.png');
@@ -42,12 +43,13 @@ const mockedRouter = {
 // -------------------
 // Mock expo-router
 // -------------------
-jest.mock('expo-router', () => ({
-    useRouter: () => mockedRouter,
-    useFocusEffect: (callback: () => void) => {
-      callback();
-    },
-  }));
+jest.mock('expo-router', () => {
+    const React = require('react');
+    return {
+      useRouter: () => mockedRouter,
+      useFocusEffect: (callback: () => void) => React.useEffect(callback, []),
+    };
+  });
   
 
 // -------------------
@@ -62,6 +64,8 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 // Pack and Render PaymentMethod 
 // -------------------
 const renderPaymentMethod = () => render(<PaymentMethod />);
+const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
+
 
 
 afterEach(cleanup);
@@ -80,6 +84,7 @@ describe('PaymentMethod Screen', () => {
     (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
   
     const { getByText, queryByText } = render(<PaymentMethod />);
+
   
     await waitFor(() => {
       expect(getByText('Payment method')).toBeTruthy();
@@ -164,3 +169,85 @@ describe('PaymentMethod Screen', () => {
   });
   
 });
+
+describe('getCardLogo', () => {
+    it('should return visa image for "visa"', () => {
+      expect(getCardLogo('visa')).toBe('visa.png');
+    });
+  
+    it('should return mastercard image for "mastercard"', () => {
+      expect(getCardLogo('mastercard')).toBe('mastercard.png');
+    });
+  
+    it('should return amex image for "amex"', () => {
+      expect(getCardLogo('amex')).toBe('amex.png');
+    });
+  
+    it('should return discover image for "discover"', () => {
+      expect(getCardLogo('discover')).toBe('discover.png');
+    });
+  
+    it('should default to visa image for unknown type', () => {
+      expect(getCardLogo('unknown')).toBe('visa.png');
+    });
+
+    it('handles error when loading cards from storage', async () => {
+        const error = new Error('Storage error');
+        (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(error);
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      
+        render(<PaymentMethod />);
+      
+        await waitFor(() => {
+          expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading cards from storage', error);
+        });
+      
+        consoleErrorSpy.mockRestore();
+    });
+
+    it('handles error when deleting a card', async () => {
+        // 1. Let getItem return card array
+        (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(JSON.stringify([sampleCard]));
+      
+        // 2. mockImplementation initilize
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      
+        // 3. render component
+        const { getByTestId } = renderPaymentMethod();
+      
+        // 4. after done, find the delete button
+        await waitFor(() => {
+          expect(getByTestId('delete-button-0')).toBeTruthy();
+        });
+      
+        // 5. Let setItem throw an error
+        const deleteError = new Error('Delete error');
+        (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(deleteError);
+      
+        // 6. mock Alert.alert
+        jest.spyOn(Alert, 'alert').mockImplementation((title, message, buttons) => {
+          const confirmButton = buttons?.[1]; 
+          if (confirmButton && confirmButton.onPress) {
+            confirmButton.onPress();
+          }
+        });
+      
+        // 7. press delete button ->  Alert -> Confirm -> call handleDeleteCard
+        act(() => {
+          fireEvent.press(getByTestId('delete-button-0'));
+        });
+      
+        // 8. check console.error 
+        await waitFor(() => {
+          expect(consoleErrorSpy).toHaveBeenCalledWith('Error deleting card', deleteError);
+        });
+      
+        consoleErrorSpy.mockRestore();
+      });
+      
+    
+    
+});
+
+
+
