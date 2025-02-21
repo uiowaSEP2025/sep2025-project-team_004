@@ -1,214 +1,146 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ScrollView,
-} from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../types';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../types"; 
 
-const EditProfilePage: React.FC = () => {
+const WelcomePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [menuVisible, setMenuVisible] = useState(false);
+  const menuAnimation = useRef(new Animated.Value(0)).current;
 
-  const [username] = useState('john_doe'); 
-  const [firstName] = useState('John'); 
-  const [lastName] = useState('Doe'); 
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [zipCode, setZipCode] = useState('');
-
-  // Form Validation
-  const validateForm = () => {
-    if (!phone || !address || !city || !state || !zipCode) {
-      Alert.alert('Error', 'Please fill out all required fields.');
-      return false;
-    }
-
-    // Phone Number Validation (Basic)
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(phone)) {
-      Alert.alert('Error', 'Please enter a valid phone number (10 digits).');
-      return false;
-    }
-
-    // Zip Code Validation (Basic US Format)
-    const zipRegex = /^[0-9]{5}$/;
-    if (!zipRegex.test(zipCode)) {
-      Alert.alert('Error', 'Please enter a valid zip code (5 digits).');
-      return false;
-    }
-
-    return true;
-  };
-
-  // Handle Save
-  const handleSave = () => {
-    if (validateForm()) {
-      Alert.alert('Success', 'Profile updated successfully!');
-      // TODO: Implement save functionality (e.g., API call or state update)
+  // Toggle Menu with Animation
+  const handleMenuToggle = () => {
+    if (menuVisible) {
+      Animated.timing(menuAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setMenuVisible(false));
+    } else {
+      setMenuVisible(true);
+      Animated.timing(menuAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }
   };
 
-  // Handle Cancel
-  const handleCancel = () => {
-    Alert.alert('Cancel Changes', 'Discard all changes?', [
-      { text: 'No', style: 'cancel' },
-      {
-        text: 'Yes',
-        style: 'destructive',
-        onPress: () => {
-          setPhone('');
-          setAddress('');
-          setCity('');
-          setState('');
-          setZipCode('');
-          navigation.goBack();
-        },
-      },
-    ]);
+  // Handle Option Selection
+  const handleOptionSelect = (option: string) => {
+    console.log(`Selected: ${option}`);
+    setMenuVisible(false);
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Edit Profile</Text>
+    <View style={styles.container}>
+      {/* Header with Profile Icon */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.profileIcon} onPress={handleMenuToggle}>
+          <Text style={styles.profileIconText}>P</Text>
+        </TouchableOpacity>
 
-      <View style={styles.form}>
-        <Text style={styles.label}>Username:</Text>
-        <TextInput
-          style={[styles.input, styles.readOnly]}
-          value={username}
-          editable={false}
-        />
-
-        <Text style={styles.label}>First Name:</Text>
-        <TextInput
-          style={[styles.input, styles.readOnly]}
-          value={firstName}
-          editable={false}
-        />
-
-        <Text style={styles.label}>Last Name:</Text>
-        <TextInput
-          style={[styles.input, styles.readOnly]}
-          value={lastName}
-          editable={false}
-        />
-
-        <Text style={styles.label}>Phone Number:</Text>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="Phone Number"
-          keyboardType="phone-pad"
-          maxLength={10}
-        />
-
-        <Text style={styles.label}>Address:</Text>
-        <TextInput
-          style={styles.input}
-          value={address}
-          onChangeText={setAddress}
-          placeholder="Address"
-        />
-
-        <Text style={styles.label}>City:</Text>
-        <TextInput
-          style={styles.input}
-          value={city}
-          onChangeText={setCity}
-          placeholder="City"
-        />
-
-        <Text style={styles.label}>State:</Text>
-        <TextInput
-          style={styles.input}
-          value={state}
-          onChangeText={setState}
-          placeholder="State"
-        />
-
-        <Text style={styles.label}>Zip Code:</Text>
-        <TextInput
-          style={styles.input}
-          value={zipCode}
-          onChangeText={setZipCode}
-          placeholder="Zip Code"
-          keyboardType="number-pad"
-          maxLength={5}
-        />
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.buttonText}>Save</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-            <Text style={styles.buttonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Animated Menu */}
+        {menuVisible && (
+          <Animated.View
+            style={[
+              styles.menu,
+              {
+                opacity: menuAnimation,
+                transform: [
+                  {
+                    scale: menuAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.9, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+            pointerEvents={menuVisible ? 'auto' : 'none'}
+          >
+            <TouchableOpacity onPress={() => handleOptionSelect('Profile')}>
+              <Text style={styles.menuItem}>Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => {
+                navigation.navigate("editProfile");
+              }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.menuItem}>Edit Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleOptionSelect('Settings')}>
+              <Text style={styles.menuItem}>Settings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleOptionSelect('Logout')}>
+              <Text style={styles.menuItem}>Logout</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
       </View>
-    </ScrollView>
+
+      {/* Main Content */}
+      <View style={styles.content}>
+        <Text style={styles.welcomeText}>Welcome!</Text>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    padding: 20,
-    backgroundColor: '#fff',
+    flex: 1,
+    backgroundColor: '#fff', // Add a background color to avoid black screen
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
+  header: {
+    height: 60,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingRight: 16,
+    position: 'relative',
+    zIndex: 2, // Ensures the header is above the content
   },
-  form: {
-    width: '100%',
+  profileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  label: {
-    fontSize: 16,
-    marginBottom: 5,
-    color: '#333',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  readOnly: {
-    backgroundColor: '#f0f0f0',
-    color: '#888',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  saveButton: {
-    backgroundColor: '#28a745',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  cancelButton: {
-    backgroundColor: '#dc3545',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  buttonText: {
+  profileIconText: {
     color: '#fff',
+    fontWeight: 'bold',
+  },
+  menu: {
+    position: 'absolute',
+    top: 50,
+    right: 16,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    paddingVertical: 8,
+    zIndex: 1000,
+  },
+  menuItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     fontSize: 16,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff', // Add background to ensure consistent color
+  },
+  welcomeText: {
+    fontSize: 24,
   },
 });
 
-export default EditProfilePage;
+export default WelcomePage;

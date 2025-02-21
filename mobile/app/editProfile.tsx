@@ -7,12 +7,17 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Dimensions,
 } from 'react-native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from './types';
 
-const EditProfilePage = () => {
-  // State Hooks for form inputs
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+const EditProfilePage: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  const [username] = useState('john_doe'); 
+  const [firstName] = useState('John'); 
+  const [lastName] = useState('Doe'); 
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
@@ -21,8 +26,8 @@ const EditProfilePage = () => {
 
   // Form Validation
   const validateForm = () => {
-    if (!firstName || !lastName || !phone || !address || !city || !state || !zipCode) {
-      Alert.alert('Error', 'Please fill out all fields.');
+    if (!phone || !address || !city || !state || !zipCode) {
+      Alert.alert('Error', 'Please fill out all required fields.');
       return false;
     }
 
@@ -53,26 +58,21 @@ const EditProfilePage = () => {
 
   // Handle Cancel
   const handleCancel = () => {
-    Alert.alert(
-      'Cancel Changes',
-      'Are you sure you want to discard your changes?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes',
-          style: 'destructive',
-          onPress: () => {
-            setFirstName('');
-            setLastName('');
-            setPhone('');
-            setAddress('');
-            setCity('');
-            setState('');
-            setZipCode('');
-          },
+    Alert.alert('Cancel Changes', 'Discard all changes?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes',
+        style: 'destructive',
+        onPress: () => {
+          setPhone('');
+          setAddress('');
+          setCity('');
+          setState('');
+          setZipCode('');
+          navigation.goBack();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
@@ -80,20 +80,25 @@ const EditProfilePage = () => {
       <Text style={styles.title}>Edit Profile</Text>
 
       <View style={styles.form}>
+        <Text style={styles.label}>Username:</Text>
+        <TextInput
+          style={[styles.input, styles.readOnly]}
+          value={username}
+          editable={false}
+        />
+
         <Text style={styles.label}>First Name:</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, styles.readOnly]}
           value={firstName}
-          onChangeText={setFirstName}
-          placeholder="First Name"
+          editable={false}
         />
 
         <Text style={styles.label}>Last Name:</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, styles.readOnly]}
           value={lastName}
-          onChangeText={setLastName}
-          placeholder="Last Name"
+          editable={false}
         />
 
         <Text style={styles.label}>Phone Number:</Text>
@@ -158,6 +163,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 20,
     backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 24,
@@ -167,6 +174,7 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
+    alignItems: 'center',
   },
   label: {
     fontSize: 16,
@@ -180,6 +188,16 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     fontSize: 16,
+    width: Dimensions.get("window").width * 0.2,
+    alignContent: 'center',
+    alignSelf: 'center',
+  },
+  readOnly: {
+    backgroundColor: '#f0f0f0',
+    color: '#888',
+    width: Dimensions.get("window").width * 0.2,
+    alignContent: 'center',
+    alignSelf: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
