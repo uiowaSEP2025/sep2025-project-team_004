@@ -29,3 +29,9 @@ class UserSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "first_name", "last_name"]
+        extra_kwargs = {"username": {"read_only": True}, "email": {"read_only": True}, "first_name": {"required": True}, "last_name": {"read_only": True}}

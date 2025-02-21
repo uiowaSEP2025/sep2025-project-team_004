@@ -5,8 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny
-from .serializers import UserSerializer
-
+from .serializers import UserSerializer, UpdateUserSerializer
+from rest_framework.permissions import IsAuthenticated
 User = get_user_model()
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -27,3 +27,12 @@ class RegisterView(APIView):
             return Response({"message": "User registered successfully!"}, status=status.HTTP_201_CREATED)
         print("Validation errors:", serializer.errors)
         return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProfileUpdateView(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UpdateUserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
