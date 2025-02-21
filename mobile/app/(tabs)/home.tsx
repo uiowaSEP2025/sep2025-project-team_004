@@ -59,7 +59,7 @@ const WelcomePage: React.FC = () => {
             ]}
             pointerEvents={menuVisible ? 'auto' : 'none'}
           >
-            <TouchableOpacity onPress={() => handleOptionSelect('Profile')}>
+            <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
               <Text style={styles.menuItem}>Profile</Text>
             </TouchableOpacity>
             <TouchableOpacity 

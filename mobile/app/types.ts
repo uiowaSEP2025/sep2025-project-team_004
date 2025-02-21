@@ -6,6 +6,7 @@ export type RootStackParamList = {
     register: undefined;
     forgot: undefined;
     editProfile: undefined;
+    Profile: undefined;
     // Add other routes as needed
   };
   
