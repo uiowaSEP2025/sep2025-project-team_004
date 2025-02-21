@@ -8,15 +8,11 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../types';
 
-const EditProfilePage: React.FC = () => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-
-  const [username] = useState('john_doe'); 
-  const [firstName] = useState('John'); 
-  const [lastName] = useState('Doe'); 
+const EditProfilePage = () => {
+  // State Hooks for form inputs
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
@@ -25,8 +21,8 @@ const EditProfilePage: React.FC = () => {
 
   // Form Validation
   const validateForm = () => {
-    if (!phone || !address || !city || !state || !zipCode) {
-      Alert.alert('Error', 'Please fill out all required fields.');
+    if (!firstName || !lastName || !phone || !address || !city || !state || !zipCode) {
+      Alert.alert('Error', 'Please fill out all fields.');
       return false;
     }
 
@@ -57,21 +53,26 @@ const EditProfilePage: React.FC = () => {
 
   // Handle Cancel
   const handleCancel = () => {
-    Alert.alert('Cancel Changes', 'Discard all changes?', [
-      { text: 'No', style: 'cancel' },
-      {
-        text: 'Yes',
-        style: 'destructive',
-        onPress: () => {
-          setPhone('');
-          setAddress('');
-          setCity('');
-          setState('');
-          setZipCode('');
-          navigation.goBack();
+    Alert.alert(
+      'Cancel Changes',
+      'Are you sure you want to discard your changes?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes',
+          style: 'destructive',
+          onPress: () => {
+            setFirstName('');
+            setLastName('');
+            setPhone('');
+            setAddress('');
+            setCity('');
+            setState('');
+            setZipCode('');
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   return (
@@ -79,25 +80,20 @@ const EditProfilePage: React.FC = () => {
       <Text style={styles.title}>Edit Profile</Text>
 
       <View style={styles.form}>
-        <Text style={styles.label}>Username:</Text>
-        <TextInput
-          style={[styles.input, styles.readOnly]}
-          value={username}
-          editable={false}
-        />
-
         <Text style={styles.label}>First Name:</Text>
         <TextInput
-          style={[styles.input, styles.readOnly]}
+          style={styles.input}
           value={firstName}
-          editable={false}
+          onChangeText={setFirstName}
+          placeholder="First Name"
         />
 
         <Text style={styles.label}>Last Name:</Text>
         <TextInput
-          style={[styles.input, styles.readOnly]}
+          style={styles.input}
           value={lastName}
-          editable={false}
+          onChangeText={setLastName}
+          placeholder="Last Name"
         />
 
         <Text style={styles.label}>Phone Number:</Text>
@@ -184,10 +180,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     fontSize: 16,
-  },
-  readOnly: {
-    backgroundColor: '#f0f0f0',
-    color: '#888',
   },
   buttonContainer: {
     flexDirection: 'row',
