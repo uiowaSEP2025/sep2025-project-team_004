@@ -16,9 +16,14 @@ const EditProfilePage: React.FC = () => {
   const [zipCode, setZipCode] = useState('');
 
   const fetchUserProfile = async () => {
+    const baseUrl = process.env.NODE_ENV === "production"
+      ? process.env.HOME_URL  
+      : "http://127.0.0.1:8000"; 
+    const profileEndpoint = `${baseUrl}/api/users/profile/`; 
+
     try {
       const token = "YOUR_AUTH_TOKEN"; 
-      const response = await fetch('http://127.0.0.1:8000/api/users/profile/', {
+      const response = await fetch(profileEndpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

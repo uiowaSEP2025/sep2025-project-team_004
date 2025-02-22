@@ -24,9 +24,14 @@ export default function HomeScreen() {
       return;
     }
     setError("");
+    const apiUrl = process.env.NODE_ENV === "production"
+      ? process.env.HOME_URL  // Production: use defined env var
+      : "http://127.0.0.1:8000";  // Dev: use default url
+
+    const loginEndpoint = `${apiUrl}/api/users/login/`;
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/users/login/", {
+      const response = await fetch(loginEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })

@@ -39,8 +39,12 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
+      const baseUrl = process.env.NODE_ENV === "production"
+        ? process.env.HOME_URL  
+        : "http://127.0.0.1:8000";  
+      const registerEndpoint = `${baseUrl}/api/users/register/`;
       
-      const response = await fetch("http://127.0.0.1:8000/api/users/register/", {
+      const response = await fetch(registerEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

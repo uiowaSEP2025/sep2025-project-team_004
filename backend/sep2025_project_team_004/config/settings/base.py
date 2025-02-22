@@ -354,13 +354,22 @@ REST_FRAMEWORK = {
 
 
 # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup
+
+
 CORS_URLS_REGEX = r"^/api/.*$"
 
-CORS_ALLOWED_ORIGINS = [
+env = environ.Env()
+environ.Env.read_env()
+
+DEFAULT_CORS_ORIGINS = [
     "http://127.0.0.1:8081",
-    "http://localhost:8081", 
+    "http://localhost:8081",
     "http://127.0.0.1:8000",
 ]
+
+EXTRA_CORS_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+CORS_ALLOWED_ORIGINS = list(set(DEFAULT_CORS_ORIGINS + EXTRA_CORS_ORIGINS))
+
 
 CORS_ALLOW_CREDENTIALS = True 
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
