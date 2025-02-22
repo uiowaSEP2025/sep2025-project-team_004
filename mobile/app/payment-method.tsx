@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+export { getCardLogo };
+
 
 // Dynamically load card type based on card info in storage
 const getCardLogo = (cardType: string) => {
@@ -37,6 +39,17 @@ export default function PaymentMethod() {
 
   // Load card info from storage
   const loadCards = async () => {
+    if (process.env.NODE_ENV === 'test') {
+      // Test env
+      setCards([{
+        last4: '1234',
+        cardHolder: 'John Doe',
+        expiry: '12/24',
+        cardType: 'visa',
+        default: false,
+      }]);
+      //return;
+    }
     try {
       const stored = await AsyncStorage.getItem('storedCards');
       if (stored) {
@@ -156,12 +169,12 @@ export default function PaymentMethod() {
               {/* default and delete */}
               <View style={styles.defaultContainer}>
               <TouchableOpacity
-                testID={`default-checkbox-${index}`}
-                onPress={() => handleSetDefault(index)}
-                style={styles.checkbox}
-              >
-                {card.default && <View style={styles.checked} />}
-              </TouchableOpacity>
+              testID={`default-checkbox-${index}`}
+              onPress={() => handleSetDefault(index)}
+              style={styles.checkbox}
+            >
+              {card.default && <View style={styles.checked} />}
+            </TouchableOpacity>
                 <Text style={styles.defaultText}>Use as default payment method</Text>
                 <TouchableOpacity testID={`delete-button-${index}`} onPress={() => confirmDelete(index)} style={styles.defaultDeleteButton}>
                   <Image

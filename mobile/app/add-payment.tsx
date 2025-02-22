@@ -161,6 +161,7 @@ export default function PaymentMethod() {
                 {/* If there is a card type, display logo */}
                 {detectedCardType ? (
                   <Image
+                    testID="card-logo" 
                     style={styles.cardLogo}
                     source={cardLogos[detectedCardType]}
                     resizeMode="contain"
