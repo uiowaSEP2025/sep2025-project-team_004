@@ -13,23 +13,39 @@ import { RootStackParamList } from "../types";
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       setError("Both fields are required!");
       console.log("Error set:", "Both fields are required!");
       return;
     }
     setError("");
-  };
 
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/users/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        console.log("Login successful:", data);
+
+        navigation.navigate("Profile");
+      } else {
+        setError(data.error || "Login failed!");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Something went wrong. Please try again.");
+    }
+  };
   return (
     <View style={styles.container}>
-      
       <Text testID="login-title" style={styles.title}>Login</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -50,35 +66,34 @@ export default function HomeScreen() {
         onChangeText={setPassword}
       />
 
-<View style={styles.buttonContainer}>
-  <TouchableOpacity 
-    testID="login-button"
-    style={styles.button} 
-    onPress={handleLogin}
-    accessibilityRole="button" 
-  >
-    <Text style={styles.buttonText}>Login</Text>
-  </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          testID="login-button"
+          style={styles.button} 
+          onPress={handleLogin}
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
 
-  <TouchableOpacity
-    testID="register-button"
-    style={styles.button}
-    onPress={() => navigation.navigate("register")}
-    accessibilityRole="button" 
-  >
-    <Text style={styles.buttonText}>Register</Text>
-  </TouchableOpacity>
-</View>
-
+        <TouchableOpacity
+          testID="register-button"
+          style={styles.button}
+          onPress={() => navigation.navigate("register")}
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>Register</Text>
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
         testID="forgot-button"
         style={styles.registerButton}
         onPress={() => navigation.navigate("forgot")}
         accessibilityRole="button"
-        >
+      >
         <Text style={styles.registerText}>Forgot Password?</Text>
-        </TouchableOpacity>
+      </TouchableOpacity>
     </View>
   );
 }
