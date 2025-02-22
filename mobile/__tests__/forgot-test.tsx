@@ -1,7 +1,7 @@
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { NavigationContainer } from "@react-navigation/native";
-import ForgotScreen from "../app/(tabs)/forgot";
+import ForgotScreen from "../app/forgot";
 
 const mockedNavigate = jest.fn();
 

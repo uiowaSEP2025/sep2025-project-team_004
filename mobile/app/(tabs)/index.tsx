@@ -108,14 +108,13 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // or 'center', or any alignment you prefer
+    justifyContent: 'space-between', 
     alignItems: 'center',
   },
   button: {
-    // Your button styles
     padding: 10,
     backgroundColor: '#007BFF',
-    marginHorizontal: 5, // Add some horizontal margin between buttons
+    marginHorizontal: 5,
     borderRadius: 5,
     width: Dimensions.get("window").width * 0.15,
 
@@ -137,3 +136,4 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 });
+                    
