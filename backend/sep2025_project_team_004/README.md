@@ -95,3 +95,16 @@ The following details how to deploy this application.
 ### Docker
 
 See detailed [cookiecutter-django Docker documentation](https://cookiecutter-django.readthedocs.io/en/latest/3-deployment/deployment-with-docker.html).
+
+## Steps
+-- load env
+source venv/bin/activate
+source .env
+--migrate db
+python manage.py migrate
+--run server
+python manage.py runserver
+
+--login to the db
+psql -h hopper.proxy.rlwy.net -p 22714 -U postgres -d railway
+\dt   --veiw all tables

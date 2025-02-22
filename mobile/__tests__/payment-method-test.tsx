@@ -7,7 +7,7 @@ import {
   act,
   cleanup,
 } from '@testing-library/react-native';
-import PaymentMethod from '../app/payment-method';
+import Pgit checkout -b S1-AWSaymentMethod from '../app/payment-method';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { getCardLogo } from '../app/payment-method';
