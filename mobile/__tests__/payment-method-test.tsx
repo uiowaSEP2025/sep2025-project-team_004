@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { getCardLogo } from '../app/payment-method';
 
+
 // Mock png feedback，avoid require() returns null
 jest.mock('@/assets/images/back-arrow.png', () => 'back-arrow.png');
 jest.mock('@/assets/images/add-icon.png', () => 'add-icon.png');
