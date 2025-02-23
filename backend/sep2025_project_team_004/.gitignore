@@ -275,3 +275,8 @@ sep2025_project_team_004/media/
 .ipython/
 .env
 .envs/*
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

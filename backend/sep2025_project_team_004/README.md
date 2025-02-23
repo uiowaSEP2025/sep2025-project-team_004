@@ -108,3 +108,25 @@ python manage.py runserver
 --login to the db
 psql -h hopper.proxy.rlwy.net -p 22714 -U postgres -d railway
 \dt   --veiw all tables
+
+## AWS Deploy
+-goto
+./config/wsgi.py
+--run Gunicorn locally
+gunicorn config.wsgi --bind 0.0.0.0:8000
+web: gunicorn config.wsgi --bind 0.0.0.0:8000
+
+--deploy
+eb deploy
+--install eb
+pip install awsebcli --upgrade
+--init eb
+eb init -p python-3.8 my-django-app
+eb deploy
+--then ans questions
+eb ssh
+
+
+
+
+
