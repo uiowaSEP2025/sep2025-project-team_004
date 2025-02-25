@@ -5,7 +5,7 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentMethod
         fields = ['id', 'user', 'card_number', 'last4', 'expiration_date', 'cardholder_name', 'card_type', 'created_at', 'is_default']
-        extra_kwargs = {'user': {'read_only': True}}  # Prevent users from setting this manually
+        extra_kwargs = {'user': {'read_only': True}, 'expiration_date': {"required": True}, 'card_type': {"required": True}}
 
     def validate_card_number(self, value):
         """Ensure card number is exactly 16 digits."""

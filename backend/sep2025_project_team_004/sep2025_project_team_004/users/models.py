@@ -27,7 +27,7 @@ class User(AbstractUser):
     city = CharField(_("City"), blank=True, max_length=255)
     address = CharField(_("Address"), blank=True, max_length=255)
     email = EmailField(_("email address"), unique=True)
-    username = CharField(_("username"), unique=True, blank=True, max_length=255)
+    username = CharField(_("username"), unique=True, blank=False, null=False, max_length=255)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

@@ -1,15 +1,14 @@
-from collections.abc import Sequence
-from typing import Any
 
-from factory import Faker
-from factory import post_generation
+from typing import Any, Sequence  # Import Sequence from typing
+from factory import Faker, Sequence as FactorySequence, post_generation
 from factory.django import DjangoModelFactory
 
 from sep2025_project_team_004.users.models import User
 
 
 class UserFactory(DjangoModelFactory[User]):
-    email = Faker("email")
+    username = FactorySequence(lambda n: f"user{n}")
+    email = FactorySequence(lambda n: f"user{n}@example.com")
     name = Faker("name")
 
     @post_generation
@@ -37,4 +36,4 @@ class UserFactory(DjangoModelFactory[User]):
 
     class Meta:
         model = User
-        django_get_or_create = ["email"]
+        django_get_or_create = ["email", "username"]

@@ -35,4 +35,6 @@ TEMPLATES[0]["OPTIONS"]["debug"] = True  # type: ignore[index]
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
 MEDIA_URL = "http://media.testserver/"
 # Your stuff...
+
+ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]
 # ------------------------------------------------------------------------------

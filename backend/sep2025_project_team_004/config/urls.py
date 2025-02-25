@@ -24,6 +24,7 @@ urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     # User management
     path("api/users/", include("sep2025_project_team_004.users.api.urls", namespace="users")),
+    path("users/", include("sep2025_project_team_004.users.urls", namespace="user")),
     path("accounts/", include("allauth.urls")),
     path("api/store/", include("sep2025_project_team_004.store.urls")),
     path("api/payment/", include("sep2025_project_team_004.payment.urls")),
