@@ -17,7 +17,7 @@ export default function RegisterScreen() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState(""); // Not needed in backend, but keeping it for UI
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -26,7 +26,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     
-    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+    if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
       setError("Please fill out all fields.");
       return;
     }
@@ -44,7 +44,9 @@ export default function RegisterScreen() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: `${firstName} ${lastName}`,
+          first_name: firstName,
+          last_name: lastName,
+          username: username,
           email: email,
           password: password,
         }),
@@ -54,6 +56,12 @@ export default function RegisterScreen() {
       console.log("Backend response:", data);
 
       if (response.ok) {
+        setFirstName("");
+        setLastName("");
+        setUsername("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
         navigation.navigate("index")
         Alert.alert("Success", "Account created successfully!", [
           { text: "OK" }, 
@@ -95,6 +103,14 @@ export default function RegisterScreen() {
         placeholderTextColor="#888"
         value={lastName}
         onChangeText={setLastName}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        placeholderTextColor="#888"
+        value={username}
+        onChangeText={setUsername}
       />
 
       <TextInput

@@ -6,12 +6,17 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "password"]
-        extra_kwargs = {"password": {"write_only": True}}
+        fields = ["id", "email", "first_name", "last_name", "password", "address", "state", "city", "username", "zip_code", "phone_number"]
+        extra_kwargs = {"password": {"write_only": True}, "username": {"required": True}}
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("This email is already registered.")
+        return value
+    
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("This username is already taken.")
         return value
 
     def validate_password(self, value):
@@ -33,5 +38,5 @@ class LoginSerializer(serializers.Serializer):
 class UpdateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name"]
-        extra_kwargs = {"username": {"read_only": True}, "email": {"read_only": True}, "first_name": {"required": True}, "last_name": {"read_only": True}}
+        fields = ["id", "email", "first_name", "last_name", "address", "state", "city", "username", "zip_code", "phone_number"]
+        extra_kwargs = {"email": {"read_only": True}, "first_name": {"required": True}, "last_name": {"read_only": True}}

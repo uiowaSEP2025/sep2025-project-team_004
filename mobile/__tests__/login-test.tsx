@@ -2,7 +2,7 @@
 import React from "react";
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
 import { NavigationContainer } from "@react-navigation/native";
-import HomeScreen from "../app/(tabs)/index";
+import HomeScreen from "../app/index";
 // Create a mocked navigation function
 const mockedNavigate = jest.fn();
 
