@@ -59,8 +59,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: 3.10.0a1
-          check-latest: true
+          python-version: 3.10.0-alpha.1
 
 
       - name: Install Dependencies
