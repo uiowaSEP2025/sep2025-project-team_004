@@ -74,60 +74,53 @@ export default function PaymentMethod() {
     }
     setExpiry(formatted);
   };
+
+  const API_URL = "http://127.0.0.1:8000/api/payment/payment-methods/";
+  const detectedCardType = getCardType(sanitizedCardNumber);
   
   const handleAddCard = async () => {
-    const digits = cardNumber.replace(/\D/g, '');
-    if (digits.length < 16) {
-      // TODO: add more verification here to check card number
-      // I skipped for now it's easy to do test.
-      // I feel like it is better to check this on server side
-      Alert.alert("Invalid Card Number", "Please enter a valid card number.");
-      return;
-    }
-    const last4 = digits.slice(-4);
-
-    const newCard = {
-      last4,
-      expiry,
-      cardHolder,
-      cardType: detectedCardType,
-    };
-
-    // Add a new card
-    try {
-      const stored = await AsyncStorage.getItem('storedCards');
-      let storedCards = stored ? JSON.parse(stored) : [];
-
-      // Duplication detection：if last4, expiry, cardHolder are same, then reject
-      const duplicate = storedCards.find(
-        (card: any) =>
-          card.last4 === newCard.last4 &&
-          card.expiry === newCard.expiry &&
-          card.cardHolder === newCard.cardHolder
-      );
-      if (duplicate) {
-        Alert.alert("Duplicate Card", "This card has already been added.");
-        //should I verify with the server to avoid bugs?
-        navigation.goBack();
+      const authToken = await AsyncStorage.getItem("authToken"); // Retrieve auth token
+      if (!authToken) {
+        Alert.alert("Error", "User not authenticated.");
         return;
       }
+    
+      const newCard = {
+        card_number: cardNumber.replace(/\D/g, ''),  // Ensure it's numeric
+        last4: cardNumber.replace(/\D/g, '').slice(-4),
+        expiration_date: expiry,
+        cardholder_name: cardHolder,
+        card_type: detectedCardType,
+    };
 
-      // Add new card and save to AsyncStorage
-      storedCards.push(newCard);
-      await AsyncStorage.setItem('storedCards', JSON.stringify(storedCards));
+    console.log("Sending Request:", JSON.stringify(newCard));
 
-      Alert.alert("Card Added", "Your card has been added successfully.");
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newCard),
+      });
 
-      //TODO: Add the card, talk to the backend, verfy the card, get feedback, show status, and return
+      const responseData = await response.json();
+      console.log("API Response:", responseData);
+  
+      if (!response.ok) {
+        throw new Error("Failed to add payment method.");
+      }
+
+      Alert.alert("Success", "Your payment method has been added.");
       navigation.goBack();
+
     } catch (error) {
       console.error("Error storing card", error);
       Alert.alert("Error", "There was an error adding your card.");
     }
   };
 
-
-  const detectedCardType = getCardType(sanitizedCardNumber);
 
   return (
     <SafeAreaView style={styles.container}>

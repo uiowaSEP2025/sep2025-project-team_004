@@ -8,7 +8,7 @@ User = get_user_model()
 class TestUserSerializer:
     def test_valid_user_serializer(self):
         data = {
-            "name": "Jane Doe",
+            "username": "janedoe",
             "email": "janedoe@example.com",
             "password": "SecurePass123!"
         }
@@ -19,7 +19,7 @@ class TestUserSerializer:
 
     def test_invalid_email_serializer(self):
         data = {
-            "name": "Invalid User",
+            "username": "invaliduser",
             "email": "invalid-email",
             "password": "SecurePass123!"
         }
@@ -29,7 +29,7 @@ class TestUserSerializer:
 
     def test_missing_fields_serializer(self):
         data = {
-            "name": "Missing Fields"
+            "username": "missingfields"
         }
         serializer = UserSerializer(data=data)
         assert not serializer.is_valid()
@@ -37,13 +37,62 @@ class TestUserSerializer:
         assert "password" in serializer.errors
 
     def test_duplicate_email_serializer(self):
-        User.objects.create_user(email="duplicate@example.com", password="SecurePass123!")
+        User.objects.create_user(username="janedoe", email="duplicate@example.com", password="SecurePass123!")
 
         data = {
-            "name": "Duplicate User",
+            "username": "janedoe",
             "email": "duplicate@example.com",
             "password": "SecurePass123!"
         }
         serializer = UserSerializer(data=data)
         assert not serializer.is_valid()
         assert "email" in serializer.errors
+
+    def test_duplicate_username_serializer(self):
+        User.objects.create_user(username="janedoe", email="unique@example.com", password="SecurePass123!")
+
+        data = {
+            "username": "janedoe",
+            "email": "another@example.com",
+            "password": "SecurePass123!"
+        }
+        serializer = UserSerializer(data=data)
+        assert not serializer.is_valid()
+        assert "username" in serializer.errors
+
+    def test_password_too_short(self):
+        """Test password validation for length < 8"""
+        data = {
+            "username": "shortpass",
+            "email": "shortpass@example.com",
+            "password": "Short1"  # Too short (6 characters)
+        }
+        serializer = UserSerializer(data=data)
+        assert not serializer.is_valid()
+        assert "password" in serializer.errors
+        assert "Password must be at least 8 characters long." in serializer.errors["password"]
+
+    def test_password_missing_number(self):
+        """Test password validation when missing a number"""
+        data = {
+            "username": "nonumber",
+            "email": "nonumber@example.com",
+            "password": "OnlyLetters"  # No digits
+        }
+        serializer = UserSerializer(data=data)
+        assert not serializer.is_valid()
+        assert "password" in serializer.errors
+        assert "Password must contain at least one number." in serializer.errors["password"]
+
+    def test_password_missing_letter(self):
+        """Test password validation when missing a letter"""
+        data = {
+            "username": "noletter",
+            "email": "noletter@example.com",
+            "password": "12345678"  # No letters
+        }
+        serializer = UserSerializer(data=data)
+        assert not serializer.is_valid()
+        assert "password" in serializer.errors
+        assert "Password must contain at least one letter." in serializer.errors["password"]
+

@@ -7,6 +7,10 @@ export type RootStackParamList = {
     forgot: undefined;
     editProfile: undefined;
     Profile: undefined;
+    home: undefined;
+    "(tabs)": undefined;
+    "payment-method": undefined;
+    "add-payment": undefined;
     // Add other routes as needed
   };
   

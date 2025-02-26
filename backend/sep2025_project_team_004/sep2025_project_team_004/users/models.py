@@ -19,10 +19,15 @@ class User(AbstractUser):
 
     # First and last name do not cover name patterns around the globe
     name = CharField(_("Name of User"), blank=True, max_length=255)
-    first_name = None  # type: ignore[assignment]
-    last_name = None  # type: ignore[assignment]
+    first_name = CharField(_("First Name"), blank=True, max_length=255)
+    last_name = CharField(_("Last Name"), blank=True, max_length=255)
+    phone_number = CharField(_("Phone Number"), blank=True, max_length=20)
+    zip_code = CharField(_("Zip Code"), blank=True, max_length=6)
+    state = CharField(_("State"), blank=True, max_length=255)
+    city = CharField(_("City"), blank=True, max_length=255)
+    address = CharField(_("Address"), blank=True, max_length=255)
     email = EmailField(_("email address"), unique=True)
-    username = None  # type: ignore[assignment]
+    username = CharField(_("username"), unique=True, blank=False, null=False, max_length=255)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

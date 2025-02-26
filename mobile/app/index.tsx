@@ -1,4 +1,3 @@
-// app/HomeScreen.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -8,28 +7,67 @@ import {
   StyleSheet,
   Dimensions,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../types"; 
+import { RootStackParamList } from "./types"; 
+
+const API_URL = "http://127.0.0.1:8000/api/users/api-token-auth/";  
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       setError("Both fields are required!");
-      console.log("Error set:", "Both fields are required!");
       return;
     }
-    setError("");
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: email,  // Django expects "username" instead of "email"
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      if (response.ok && data.token) {
+        await AsyncStorage.setItem("authToken", data.token); 
+        
+        const userResponse = await fetch("http://127.0.0.1:8000/api/users/me/", {
+          method: "GET",
+          headers: { "Authorization": `Token ${data.token}` },
+        });
+  
+        const userData = await userResponse.json();
+        if (userResponse.ok) {
+          await AsyncStorage.setItem("userInfo", JSON.stringify(userData));
+          navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "home" } }] });
+        } else {
+          console.error("Failed to fetch user details:", userData);
+        }
+      } else {
+        setError("Invalid credentials. Please try again.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Something went wrong. Please try again later.");
+    }
+  
+    setPassword("");
   };
 
   return (
     <View style={styles.container}>
-      
       <Text testID="login-title" style={styles.title}>Login</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -50,35 +88,34 @@ export default function HomeScreen() {
         onChangeText={setPassword}
       />
 
-<View style={styles.buttonContainer}>
-  <TouchableOpacity 
-    testID="login-button"
-    style={styles.button} 
-    onPress={handleLogin}
-    accessibilityRole="button" 
-  >
-    <Text style={styles.buttonText}>Login</Text>
-  </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          testID="login-button"
+          style={styles.button} 
+          onPress={handleLogin}
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
 
-  <TouchableOpacity
-    testID="register-button"
-    style={styles.button}
-    onPress={() => navigation.navigate("register")}
-    accessibilityRole="button" 
-  >
-    <Text style={styles.buttonText}>Register</Text>
-  </TouchableOpacity>
-</View>
-
+        <TouchableOpacity
+          testID="register-button"
+          style={styles.button}
+          onPress={() => navigation.navigate("register")}
+          accessibilityRole="button" 
+        >
+          <Text style={styles.buttonText}>Register</Text>
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
         testID="forgot-button"
         style={styles.registerButton}
         onPress={() => navigation.navigate("forgot")}
         accessibilityRole="button"
-        >
+      >
         <Text style={styles.registerText}>Forgot Password?</Text>
-        </TouchableOpacity>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -117,7 +154,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     borderRadius: 5,
     width: Dimensions.get("window").width * 0.15,
-
   },
   buttonText: {
     color: '#fff',
@@ -136,4 +172,5 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 });
-                    
+
+

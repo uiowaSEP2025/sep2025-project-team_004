@@ -13,7 +13,7 @@ from sep2025_project_team_004.users.models import User
 class UserDetailView(LoginRequiredMixin, DetailView):
     model = User
     slug_field = "id"
-    slug_url_kwarg = "id"
+    slug_url_kwarg = "pk"
 
 
 user_detail_view = UserDetailView.as_view()

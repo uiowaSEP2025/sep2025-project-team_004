@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ImageBackground, Dimensions } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from './types';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 const EditProfilePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -14,43 +16,112 @@ const EditProfilePage: React.FC = () => {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const fetchUserProfile = async () => {
     try {
-      const token = "YOUR_AUTH_TOKEN"; 
-      const response = await fetch('http://127.0.0.1:8000/api/users/profile/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+        const token = await AsyncStorage.getItem("authToken");
 
-      if (response.ok) {
+        if (!token) {
+            Alert.alert("Error", "User is not authenticated.");
+            return;
+        }
+
+        const response = await fetch('http://127.0.0.1:8000/api/users/profile/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`, 
+            },
+        });
+
+        if (response.status === 403) {
+            console.error("403 Forbidden - Check Django permissions");
+            Alert.alert("Error", "You do not have permission to access this resource.");
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch profile: ${response.statusText}`);
+        }
+
         const userData = await response.json();
+
         setUsername(userData.username);
         setFirstName(userData.first_name);
         setLastName(userData.last_name);
-        setPhone(userData.phone);
+        setPhone(userData.phone_number);
         setAddress(userData.address);
         setCity(userData.city);
         setState(userData.state);
         setZipCode(userData.zip_code);
-      } else {
-        Alert.alert('Error', 'Failed to load user profile.');
-      }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      Alert.alert('Error', 'An error occurred while loading user profile.');
+        console.error("Error fetching user profile:", error);
+        Alert.alert("Error", "An error occurred while loading user profile.");
     }
-  };
+};
+
 
   useEffect(() => {
     fetchUserProfile();
   }, []);
 
+  const updateUserProfile = async () => {
+    try {
+        const token = await AsyncStorage.getItem("authToken");
+
+        if (!token) {
+            Alert.alert("Error", "User is not authenticated.");
+            return;
+        }
+
+        const response = await fetch("http://127.0.0.1:8000/api/users/profile/update/", {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Token ${token}`,
+            },
+            body: JSON.stringify({
+                first_name: firstName,
+                last_name: lastName,
+                phone_number: phone,
+                address: address,
+                city: city,
+                state: state,
+                zip_code: zipCode,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Update failed:", errorData);
+            Alert.alert("Error", errorData.detail || "Failed to update profile.");
+            return;
+        }
+
+        const updatedData = await response.json();
+        Alert.alert("Success", "Your profile has been updated.");
+
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        Alert.alert("Error", "Failed to update profile.");
+    }
+};
+
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <TouchableOpacity
+                testID="back-button"
+                onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "home" } }]})}
+                style={styles.headerIcon}
+              >
+                <ImageBackground
+                  style={styles.backIcon}
+                  source={require("@/assets/images/back-arrow.png")}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
       <Text style={styles.title}>Edit Profile</Text>
       <View style={styles.form}>
         <Text style={styles.label}>Username:</Text>
@@ -62,19 +133,15 @@ const EditProfilePage: React.FC = () => {
 
         <Text style={styles.label}>First Name:</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, styles.readOnly]}
           value={firstName}
-          onChangeText={setFirstName}
-          placeholder="First Name"
           editable={false}
         />
 
         <Text style={styles.label}>Last Name:</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, styles.readOnly]}
           value={lastName}
-          onChangeText={setLastName}
-          placeholder="Last Name"
           editable={false}
         />
 
@@ -122,6 +189,16 @@ const EditProfilePage: React.FC = () => {
           maxLength={5}
         />
       </View>
+      {/* Update Button */}
+      <TouchableOpacity
+        style={styles.updateButton}
+        onPress={updateUserProfile}
+        disabled={loading}
+      >
+        <Text style={styles.updateButtonText}>
+          {loading ? "Updating..." : "Update Profile"}
+        </Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -140,6 +217,8 @@ const styles = StyleSheet.create({
   form: {
     marginBottom: 20,
   },
+  headerIcon: { width: 20, height: 20 },
+  backIcon: { width: 20, height: 20 },
   label: {
     fontSize: 16,
     marginBottom: 5,
@@ -153,6 +232,18 @@ const styles = StyleSheet.create({
   },
   readOnly: {
     backgroundColor: '#f0f0f0',
+  },
+  updateButton: {
+    backgroundColor: "#007AFF",
+    padding: 15,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  updateButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

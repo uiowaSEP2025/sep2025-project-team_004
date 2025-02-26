@@ -2,11 +2,11 @@ import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import RegisterScreen from "../app/register"; 
-import fetchMock from 'jest-fetch-mock';
+import fetchMock from "jest-fetch-mock";
 
-fetchMock.enableMocks();  // Enable jest-fetch-mock globally
+fetchMock.enableMocks(); // Enable jest-fetch-mock globally
 
-// Create a mocked goBack and navigate function
+// Create mocked goBack and navigate functions
 const mockedGoBack = jest.fn();
 const mockedNavigate = jest.fn();
 
@@ -15,8 +15,8 @@ jest.mock("@react-navigation/native", () => {
   return {
     ...actualNav,
     useNavigation: () => ({
-      navigate: mockedNavigate,  // Mock navigate
-      goBack: mockedGoBack,      // Mock goBack
+      navigate: mockedNavigate, // Mock navigate
+      goBack: mockedGoBack,     // Mock goBack
     }),
   };
 });
@@ -31,7 +31,7 @@ const renderWithNavigation = () =>
 
 describe("RegisterScreen", () => {
   beforeEach(() => {
-    fetchMock.resetMocks();  // Reset fetch mocks before each test
+    fetchMock.resetMocks(); // Reset fetch mocks before each test
     mockedGoBack.mockClear();
     mockedNavigate.mockClear();
   });
@@ -43,6 +43,7 @@ describe("RegisterScreen", () => {
     expect(getByTestId("register-title")).toBeTruthy();
     expect(getByPlaceholderText("First Name")).toBeTruthy();
     expect(getByPlaceholderText("Last Name")).toBeTruthy();
+    expect(getByPlaceholderText("Username")).toBeTruthy(); // Check for Username field
     expect(getByPlaceholderText("Email")).toBeTruthy();
     expect(getByPlaceholderText("Password")).toBeTruthy();
     expect(getByPlaceholderText("Confirm Password")).toBeTruthy();
@@ -74,6 +75,7 @@ describe("RegisterScreen", () => {
 
     fireEvent.changeText(getByPlaceholderText("First Name"), "Alice");
     fireEvent.changeText(getByPlaceholderText("Last Name"), "Smith");
+    fireEvent.changeText(getByPlaceholderText("Username"), "alice123"); // Added username
     fireEvent.changeText(getByPlaceholderText("Email"), "alice@example.com");
     fireEvent.changeText(getByPlaceholderText("Password"), "password123");
     fireEvent.changeText(getByPlaceholderText("Confirm Password"), "differentPassword");
@@ -97,6 +99,7 @@ describe("RegisterScreen", () => {
 
     fireEvent.changeText(getByPlaceholderText("First Name"), "Bob");
     fireEvent.changeText(getByPlaceholderText("Last Name"), "Jones");
+    fireEvent.changeText(getByPlaceholderText("Username"), "bob123"); // Added username
     fireEvent.changeText(getByPlaceholderText("Email"), "bob@example.com");
     fireEvent.changeText(getByPlaceholderText("Password"), "password123");
     fireEvent.changeText(getByPlaceholderText("Confirm Password"), "password123");
@@ -123,6 +126,7 @@ describe("RegisterScreen", () => {
 
     fireEvent.changeText(getByPlaceholderText("First Name"), "Bob");
     fireEvent.changeText(getByPlaceholderText("Last Name"), "Jones");
+    fireEvent.changeText(getByPlaceholderText("Username"), "bob123"); // Added username
     fireEvent.changeText(getByPlaceholderText("Email"), "existing@example.com");
     fireEvent.changeText(getByPlaceholderText("Password"), "password123");
     fireEvent.changeText(getByPlaceholderText("Confirm Password"), "password123");
