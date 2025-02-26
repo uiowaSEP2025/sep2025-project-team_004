@@ -55,6 +55,7 @@ jobs:
 
     env: 
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      USE_DOCKER: false
 
     steps:
       - name: Checkout Repository
