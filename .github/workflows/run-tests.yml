@@ -32,7 +32,7 @@ jobs:
         run: npm install
 
       - name: Run Jest Tests
-        run: npm test -- --ci --coverage --runInBand --forceExit
+        run: npx jest --ci --coverage --runInBand 
 
   backend-tests:
     name: Run Django Tests
