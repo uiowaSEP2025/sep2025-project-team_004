@@ -43,6 +43,7 @@ jobs:
       postgres:
         image: postgres:13
         env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: testdb
