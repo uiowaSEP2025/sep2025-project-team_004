@@ -3,6 +3,14 @@ from .base import *  # noqa: F403
 from .base import INSTALLED_APPS
 from .base import MIDDLEWARE
 from .base import env
+import os
+
+
+# In local env, the .env should already been read in base.py, so we don't need to load .env here.
+USE_DOCKER = env("USE_DOCKER", default="yes")
+DATABASE_URL = env("DATABASE_URL", default="")
+print(f"USE_DOCKERaaa: {USE_DOCKER}")
+print(f"DATABASE_URLaaa: {DATABASE_URL}")
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -16,6 +24,15 @@ SECRET_KEY = env(
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]  # noqa: S104
 
+# DATABASES
+# ------------------------------------------------------------------------------
+# https://docs.djangoproject.com/en/dev/ref/settings/#databases
+DATABASES = {"default": env.db("DATABASE_URL")}
+DATABASES["default"]["ATOMIC_REQUESTS"] = True
+# https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
+
 # CACHES
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#caches
@@ -28,6 +45,10 @@ CACHES = {
 
 # EMAIL
 # ------------------------------------------------------------------------------
+EMAIL_BACKEND = env(
+    "DJANGO_EMAIL_BACKEND",
+    default="django.core.mail.backends.smtp.EmailBackend",
+)
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-host
 EMAIL_HOST = env("EMAIL_HOST", default="mailpit")
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-port
@@ -37,6 +58,9 @@ EMAIL_PORT = 1025
 # ------------------------------------------------------------------------------
 # http://whitenoise.evans.io/en/latest/django.html#using-whitenoise-in-development
 INSTALLED_APPS = ["whitenoise.runserver_nostatic", *INSTALLED_APPS]
+
+# Admin
+DJANGO_ADMIN_FORCE_ALLAUTH = env.bool("DJANGO_ADMIN_FORCE_ALLAUTH", default=False)
 
 
 # django-debug-toolbar
@@ -59,6 +83,12 @@ DEBUG_TOOLBAR_CONFIG = {
 INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
 if env("USE_DOCKER") == "yes":
     import socket
+    try:
+        hostname = socket.gethostname()
+        ip_address = socket.gethostbyname(hostname)
+    except socket.gaierror:
+        hostname = "localhost"
+        ip_address = "127.0.0.1"  # default
 
     hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
     INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
@@ -73,7 +103,7 @@ if env("USE_DOCKER") == "yes":
 # django-extensions
 # ------------------------------------------------------------------------------
 # https://django-extensions.readthedocs.io/en/latest/installation_instructions.html#configuration
-INSTALLED_APPS += ["django_extensions"]
+#INSTALLED_APPS += ["django_extensions"]
 # Celery
 # ------------------------------------------------------------------------------
 
