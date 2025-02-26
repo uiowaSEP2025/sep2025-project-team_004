@@ -1,10 +1,17 @@
+// __tests__/login-test.tsx
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+);
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from "react";
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import HomeScreen from "../app/index";
-// Create a mocked navigation function
+
+// Create mocked navigation functions
 const mockedNavigate = jest.fn();
+const mockedReset = jest.fn();
 
 jest.mock("@react-navigation/native", () => {
   const actualNav = jest.requireActual("@react-navigation/native");
@@ -12,6 +19,7 @@ jest.mock("@react-navigation/native", () => {
     ...actualNav,
     useNavigation: () => ({
       navigate: mockedNavigate,
+      reset: mockedReset,
     }),
   };
 });
@@ -23,15 +31,15 @@ const renderWithNavigation = () =>
     </NavigationContainer>
   );
 
-describe("LoginScreen", () => {
+describe("HomeScreen", () => {
   beforeEach(() => {
     mockedNavigate.mockClear();
+    mockedReset.mockClear();
   });
 
   it("renders correctly", () => {
     const { getByTestId, getByPlaceholderText, getByText } = renderWithNavigation();
 
-    // Use testIDs to uniquely target elements
     expect(getByTestId("login-title")).toBeTruthy();
     expect(getByPlaceholderText("Email")).toBeTruthy();
     expect(getByPlaceholderText("Password")).toBeTruthy();
@@ -69,5 +77,78 @@ describe("LoginScreen", () => {
     const registerButton = getByTestId("register-button");
     fireEvent.press(registerButton);
     expect(mockedNavigate).toHaveBeenCalledWith("register");
+  });
+
+  // ---- New tests to cover login logic ----
+
+  it("logs in successfully with valid credentials", async () => {
+    // Mock fetch calls:
+    // First call: login API returns a token.
+    // Second call: user API returns user info.
+    (global.fetch as jest.Mock) = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: "dummy-token" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 1, name: "John Doe" }),
+      });
+
+    const { getByPlaceholderText, getByTestId } = renderWithNavigation();
+    fireEvent.changeText(getByPlaceholderText("Email"), "test@example.com");
+    fireEvent.changeText(getByPlaceholderText("Password"), "password123");
+
+    await act(async () => {
+      fireEvent.press(getByTestId("login-button"));
+    });
+
+    // Check that AsyncStorage.setItem was called with the correct values.
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith("authToken", "dummy-token");
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      "userInfo",
+      JSON.stringify({ id: 1, name: "John Doe" })
+    );
+
+    // Check that navigation.reset is called to navigate to the tabs/home screen.
+    expect(mockedReset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: "(tabs)", params: { screen: "home" } }],
+    });
+  });
+
+  it("shows error when login API returns invalid credentials", async () => {
+    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: "Invalid credentials" }),
+    });
+
+    const { getByPlaceholderText, getByTestId, queryByText } = renderWithNavigation();
+    fireEvent.changeText(getByPlaceholderText("Email"), "wrong@example.com");
+    fireEvent.changeText(getByPlaceholderText("Password"), "wrongpassword");
+
+    await act(async () => {
+      fireEvent.press(getByTestId("login-button"));
+    });
+
+    await waitFor(() => {
+      expect(queryByText("Invalid credentials. Please try again.")).toBeTruthy();
+    });
+  });
+
+  it("shows error when an exception occurs during login", async () => {
+    (global.fetch as jest.Mock) = jest.fn().mockRejectedValue(new Error("Network error"));
+
+    const { getByPlaceholderText, getByTestId, queryByText } = renderWithNavigation();
+    fireEvent.changeText(getByPlaceholderText("Email"), "error@example.com");
+    fireEvent.changeText(getByPlaceholderText("Password"), "password123");
+
+    await act(async () => {
+      fireEvent.press(getByTestId("login-button"));
+    });
+
+    await waitFor(() => {
+      expect(queryByText("Something went wrong. Please try again later.")).toBeTruthy();
+    });
   });
 });

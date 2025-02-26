@@ -97,9 +97,12 @@ const WelcomePage: React.FC = () => {
             <TouchableOpacity onPress={() => navigation.navigate("editProfile")}>
               <Text style={styles.menuItem}>Edit Profile</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate("index")}>
+            <TouchableOpacity onPress={() => {navigation.navigate("index");
+              setMenuVisible(false);
+            }}>
               <Text style={styles.menuItem}>Settings</Text>
             </TouchableOpacity>
+
             <TouchableOpacity onPress={handleLogout}>
               <Text style={styles.menuItem}>Logout</Text>
             </TouchableOpacity>

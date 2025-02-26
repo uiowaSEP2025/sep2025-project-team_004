@@ -11,7 +11,7 @@ import PaymentMethod from '../app/payment-method';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 
-// Mock png feedback，avoid require() returns null
+// Mock png feedback to avoid require() returning null
 jest.mock('@/assets/images/back-arrow.png', () => 'back-arrow.png');
 jest.mock('@/assets/images/add-icon.png', () => 'add-icon.png');
 jest.mock('@/assets/images/delete.png', () => 'delete.png');
@@ -24,11 +24,12 @@ jest.mock('@/assets/images/card-logo/discover.png', () => 'discover.png');
 // Sample Card
 // -------------------
 const sampleCard = {
+  id: 0,
   last4: '1234',
-  cardHolder: 'John Doe',
-  expiry: '12/24',
+  cardholder_name: 'John Doe',
+  expiration_date: '12/24',
   cardType: 'visa',
-  default: false,
+  is_default: false,
 };
 
 // -------------------
@@ -43,12 +44,11 @@ const mockedRouter = {
 // Mock expo-router
 // -------------------
 jest.mock('expo-router', () => ({
-    useRouter: () => mockedRouter,
-    useFocusEffect: (callback: () => void) => {
-      callback();
-    },
-  }));
-  
+  useRouter: () => mockedRouter,
+  useFocusEffect: (callback: () => void) => {
+    callback();
+  },
+}));
 
 // -------------------
 // Mock AsyncStorage 
@@ -59,10 +59,9 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }));
 
 // -------------------
-// Pack and Render PaymentMethod 
+// Helper to render PaymentMethod 
 // -------------------
 const renderPaymentMethod = () => render(<PaymentMethod />);
-
 
 afterEach(cleanup);
 
@@ -72,11 +71,15 @@ describe('PaymentMethod Screen', () => {
     mockedRouter.push.mockClear();
     (AsyncStorage.getItem as jest.Mock).mockClear();
     (AsyncStorage.setItem as jest.Mock).mockClear();
+    if (!global.fetch) {
+      global.fetch = jest.fn();
+    } else if (typeof (global.fetch as jest.Mock).mockClear === 'function') {
+      (global.fetch as jest.Mock).mockClear();
+    }
   });
 
   it('renders correctly with no stored cards', async () => {
-    // If AsyncStorage have no card info
-    
+    // Simulate no stored card info by returning null for stored cards
     (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
   
     const { getByText, queryByText } = render(<PaymentMethod />);
@@ -89,69 +92,91 @@ describe('PaymentMethod Screen', () => {
   });
 
   it('renders correctly with stored cards', async () => {
-    // Mock AsyncStorage returns a card info
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify([sampleCard]));
-
-    const { getByText } = await renderPaymentMethod();
-
+    // Return a dummy auth token and stored card data via AsyncStorage
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'authToken') return Promise.resolve('dummyToken');
+      return Promise.resolve(JSON.stringify([sampleCard]));
+    });
+    // Mock fetch to return valid card data (for loadCards)
+    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [sampleCard],
+    });
+  
+    const { getByText } = renderPaymentMethod();
+  
     await waitFor(() => {
       expect(getByText('Payment method')).toBeTruthy();
       expect(getByText('John Doe')).toBeTruthy();
       expect(getByText('12/24')).toBeTruthy();
-      // check the last 4 digits
       expect(getByText(/1234/)).toBeTruthy();
     });
   });
 
   it('navigates back when back button is pressed', async () => {
-    const { getByTestId } = await renderPaymentMethod();
-    act(() => {
+    const { getByTestId } = renderPaymentMethod();
+    await act(async () => {
       fireEvent.press(getByTestId('back-button'));
     });
     expect(mockedRouter.back).toHaveBeenCalled();
   });
 
   it('navigates to add payment screen when add button is pressed', async () => {
-    const { getByTestId } = await renderPaymentMethod();
-    act(() => {
+    const { getByTestId } = renderPaymentMethod();
+    await act(async () => {
       fireEvent.press(getByTestId('add-payment-button'));
     });
     expect(mockedRouter.push).toHaveBeenCalledWith('/add-payment');
   });
 
   it('sets a card as default when default checkbox is pressed', async () => {
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify([sampleCard]));
-
-
-    const { getByTestId } = await renderPaymentMethod();
-
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'authToken') return Promise.resolve('dummyToken');
+      return Promise.resolve(JSON.stringify([sampleCard]));
+    });
+    // For loadCards, return valid card data
+    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [sampleCard],
+    });
+  
+    const { getByTestId } = renderPaymentMethod();
+  
     await waitFor(() => {
       expect(getByTestId('default-checkbox-0')).toBeTruthy();
     });
-
-    act(() => {
+  
+    await act(async () => {
       fireEvent.press(getByTestId('default-checkbox-0'));
     });
-
+  
     await waitFor(() => {
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
         'storedCards',
-        JSON.stringify([{ ...sampleCard, default: true }])
+        JSON.stringify([{ ...sampleCard, is_default: true }])
       );
     });
   });
 
   it('shows alert when delete button is pressed', async () => {
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify([sampleCard]));
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'authToken') return Promise.resolve('dummyToken');
+      return Promise.resolve(JSON.stringify([sampleCard]));
+    });
+    // For loadCards, return valid card data
+    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [sampleCard],
+    });
+  
     const alertSpy = jest.spyOn(Alert, 'alert');
-    
     const { getByTestId } = renderPaymentMethod();
   
     await waitFor(() => {
       expect(getByTestId('delete-button-0')).toBeTruthy();
     });
   
-    act(() => {
+    await act(async () => {
       fireEvent.press(getByTestId('delete-button-0'));
     });
   
@@ -162,5 +187,112 @@ describe('PaymentMethod Screen', () => {
       { cancelable: true }
     );
   });
+
+  // ---- Additional tests to improve coverage ----
+
+  it("alerts user if not authenticated during loadCards", async () => {
+    // Simulate missing authToken so that loadCards shows an alert
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => Promise.resolve(null));
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    renderPaymentMethod();
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("Error", "User not authenticated.");
+    });
+  });
+
+  it("alerts user if fetching payment methods fails", async () => {
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'authToken') return Promise.resolve("dummyToken");
+      return Promise.resolve(JSON.stringify([]));
+    });
+    // For loadCards, simulate a failed fetch
+    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: "Failed" }),
+    });
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    renderPaymentMethod();
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("Error", "Failed to load payment methods.");
+    });
+  });
+
+  it("does not render default checkbox if auth token is missing", async () => {
+    // When auth token is missing, loadCards returns early so no cards are loaded.
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'authToken') return Promise.resolve(null);
+      return Promise.resolve(JSON.stringify([sampleCard]));
+    });
+    const { queryByTestId } = renderPaymentMethod();
+    await waitFor(() => {
+      expect(queryByTestId('default-checkbox-0')).toBeNull();
+    });
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  it("logs error when deletion fails", async () => {
+    // Chain fetch calls: first for loadCards, then deletion fails.
+    (global.fetch as jest.Mock) = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [sampleCard],
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: "Deletion failed" }),
+      });
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'authToken') return Promise.resolve("dummyToken");
+      return Promise.resolve(JSON.stringify([sampleCard]));
+    });
   
+    // Override Alert.alert to simulate user pressing "Yes" immediately.
+    const alertMock = jest.spyOn(Alert, 'alert').mockImplementation(
+      (title, message, buttons, options) => {
+        const yesButton = buttons?.find((button: any) => button.text === 'Yes');
+        if (yesButton && yesButton.onPress) {
+          yesButton.onPress();
+        }
+      }
+    );
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  
+    const { getByTestId } = renderPaymentMethod();
+    await waitFor(() => {
+      expect(getByTestId('delete-button-0')).toBeTruthy();
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId('delete-button-0'));
+    });
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Error deleting payment method:",
+        expect.any(Error)
+      );
+    });
+    consoleSpy.mockRestore();
+    alertMock.mockRestore();
+  });
+  
+
+  it("only displays up to 10 cards", async () => {
+    // Create 15 cards
+    const manyCards = Array.from({ length: 15 }, (_, i) => ({
+      ...sampleCard,
+      id: i,
+    }));
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'authToken') return Promise.resolve("dummyToken");
+      return Promise.resolve(JSON.stringify(manyCards));
+    });
+    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => manyCards,
+    });
+    const { getAllByTestId } = renderPaymentMethod();
+    await waitFor(() => {
+      // Check that only 10 default checkboxes are rendered
+      expect(getAllByTestId(/default-checkbox-/).length).toBe(10);
+    });
+  });
 });

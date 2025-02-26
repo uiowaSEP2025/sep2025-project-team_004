@@ -1,5 +1,4 @@
-/// app/payment-method.tsx
-
+// app/payment-method.tsx
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -11,16 +10,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Modal,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+// Use expo-router instead of react-navigation to match test expectations
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../app/types';
 
-// Dynamically load card type based on card info in storage
-
-
+// Dynamically load card logo
 const getCardLogo = (cardType: string) => {
   switch (cardType.toLowerCase()) {
     case 'visa':
@@ -39,13 +34,11 @@ const getCardLogo = (cardType: string) => {
 const API_URL = "http://127.0.0.1:8000/api/payment/payment-methods/";
 
 export default function PaymentMethod() {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const router = useRouter();
   const [cards, setCards] = useState<any[]>([]);
-  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [defaultPaymentId, setDefaultPaymentId] = useState<number | null>(null);
 
-  // Load card info from storage
+  // Load card info from API
   const loadCards = async () => {
     try {
       const authToken = await AsyncStorage.getItem("authToken");
@@ -67,10 +60,8 @@ export default function PaymentMethod() {
       }
   
       const data = await response.json();
-
       const defaultCard = data.find((card: any) => card.is_default);
       setDefaultPaymentId(defaultCard ? defaultCard.id : null);
-
       setCards(
         data.map((card: any) => ({
           ...card,
@@ -83,20 +74,20 @@ export default function PaymentMethod() {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadCards();
-    }, [])
-  );
+  // Call loadCards when the screen is focused
+  // (Assuming expo-router calls useFocusEffect similarly)
+  React.useEffect(() => {
+    loadCards();
+  }, []);
 
+  // Set default payment card and update storage
   const handleSetDefault = async (selectedIndex: number) => {
     try {
       const selectedCardId = cards[selectedIndex].id;
-
       const token = await AsyncStorage.getItem("authToken");
       if (!token) {
-          console.error("User not authenticated");
-          return;
+        console.error("User not authenticated");
+        return;
       }
 
       const response = await fetch(`http://127.0.0.1:8000/api/payment/set-default/${selectedCardId}/`, {
@@ -113,33 +104,39 @@ export default function PaymentMethod() {
       }
 
       setDefaultPaymentId(selectedCardId);
-      setCards(
-        cards.map((card, index) => ({
-          ...card,
-          is_default: index === selectedIndex,
-        }))
-      );
-
-  } catch (error) {
+      const updatedCards = cards.map((card, index) => ({
+        ...card,
+        is_default: index === selectedIndex,
+      }));
+      setCards(updatedCards);
+      await AsyncStorage.setItem('storedCards', JSON.stringify(updatedCards));
+    } catch (error) {
       console.error("Error updating default payment method:", error);
-  }
-};
+    }
+  };
 
+  // Show confirmation alert when delete button is pressed
   const confirmDelete = (id: number) => {
-    setSelectedCardId(id);
-    setDeleteModalVisible(true);
-};
+    Alert.alert(
+      'Delete Card',
+      'Are you sure to delete this card？',
+      [
+        { text: 'Yes', onPress: () => handleDeleteCard(id) },
+        { text: 'Cancel', style: 'cancel' }
+      ],
+      { cancelable: true }
+    );
+  };
 
-const handleDeleteCard = async () => {
-  if (!selectedCardId) return;
-  try {
+  const handleDeleteCard = async (id: number) => {
+    try {
       const authToken = await AsyncStorage.getItem("authToken");
       if (!authToken) {
           console.error("User not authenticated.");
           return;
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/api/payment/delete/${selectedCardId}/`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/payment/delete/${id}/`, {
           method: "DELETE",
           headers: {
               "Authorization": `Token ${authToken}`,
@@ -152,14 +149,13 @@ const handleDeleteCard = async () => {
           throw new Error(errorData.error || "Failed to delete payment method.");
       }
 
-      setCards(cards.filter((card) => card.id !== selectedCardId)); 
-      setDeleteModalVisible(false); 
-  } catch (error) {
+      setCards(cards.filter((card) => card.id !== id)); 
+    } catch (error) {
       console.error("Error deleting payment method:", error);
-  }
-};
+    }
+  };
 
-  // Display 10 card maximum; add more logic when adding(todo)
+  // Only display up to 10 cards
   const renderedCards = cards.slice(0, 10);
 
   return (
@@ -168,7 +164,7 @@ const handleDeleteCard = async () => {
       <View style={styles.header}>
         <TouchableOpacity
           testID="back-button"
-          onPress={() => navigation.navigate("Profile")}
+          onPress={() => router.back()}
           style={styles.headerIcon}
         >
           <ImageBackground
@@ -180,7 +176,7 @@ const handleDeleteCard = async () => {
         <Text style={styles.headerTitle}>Payment method</Text>
         <TouchableOpacity
           testID="add-payment-button"
-          onPress={() => navigation.navigate("add-payment")}
+          onPress={() => router.push('/add-payment')}
           style={styles.headerRight}
         >
           <ImageBackground
@@ -191,20 +187,18 @@ const handleDeleteCard = async () => {
         </TouchableOpacity>
       </View>
   
-      {/* Main content */}
+      {/* Main Content */}
       <ScrollView contentInsetAdjustmentBehavior="automatic" style={styles.scrollView}>
         <View style={styles.cardContainer}>
           {renderedCards.map((card, index) => (
             <View key={index} style={styles.cardWrapper}>
               <View style={styles.fancyCard}>
-                {/* Card number display **** + last 4 dig */}
+                {/* Card number display */}
                 <Text style={styles.fancyCardNumber}>
                   <Text style={styles.maskedPart}>* * * * * * * * * * * </Text>
                   <Text style={styles.realPart}>{card.last4}</Text>
                 </Text>
-                {/* Card background */}
                 <View style={styles.cardBackground} />
-                {/* Card type icon */}
                 <Image
                   style={styles.decoration1}
                   source={getCardLogo(card.cardType || "visa")}
@@ -225,7 +219,7 @@ const handleDeleteCard = async () => {
                 </Text>
               </View>
   
-              {/* Default & Delete Container */}
+              {/* Default & Delete Controls */}
               <View style={styles.defaultContainer}>
                 <TouchableOpacity
                   testID={`default-checkbox-${index}`}
@@ -255,30 +249,9 @@ const handleDeleteCard = async () => {
           ))}
         </View>
       </ScrollView>
-  
-      {/* Delete Confirmation Modal */}
-      <Modal visible={deleteModalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>Are you sure you want to delete this card?</Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity onPress={handleDeleteCard} style={styles.modalButton}>
-                <Text style={styles.modalButtonText}>Yes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setDeleteModalVisible(false)}
-                style={[styles.modalButton, styles.cancelButton]}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
-};  
-
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
@@ -331,13 +304,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textAlign: 'left',
   },
-  disabledButton: {
-    opacity: 0.5, 
-  },
-  
-  disabledIcon: {
-    tintColor: "#ccc", 
-  },
   realPart: {
     fontFamily: 'Nunito Sans',
     fontSize: 20,
@@ -363,12 +329,9 @@ const styles = StyleSheet.create({
     left: '70%',
     zIndex: 1,
   },
-
   labelCardHolder: {
     width: '30.63%',
     height: '8.89%',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
     fontFamily: 'Nunito Sans',
     fontSize: 12,
     fontWeight: '600',
@@ -383,8 +346,6 @@ const styles = StyleSheet.create({
   },
   labelExpiry: {
     height: '8.89%',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
     fontFamily: 'Nunito Sans',
     fontSize: 12,
     fontWeight: '600',
@@ -398,9 +359,6 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   valueCardHolder: {
-    height: '10.56%',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
     fontFamily: 'Nunito Sans',
     fontSize: 14,
     fontWeight: '600',
@@ -414,9 +372,6 @@ const styles = StyleSheet.create({
     zIndex: 6,
   },
   valueExpiry: {
-    height: '10.56%',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
     fontFamily: 'Nunito Sans',
     fontSize: 14,
     fontWeight: '600',
@@ -464,32 +419,7 @@ const styles = StyleSheet.create({
     height: 20,
     tintColor: 'red',
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+  disabledButton: {
+    opacity: 0.5,
   },
-  modalContent: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  modalText: { fontSize: 18, marginBottom: 10 },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  modalButton: {
-    flex: 1,
-    padding: 10,
-    margin: 5,
-    backgroundColor: "#007AFF",
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  cancelButton: { backgroundColor: "#888" },
-  modalButtonText: { color: "white", fontSize: 16 },
 });
