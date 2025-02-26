@@ -16,6 +16,9 @@ framework.
 """
 
 import os
+
+print(" [WSGI] DJANGO_SECRET_KEY:", os.environ.get("DJANGO_SECRET_KEY"))
+print(" [WSGI] ALL env var:", os.environ)
 import sys
 from pathlib import Path
 

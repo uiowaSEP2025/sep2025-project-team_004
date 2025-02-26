@@ -21,6 +21,22 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["changelater.com"])
 
+
+ALLOWED_HOSTS = [
+    "elasticbeanstalk.com",  
+    "my-django-env.eba-4ijahmzm.us-east-2.elasticbeanstalk.com",  
+    "172.31.27.131",  
+    "3.142.11.142", 
+    "13.58.221.133",
+    "localhost", 
+]
+
+USE_DOCKER="yes"
+
+
+
+
+
 # DATABASES
 # ------------------------------------------------------------------------------
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)

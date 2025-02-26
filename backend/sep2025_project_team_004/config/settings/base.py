@@ -8,17 +8,26 @@ import environ
 
 import logging
 
+import os
+
 logging.basicConfig(level=logging.DEBUG)
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # sep2025_project_team_004/
 APPS_DIR = BASE_DIR / "sep2025_project_team_004"
-env = environ.Env()
 
-READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE", default=True)
-if READ_DOT_ENV_FILE:
-    # OS environment variables take precedence over variables from .env
-    env.read_env(str(BASE_DIR / ".env"))
+
+# Get env from environ first
+env = environ.Env()
+environ.Env.read_env()
+
+# Load only .env exist
+DJANGO_ENV = os.getenv("DJANGO_ENV", "production")  # default as production
+
+if DJANGO_ENV in ["development", "test"]:  # Only load .env in test/dev
+    DOT_ENV_PATH = BASE_DIR / ".env"
+    if DOT_ENV_PATH.exists():
+        env.read_env(str(DOT_ENV_PATH))
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -52,6 +61,7 @@ LOCALE_PATHS = [str(BASE_DIR / "locale")]
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
+
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

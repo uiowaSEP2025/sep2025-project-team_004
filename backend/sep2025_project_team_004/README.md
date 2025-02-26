@@ -110,8 +110,8 @@ psql -h hopper.proxy.rlwy.net -p 22714 -U postgres -d railway
 \dt   --veiw all tables
 
 ## AWS Deploy
--goto
-./config/wsgi.py
+-env
+source venv/bin/activate  
 --run Gunicorn locally
 gunicorn config.wsgi --bind 0.0.0.0:8000
 web: gunicorn config.wsgi --bind 0.0.0.0:8000
@@ -122,9 +122,31 @@ eb deploy
 pip install awsebcli --upgrade
 --init eb
 eb init -p python-3.8 my-django-app
+-- deploy backend
 eb deploy
 --then ans questions
 eb ssh
+
+--check status/website
+eb status
+
+--add env var(example)
+eb setenv DJANGO_ALLOWED_HOSTS=my-django-env.eba-4ijahmzm.us-east-2.elasticbeanstalk.com
+eb setenv DJANGO_SETTINGS_MODULE=config.settings.production
+eb setenv DJANGO_SECRET_KEY=D6f1vKp1nX3xJ9zL8N4U7Y5bW0cQ2rS6dT1mG8aF3K
+aws-key
+
+--check all env var
+eb printenv
+
+
+
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"name": "First Last", "email": "example1@example.com", "password": "tttt1111"}' \
+  http://django-env.eba-4ijahmzm.us-east-2.elasticbeanstalk.com/api/users/register/
+
 
 
 
