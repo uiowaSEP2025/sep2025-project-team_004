@@ -32,7 +32,8 @@ jobs:
         run: npm install
 
       - name: Run Jest Tests
-        run: npm test -- --ci --coverage --runInBand --forceExit
+
+        run: npx jest --ci --coverage --runInBand 
 
   backend-tests:
     name: Run Django Tests
@@ -50,7 +51,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: backend  # Set working directory to backend/
+        working-directory: backend
 
     steps:
       - name: Checkout Repository
@@ -59,19 +60,17 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: 3.10.0-alpha.1
+          python-version: 3.12
 
       - name: Install Dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
-
       - name: Apply Migrations
         run: |
           source venv/bin/activate
           python manage.py migrate
-
       - name: Run Django Tests
         run: |
           source venv/bin/activate
