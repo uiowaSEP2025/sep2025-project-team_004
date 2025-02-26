@@ -73,7 +73,7 @@ if env("USE_DOCKER") == "yes":
 # django-extensions
 # ------------------------------------------------------------------------------
 # https://django-extensions.readthedocs.io/en/latest/installation_instructions.html#configuration
-INSTALLED_APPS += ["django_extensions"]
+# INSTALLED_APPS += ["django_extensions"]
 # Celery
 # ------------------------------------------------------------------------------
 
