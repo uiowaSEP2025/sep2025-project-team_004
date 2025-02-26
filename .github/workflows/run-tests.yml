@@ -69,9 +69,9 @@ jobs:
           pip install -r sep2025_project_team_004/requirements.txt
       - name: Apply Migrations
         run: |
-          source venv/bin/activate
-          python manage.py migrate
+          source sep2025_project_team_004/venv/bin/activate
+          python sep2025_project_team_004/manage.py migrate
       - name: Run Django Tests
         run: |
-          source venv/bin/activate
-          python manage.py test
+          source sep2025_project_team_004/venv/bin/activate
+          python sep2025_project_team_004/manage.py test
