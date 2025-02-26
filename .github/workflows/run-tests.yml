@@ -43,7 +43,6 @@ jobs:
       postgres:
         image: postgres:13
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: testdb
@@ -53,6 +52,9 @@ jobs:
     defaults:
       run:
         working-directory: backend/sep2025_project_team_004
+
+    env: 
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     steps:
       - name: Checkout Repository
