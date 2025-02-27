@@ -11,16 +11,26 @@ import os
 
 logging.basicConfig(level=logging.DEBUG)
 
-BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
+BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent.parent
 APPS_DIR = BASE_DIR / "sep2025_project_team_004"
+env_file = os.path.join(APPS_DIR, ".env")
+print(env_file)
+
 env = environ.Env()
 
 # If it is production env, the django_env will be read from eb-setenv, otherwise, it will be null and set as local
 # Then, the .env file can be read
-if env("DJANGO_ENV", default="local") == "local":
-    env_file = os.path.join(BASE_DIR, ".env")
-    print(f"Loading .env from: {env_file}")
-    environ.Env.read_env(env_file)
+if os.path.exists(env_file):  # If .env exists
+    print(f".env detected! Loading from: {env_file}")
+    env.read_env(env_file, overwrite=True)  
+    DJANGO_ENV = "local"
+else:
+    print("No .env file found! Checking system environment variables...")
+    DJANGO_ENV = os.getenv("DJANGO_ENV", "production")  
+    if DJANGO_ENV not in ["test", "production"]: 
+        DJANGO_ENV = "production"
+
+print(f"Final DJANGO_ENV: {DJANGO_ENV}")
 
 
 
@@ -150,11 +160,11 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
 ]
 
 # STATIC
