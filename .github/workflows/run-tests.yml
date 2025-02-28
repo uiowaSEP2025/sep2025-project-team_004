@@ -37,6 +37,17 @@ jobs:
   backend-tests:
     name: Run Django Tests
     runs-on: ubuntu-latest
+    env:
+      DJANGO_ENV: test
+      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      USE_DOCKER: ${{ secrets.USE_DOCKER }}
+      CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+
 
     services:
       postgres:
@@ -50,7 +61,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: backend  # Set working directory to backend/
+        working-directory: backend
 
     steps:
       - name: Checkout Repository
@@ -59,21 +70,19 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: 3.10.0-alpha.1
+          python-version: 3.12
 
 
-      - name: Install Dependencies
+      - name: Create virtual environment
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-
+          python -m venv sep2025_project_team_004/venv
+          source sep2025_project_team_004/venv/bin/activate
+          pip install -r sep2025_project_team_004/requirements.txt
       - name: Apply Migrations
         run: |
-          source venv/bin/activate
-          python manage.py migrate
-
+          source sep2025_project_team_004/venv/bin/activate
+          python sep2025_project_team_004/manage.py migrate
       - name: Run Django Tests
         run: |
-          source venv/bin/activate
-          python manage.py test
+          source sep2025_project_team_004/venv/bin/activate
+          python sep2025_project_team_004/manage.py test
