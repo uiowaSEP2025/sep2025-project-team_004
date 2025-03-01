@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput } from "react-native";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 
 
@@ -9,8 +9,11 @@ interface Product {
   name: string;
   description: string;
   price: number;
-  image_url?: string; // Optional field for product images
+  image?: string; // Optional field for product images
 }
+
+
+
 
 const categories = [
   { id: "1", name: "Popular", icon: "star" },
@@ -23,11 +26,17 @@ const categories = [
 export default function StoreScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
 
   useEffect(() => {
     fetch("http://localhost:8000/api/store/products/")
       .then(response => response.json())
-      .then((data: Product[]) => { 
+      .then((data: Product[]) => {
         setProducts(data);
         setLoading(false);
       })
@@ -36,6 +45,7 @@ export default function StoreScreen() {
         setLoading(false);
       });
   }, []);
+  
 
   if (loading) {
     return <ActivityIndicator size="large" color="blue" style={{ marginTop: 20 }} />;
@@ -48,6 +58,25 @@ export default function StoreScreen() {
         <Text style={styles.title}>Make your community BETTER</Text>
         <Feather name="shopping-cart" size={24} color="black" />
       </View>
+      <View style={styles.fixedHeader}>
+        <View style={styles.searchContainer}>
+          <Feather name="search" size={20} color="gray" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for products..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearButton}>
+              <Feather name="x-circle" size={20} color="gray" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+
+
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
         {categories.map((category) => (
@@ -58,18 +87,24 @@ export default function StoreScreen() {
         ))}
       </ScrollView>
 
+      
+
+      
       <FlatList
-        data={products}
+        data={filteredProducts}
         numColumns={2}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <View style={styles.productCard}>
-            {item.image_url ? (
-              <Image source={{ uri: item.image_url }} style={styles.productImage} />
-            ) : (
-              <Image source={require("../../assets/images/react-logo.png")} style={styles.productImage} />
-            )}
+            <Image
+              source={
+                item.image
+                  ? { uri: item.image }
+                  : require("../../assets/images/react-logo.png") // Local fallback
+              }
+              style={styles.productImage}
+            />
             <Text style={styles.productName}>{item.name}</Text>
             <Text style={styles.productPrice}>${Number(item.price).toFixed(2)}</Text>
             <TouchableOpacity style={styles.cartButton}>
@@ -78,6 +113,7 @@ export default function StoreScreen() {
           </View>
         )}
       />
+
     </View>
   );
 }
@@ -103,6 +139,7 @@ const styles = StyleSheet.create({
   categoryScroll: {
     paddingVertical: 10,
     paddingHorizontal: 10,
+    marginTop: 60,
   },
   categoryButton: {
     flexDirection: "row",
@@ -112,6 +149,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
     marginRight: 10,
+    justifyContent: "center", 
   },
   activeCategory: {
     backgroundColor: "black",
@@ -159,4 +197,35 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 6,
   },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    marginHorizontal: 16,
+    marginBottom: 10,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+  },
+  clearButton: {
+    marginLeft: 8,
+  },
+  fixedHeader: {
+    position: "absolute",
+    top: 40, 
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+    zIndex: 10, 
+    elevation: 5, 
+  },
+  
 });
