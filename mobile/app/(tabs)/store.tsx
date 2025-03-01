@@ -9,7 +9,7 @@ interface Product {
   name: string;
   description: string;
   price: number;
-  image_url?: string; // Optional field for product images
+  image?: string; // Optional field for product images
 }
 
 
@@ -36,7 +36,7 @@ export default function StoreScreen() {
   useEffect(() => {
     fetch("http://localhost:8000/api/store/products/")
       .then(response => response.json())
-      .then((data: Product[]) => { 
+      .then((data: Product[]) => {
         setProducts(data);
         setLoading(false);
       })
@@ -45,6 +45,7 @@ export default function StoreScreen() {
         setLoading(false);
       });
   }, []);
+  
 
   if (loading) {
     return <ActivityIndicator size="large" color="blue" style={{ marginTop: 20 }} />;
@@ -96,11 +97,14 @@ export default function StoreScreen() {
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <View style={styles.productCard}>
-            {item.image_url ? (
-              <Image source={{ uri: item.image_url }} style={styles.productImage} />
-            ) : (
-              <Image source={require("../../assets/images/react-logo.png")} style={styles.productImage} />
-            )}
+            <Image
+              source={
+                item.image
+                  ? { uri: item.image }
+                  : require("../../assets/images/react-logo.png") // Local fallback
+              }
+              style={styles.productImage}
+            />
             <Text style={styles.productName}>{item.name}</Text>
             <Text style={styles.productPrice}>${Number(item.price).toFixed(2)}</Text>
             <TouchableOpacity style={styles.cartButton}>
@@ -109,6 +113,7 @@ export default function StoreScreen() {
           </View>
         )}
       />
+
     </View>
   );
 }
