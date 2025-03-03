@@ -14,10 +14,11 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../app/types";
 
 export default function PaymentMethod() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
@@ -113,7 +114,7 @@ export default function PaymentMethod() {
       }
 
       Alert.alert("Success", "Your payment method has been added.");
-      navigation.goBack();
+      navigation.navigate("payment-method");
 
     } catch (error) {
       console.error("Error storing card", error);

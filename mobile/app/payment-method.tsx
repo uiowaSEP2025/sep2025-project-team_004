@@ -164,7 +164,7 @@ export default function PaymentMethod() {
       <View style={styles.header}>
         <TouchableOpacity
           testID="back-button"
-          onPress={() => router.back()}
+          onPress={() => router.navigate("./Profile")}
           style={styles.headerIcon}
         >
           <ImageBackground

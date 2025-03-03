@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput } from "react-native";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 
 // Define the Product Type
@@ -31,6 +35,17 @@ export default function StoreScreen() {
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) {
+        navigation.reset({ index: 0, routes: [{ name: "index" }] });
+      }
+    };
+    checkAuth();
+  }, []);
   
 
   useEffect(() => {
