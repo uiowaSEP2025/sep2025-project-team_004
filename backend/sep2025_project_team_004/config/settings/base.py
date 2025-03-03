@@ -10,28 +10,30 @@ import logging
 import os
 
 logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent.parent
 APPS_DIR = BASE_DIR / "sep2025_project_team_004"
 env_file = os.path.join(APPS_DIR, ".env")
-print(env_file)
 
 env = environ.Env()
 
-# If it is production env, the django_env will be read from eb-setenv, otherwise, it will be null and set as local
-# Then, the .env file can be read
-if os.path.exists(env_file):  # If .env exists
-    print(f".env detected! Loading from: {env_file}")
-    env.read_env(env_file, overwrite=True)  
-    DJANGO_ENV = "local"
+# If DJANGO_ENV is set(should be the case in EB), then use it
+# If not found(should be the case in local or github action), then check the .env to determine which case
+if os.getenv("DJANGO_ENV"):
+    DJANGO_ENV = os.getenv("DJANGO_ENV")
+    logger.debug(f"[in base]DJANGO_ENV already set: {DJANGO_ENV}")
 else:
-    print("No .env file found! Checking system environment variables...")
-    DJANGO_ENV = os.getenv("DJANGO_ENV", "production")  
-    if DJANGO_ENV not in ["test", "production"]: 
-        DJANGO_ENV = "production"
+    # If there is .env, it is local
+    if os.path.exists(env_file):
+        logger.debug(f"[in base].env detected! Loading from: {env_file}")
+        env.read_env(env_file, overwrite=True)
+        DJANGO_ENV = "local"
+    else:
+        logger.debug("[in base]No .env file found! Setting DJANGO_ENV to test.")
+        DJANGO_ENV = "test"
 
-print(f"Final DJANGO_ENV: {DJANGO_ENV}")
-
+logger.debug(f"[in base]Final DJANGO_ENV: {DJANGO_ENV}")
 
 
 # GENERAL
@@ -60,6 +62,15 @@ USE_I18N = True
 USE_TZ = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#locale-paths
 LOCALE_PATHS = [str(BASE_DIR / "locale")]
+
+# DATABASES
+# ------------------------------------------------------------------------------
+# https://docs.djangoproject.com/en/dev/ref/settings/#databases
+DATABASES = {"default": env.db("DATABASE_URL")}
+DATABASES["default"]["ATOMIC_REQUESTS"] = True
+# https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
 
 
 # URLS
@@ -163,6 +174,7 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

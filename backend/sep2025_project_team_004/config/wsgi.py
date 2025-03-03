@@ -14,36 +14,24 @@ middleware here, or combine a Django application with an application of another
 framework.
 
 """
-
 import os
 import sys
 from pathlib import Path
-import environ
-
+import logging
 from django.core.wsgi import get_wsgi_application
 
 # This allows easy placement of apps within the interior
 # sep2025_project_team_004 directory.
-BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent.parent
-APPS_DIR = BASE_DIR / "sep2025_project_team_004"
-env_file = os.path.join(APPS_DIR, ".env")
+BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
+sys.path.append(str(BASE_DIR / "sep2025_project_team_004"))
 # We defer to a DJANGO_SETTINGS_MODULE already in the environment. This breaks
 # if running multiple sites in the same mod_wsgi process. To fix this, use
 # mod_wsgi daemon mode with each site in its own daemon process, or use
 # os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.production"
-if os.path.exists(env_file):
-    env = environ.Env()
-    print(f"[in wsgi].env detected! Loading from: {env_file}")
-    env.read_env(env_file, overwrite=True)  
-    DJANGO_ENV = env("DJANGO_ENV", default="local") 
-else:
-    DJANGO_ENV = os.getenv("DJANGO_ENV", "production") 
-    if DJANGO_ENV not in ["test", "production", "local"]:
-        DJANGO_ENV = "production" 
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.production")
 
-print(f"[in wsgi] Final DJANGO_ENV: {DJANGO_ENV}")
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", f"config.settings.{DJANGO_ENV}")
-
+# Print the default django env mode
+logging.info(f"[in wsgi] DJANGO_SETTINGS_MODULE: {os.environ.get('DJANGO_SETTINGS_MODULE')}")
 
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION
