@@ -27,7 +27,7 @@ const EditProfilePage: React.FC = () => {
             return;
         }
 
-        const response = await fetch('http://127.0.0.1:8000/api/users/profile/', {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ const EditProfilePage: React.FC = () => {
             return;
         }
 
-        const response = await fetch("http://127.0.0.1:8000/api/users/profile/update/", {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/update/`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",

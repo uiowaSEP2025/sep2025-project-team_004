@@ -11,7 +11,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "./types"; 
 
-const API_URL = "http://127.0.0.1:8000/api/users/api-token-auth/";  
+const API_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/api-token-auth/`
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -43,7 +43,7 @@ export default function HomeScreen() {
       if (response.ok && data.token) {
         await AsyncStorage.setItem("authToken", data.token); 
         
-        const userResponse = await fetch("http://127.0.0.1:8000/api/users/me/", {
+        const userResponse = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/me/`, {
           method: "GET",
           headers: { "Authorization": `Token ${data.token}` },
         });

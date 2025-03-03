@@ -25,7 +25,7 @@ export default function StoreScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/store/products/")
+    fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/store/products/`)
       .then(response => response.json())
       .then((data: Product[]) => { 
         setProducts(data);

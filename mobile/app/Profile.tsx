@@ -59,7 +59,7 @@ export default function Profile() {
             return;
           }
   
-          const response = await fetch("http://127.0.0.1:8000/api/payment/payment-methods/", {
+          const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`, {
             method: "GET",
             headers: {
               "Authorization": `Token ${authToken}`,

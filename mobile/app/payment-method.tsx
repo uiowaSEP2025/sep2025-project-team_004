@@ -31,7 +31,7 @@ const getCardLogo = (cardType: string) => {
   }
 };
 
-const API_URL = "http://127.0.0.1:8000/api/payment/payment-methods/";
+const API_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`;
 
 export default function PaymentMethod() {
   const router = useRouter();
@@ -90,7 +90,7 @@ export default function PaymentMethod() {
         return;
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/api/payment/set-default/${selectedCardId}/`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/set-default/${selectedCardId}/`, {
           method: "POST",
           headers: {
               "Content-Type": "application/json",
@@ -136,7 +136,7 @@ export default function PaymentMethod() {
           return;
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/api/payment/delete/${id}/`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/delete/${id}/`, {
           method: "DELETE",
           headers: {
               "Authorization": `Token ${authToken}`,

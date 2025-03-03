@@ -75,7 +75,7 @@ export default function PaymentMethod() {
     setExpiry(formatted);
   };
 
-  const API_URL = "http://127.0.0.1:8000/api/payment/payment-methods/";
+  const API_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`;
   const detectedCardType = getCardType(sanitizedCardNumber);
   
   const handleAddCard = async () => {
