@@ -96,8 +96,9 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "sep2025_project_team_004.users",
-    # "sep2025_project_team_004.store",
+    "sep2025_project_team_004.store",
     "sep2025_project_team_004.payment",
+    "sep2025_project_team_004.friends",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
