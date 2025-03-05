@@ -5,7 +5,6 @@ import { RootStackParamList } from '../types';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
-import Toast from "react-native-toast-message";
 
 const API_BASE_URL =
   Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";

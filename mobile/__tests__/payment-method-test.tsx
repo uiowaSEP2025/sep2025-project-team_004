@@ -10,6 +10,8 @@ import {
 import PaymentMethod from '../app/payment-method';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import { NavigationContext, NavigationProp, ParamListBase } from '@react-navigation/native';
+
 
 // Mock png feedback to avoid require() returning null
 jest.mock('@/assets/images/back-arrow.png', () => 'back-arrow.png');
@@ -38,7 +40,9 @@ const sampleCard = {
 const mockedRouter = {
   back: jest.fn(),
   push: jest.fn(),
+  navigate: jest.fn(),
 };
+
 
 // -------------------
 // Mock expo-router
@@ -49,6 +53,21 @@ jest.mock('expo-router', () => ({
     callback();
   },
 }));
+
+const mockNavigation: NavigationProp<ParamListBase> = {
+  goBack: jest.fn(),
+  reset: jest.fn(),
+  navigate: jest.fn(),
+  dispatch: jest.fn(),
+  setParams: jest.fn(),
+  addListener: jest.fn(),
+  removeListener: jest.fn(),
+  isFocused: jest.fn(),
+  canGoBack: jest.fn(),
+  getParent: jest.fn(),
+  getState: jest.fn(),
+} as any;
+
 
 // -------------------
 // Mock AsyncStorage 
@@ -114,12 +133,13 @@ describe('PaymentMethod Screen', () => {
   });
 
   it('navigates back when back button is pressed', async () => {
-    const { getByTestId } = renderPaymentMethod();
+    const { getByTestId } = renderPaymentMethod(); 
     await act(async () => {
       fireEvent.press(getByTestId('back-button'));
     });
-    expect(mockedRouter.back).toHaveBeenCalled();
+    expect(mockedRouter.navigate).toHaveBeenCalledWith("./Profile");
   });
+  
 
   it('navigates to add payment screen when add button is pressed', async () => {
     const { getByTestId } = renderPaymentMethod();

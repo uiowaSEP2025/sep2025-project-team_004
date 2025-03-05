@@ -8,6 +8,7 @@ import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { CartProvider } from "./context/CartContext";  
 
 // Prevent splash screen from auto-hiding before asset loading is complete
 SplashScreen.preventAutoHideAsync();
@@ -39,14 +40,16 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen 
-          name={isAuthenticated ? "(tabs)" : "index"}  
-        />
-      </Stack>
-      <Toast />
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <CartProvider>  
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen 
+            name={isAuthenticated ? "(tabs)" : "index"}  
+          />
+        </Stack>
+        <Toast />
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </CartProvider>
   );
 }

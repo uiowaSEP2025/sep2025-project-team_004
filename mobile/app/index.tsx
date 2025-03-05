@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
     color: "black",
   },
   input: {
-    width: '80%',
+    width: Platform.OS === "web" ? Dimensions.get("window").width * 0.305 : '80%',
     maxWidth: 400,
     padding: 12,
     borderWidth: 1,
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007BFF',
     marginHorizontal: 5,
     borderRadius: 5,
-    width: '40%',
+    width: Platform.OS === "web" ? Dimensions.get("window").width * 0.10 : '40%',
   },
   buttonText: {
     color: '#fff',
