@@ -15,10 +15,16 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../app/types";
+import { RootStackParamList } from "../types";
+import Constants from "expo-constants";
+import showMessage from "../hooks/useAlert";
+
+const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
 export default function PaymentMethod() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const {useToast,useAlert} = showMessage();
 
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
@@ -76,7 +82,7 @@ export default function PaymentMethod() {
     setExpiry(formatted);
   };
 
-  const API_URL = "http://127.0.0.1:8000/api/payment/payment-methods/";
+  const API_URL = `http://${API_BASE_URL}:8000/api/payment/payment-methods/`;
   const detectedCardType = getCardType(sanitizedCardNumber);
   
   const handleAddCard = async () => {
@@ -113,7 +119,7 @@ export default function PaymentMethod() {
         throw new Error("Failed to add payment method.");
       }
 
-      Alert.alert("Success", "Your payment method has been added.");
+      useToast("Success", "Your payment method has been added.");
       navigation.navigate("payment-method");
 
     } catch (error) {

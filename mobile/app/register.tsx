@@ -9,10 +9,15 @@ import {
   Alert,
 } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "./types";
+import showMessage  from "../hooks/useAlert";
+import { RootStackParamList } from "../types";
+import Constants from "expo-constants";
 
 export default function RegisterScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { useToast, useAlert } = showMessage();
+  const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
   
 
   const [firstName, setFirstName] = useState("");
@@ -40,7 +45,7 @@ export default function RegisterScreen() {
 
     try {
       
-      const response = await fetch("http://127.0.0.1:8000/api/users/register/", {
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/users/register/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -62,10 +67,8 @@ export default function RegisterScreen() {
         setEmail("");
         setPassword("");
         setConfirmPassword("");
+        useToast("Success", "Account created successfully!");
         navigation.navigate("index")
-        Alert.alert("Success", "Account created successfully!", [
-          { text: "OK" }, 
-        ]);
       } else {
         
         let errorMessage = "Failed to register.";
@@ -151,6 +154,10 @@ export default function RegisterScreen() {
       >
         <Text style={styles.buttonText}>Back to Login</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => useToast("Test", "This is a test message")}>
+  <Text>Test Toast</Text>
+</TouchableOpacity>
     </View>
   );
 }

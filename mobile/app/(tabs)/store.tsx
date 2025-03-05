@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput } from "react-native";
+import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput, Platform } from "react-native";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../types";
+import { RootStackParamList } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+
+const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
 
 
@@ -49,7 +53,7 @@ export default function StoreScreen() {
   
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/store/products/")
+    fetch(`http://${API_BASE_URL}:8000/api/store/products/`)
       .then(response => response.json())
       .then((data: Product[]) => {
         setProducts(data);
@@ -137,7 +141,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop: 40,
+    paddingTop: Platform.OS === "web" ? 10 : 70,
   },
   topBar: {
     flexDirection: "row",
@@ -145,6 +149,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 10,
+    marginTop: 10,
   },
   title: {
     fontSize: 16,
@@ -152,15 +157,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   categoryScroll: {
-    paddingVertical: 10,
+    paddingVertical: 5,
     paddingHorizontal: 10,
-    marginTop: 60,
+    marginTop: 10,
+    height: 80,
   },
   categoryButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f0f0f0",
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 20,
     marginRight: 10,
@@ -233,12 +239,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   fixedHeader: {
-    position: "absolute",
-    top: 40, 
+    position: "relative",
+    top: 0, 
     left: 0,
     right: 0,
     backgroundColor: "#fff",
     paddingVertical: 10,
+    paddingTop: 10,
     zIndex: 10, 
     elevation: 5, 
   },

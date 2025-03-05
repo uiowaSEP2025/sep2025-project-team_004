@@ -6,12 +6,11 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import Toast from "react-native-toast-message";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 // Prevent splash screen from auto-hiding before asset loading is complete
 SplashScreen.preventAutoHideAsync();
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
@@ -24,6 +23,7 @@ export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   // Check if user is authenticated
+  
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem("authToken");
@@ -45,6 +45,7 @@ export default function RootLayout() {
           name={isAuthenticated ? "(tabs)" : "index"}  
         />
       </Stack>
+      <Toast />
       <StatusBar style="auto" />
     </ThemeProvider>
   );

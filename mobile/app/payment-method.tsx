@@ -14,6 +14,10 @@ import {
 // Use expo-router instead of react-navigation to match test expectations
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from "expo-constants";
+
+const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
 // Dynamically load card logo
 const getCardLogo = (cardType: string) => {
@@ -31,7 +35,6 @@ const getCardLogo = (cardType: string) => {
   }
 };
 
-const API_URL = "http://127.0.0.1:8000/api/payment/payment-methods/";
 
 export default function PaymentMethod() {
   const router = useRouter();
@@ -47,7 +50,7 @@ export default function PaymentMethod() {
         return;
       }
   
-      const response = await fetch(API_URL, {
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
         method: "GET",
         headers: {
           "Authorization": `Token ${authToken}`,
@@ -90,7 +93,7 @@ export default function PaymentMethod() {
         return;
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/api/payment/set-default/${selectedCardId}/`, {
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/set-default/${selectedCardId}/`, {
           method: "POST",
           headers: {
               "Content-Type": "application/json",
@@ -136,7 +139,7 @@ export default function PaymentMethod() {
           return;
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/api/payment/delete/${id}/`, {
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/delete/${id}/`, {
           method: "DELETE",
           headers: {
               "Authorization": `Token ${authToken}`,
