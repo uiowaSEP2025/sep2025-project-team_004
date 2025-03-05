@@ -129,7 +129,7 @@ export default function PaymentMethod() {
         <View style={styles.screen}>
           {/* Header */}
           <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
             <ImageBackground
               style={styles.backIcon}
               source={require('@/assets/images/back-arrow.png')}
@@ -139,7 +139,7 @@ export default function PaymentMethod() {
             <Text style={styles.headerTitle} numberOfLines={1}>
               Add payment method
             </Text>
-            <TouchableOpacity onPress={handleAddCard}>
+            <TouchableOpacity testID="done-button" onPress={handleAddCard}>
               <Text style={styles.addText} numberOfLines={1}>
                 Done
               </Text>
@@ -178,6 +178,7 @@ export default function PaymentMethod() {
           {/* Input Area */}
           <View style={styles.formContainer}>
           <TextInput
+            testID="card-number-input"
             placeholder="Card Number"
             placeholderTextColor="#999"
             style={styles.input}
@@ -186,6 +187,7 @@ export default function PaymentMethod() {
             onChangeText={handleCardNumberChange}
           />
             <TextInput
+              testID="card-holder-input"
               placeholder="Card Holder Name"
               placeholderTextColor="#999"
               style={styles.input}
@@ -194,6 +196,7 @@ export default function PaymentMethod() {
             />
             <View style={styles.row}>
               <TextInput
+                testID="expiry-input"
                 placeholder="Expiry Date"
                 placeholderTextColor="#999"
                 style={[styles.input, styles.inputHalf]}
@@ -211,7 +214,7 @@ export default function PaymentMethod() {
           </View>
 
           {/* ADD NEW CARD */}
-          <TouchableOpacity onPress={handleAddCard}>
+          <TouchableOpacity testID="add-new-card-button" onPress={handleAddCard}>
             <View style={styles.addCardContainer}>
               <Text style={styles.addCardText}>ADD NEW CARD</Text>
             </View>
