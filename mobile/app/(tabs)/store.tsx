@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { View, Text, FlatList, Image, TouchableOpacity, Modal, StyleSheet, ActivityIndicator, TextInput, Platform } from "react-native";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { CartContext } from "../context/CartContext";
-import { RootStackParamList } from "../../types";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 
@@ -26,6 +23,9 @@ export default function StoreScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
@@ -88,10 +88,26 @@ export default function StoreScreen() {
             </View>
           )}
         </TouchableOpacity>
+        </View>
+        <View style={styles.fixedHeader}>
+          <View style={styles.searchContainer}>
+            <Feather name="search" size={20} color="gray" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search for products..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearButton}>
+                <Feather name="x-circle" size={20} color="gray" />
+             </TouchableOpacity>
+          )}
+        </View>
       </View>
       
       <FlatList
-        data={products}
+        data={filteredProducts}
         numColumns={2}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.grid}
