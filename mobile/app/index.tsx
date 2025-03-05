@@ -22,12 +22,15 @@ export default function HomeScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
       setError("Both fields are required!");
       return;
     }
+
+    setLoading(true);
 
     try {
       const response = await fetch(`http://${API_BASE_URL}:8000/api/users/api-token-auth/`, {
@@ -66,7 +69,7 @@ export default function HomeScreen() {
       console.error("Login error:", err);
       setError("Something went wrong. Please try again later.");
     }
-  
+    setLoading(false);
     setPassword("");
   };
 
@@ -97,11 +100,12 @@ export default function HomeScreen() {
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           testID="login-button"
-          style={styles.button} 
+          style={styles.button}
           onPress={handleLogin}
           accessibilityRole="button"
+          disabled={loading}
         >
-          <Text style={styles.buttonText}>Login</Text>
+          <Text style={styles.buttonText}>{loading ? "Loading..." : "Login"}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

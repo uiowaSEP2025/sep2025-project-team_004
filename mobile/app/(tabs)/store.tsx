@@ -52,7 +52,7 @@ export default function StoreScreen() {
   }, []);
 
   if (loading) {
-    return <ActivityIndicator size="large" color="blue" style={{ marginTop: 20 }} />;
+    return <ActivityIndicator size="large" color="blue" style={{ marginTop: 70 }} />;
   }
 
   const openModal = (product: Product) => {

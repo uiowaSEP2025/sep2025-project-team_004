@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     padding: 8, 
   },
   headerIcon: { width: 20, height: 20 },
-  backIcon: { width: 24, height: 24 },
+  backIcon: { width: 24 , height: 30 },
   logoutText: {
     fontSize: 16,
     color: '#FF0000',

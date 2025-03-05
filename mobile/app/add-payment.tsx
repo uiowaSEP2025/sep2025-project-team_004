@@ -18,14 +18,17 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
+import { usePayment } from "./context/PaymentContext";
+import { useRouter } from "expo-router";
 
 const API_BASE_URL =
   Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
 export default function PaymentMethod() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const {useToast,useAlert} = showMessage();
-
+  const {useToast, useAlert} = showMessage();
+  const router = useRouter();
+  const { addCard } = usePayment();
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -38,7 +41,6 @@ export default function PaymentMethod() {
       if (/^6(?:011|5)/.test(sanitized)) return 'discover';
       if (/^3[47]/.test(sanitized)) return 'amex';
       if (/^4/.test(sanitized)) return 'visa';
-      return 'visa';
     }
     return '';
   };
@@ -82,48 +84,23 @@ export default function PaymentMethod() {
     setExpiry(formatted);
   };
 
-  const API_URL = `http://${API_BASE_URL}:8000/api/payment/payment-methods/`;
   const detectedCardType = getCardType(sanitizedCardNumber);
   
   const handleAddCard = async () => {
-      const authToken = await AsyncStorage.getItem("authToken"); // Retrieve auth token
-      if (!authToken) {
-        Alert.alert("Error", "User not authenticated.");
-        return;
-      }
-    
-      const newCard = {
-        card_number: cardNumber.replace(/\D/g, ''),  // Ensure it's numeric
-        last4: cardNumber.replace(/\D/g, '').slice(-4),
-        expiration_date: expiry,
-        cardholder_name: cardHolder,
-        card_type: detectedCardType,
+    const newCard = {
+      card_number: cardNumber.replace(/\D/g, ""),
+      last4: cardNumber.slice(-4),
+      expiration_date: expiry,
+      cardholder_name: cardHolder,
+      card_type: detectedCardType,
     };
 
-    console.log("Sending Request:", JSON.stringify(newCard));
-
     try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Authorization": `Token ${authToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newCard),
-      });
-
-      const responseData = await response.json();
-      console.log("API Response:", responseData);
-  
-      if (!response.ok) {
-        throw new Error("Failed to add payment method.");
-      }
-
+      await addCard(newCard);
       useToast("Success", "Your payment method has been added.");
-      navigation.navigate("payment-method");
-
+      router.replace("/payment-method");
     } catch (error) {
-      console.error("Error storing card", error);
+      console.error("Error adding payment method:", error);
       Alert.alert("Error", "There was an error adding your card.");
     }
   };
