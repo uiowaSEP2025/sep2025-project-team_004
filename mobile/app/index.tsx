@@ -6,18 +6,23 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "./types"; 
+import { RootStackParamList } from "../types"; 
+import Constants from "expo-constants";
 
-const API_URL = "http://127.0.0.1:8000/api/users/api-token-auth/";  
+const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -25,8 +30,10 @@ export default function HomeScreen() {
       return;
     }
 
+    setLoading(true);
+
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/users/api-token-auth/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,7 +50,7 @@ export default function HomeScreen() {
       if (response.ok && data.token) {
         await AsyncStorage.setItem("authToken", data.token); 
         
-        const userResponse = await fetch("http://127.0.0.1:8000/api/users/me/", {
+        const userResponse = await fetch(`http://${API_BASE_URL}:8000/api/users/me/`, {
           method: "GET",
           headers: { "Authorization": `Token ${data.token}` },
         });
@@ -62,7 +69,7 @@ export default function HomeScreen() {
       console.error("Login error:", err);
       setError("Something went wrong. Please try again later.");
     }
-  
+    setLoading(false);
     setPassword("");
   };
 
@@ -74,6 +81,7 @@ export default function HomeScreen() {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="#888"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -83,6 +91,7 @@ export default function HomeScreen() {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor="#888"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -91,11 +100,12 @@ export default function HomeScreen() {
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           testID="login-button"
-          style={styles.button} 
+          style={styles.button}
           onPress={handleLogin}
           accessibilityRole="button"
+          disabled={loading}
         >
-          <Text style={styles.buttonText}>Login</Text>
+          <Text style={styles.buttonText}>{loading ? "Loading..." : "Login"}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -135,7 +145,8 @@ const styles = StyleSheet.create({
     color: "black",
   },
   input: {
-    width: Dimensions.get("window").width * 0.305,
+    width: Platform.OS === "web" ? Dimensions.get("window").width * 0.305 : '80%',
+    maxWidth: 400,
     padding: 12,
     borderWidth: 1,
     borderColor: "#ccc",
@@ -153,7 +164,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007BFF',
     marginHorizontal: 5,
     borderRadius: 5,
-    width: Dimensions.get("window").width * 0.15,
+    width: Platform.OS === "web" ? Dimensions.get("window").width * 0.10 : '40%',
   },
   buttonText: {
     color: '#fff',

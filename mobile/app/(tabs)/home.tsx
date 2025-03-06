@@ -5,18 +5,22 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  Platform,
+  Alert,
 } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../types";
+import { RootStackParamList } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Modal } from "react-native";
-
+import { TouchableWithoutFeedback, Keyboard } from "react-native";
+import { usePayment } from "../context/PaymentContext";
 
 const WelcomePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [menuVisible, setMenuVisible] = useState(false);
   const menuAnimation = useRef(new Animated.Value(0)).current;
   const [modalVisible, setModalVisible] = useState(false);
+  const { clearCards } = usePayment();
 
   
   useEffect(() => {
@@ -49,7 +53,19 @@ const WelcomePage: React.FC = () => {
 
   // Handle Logout
   const handleLogout = async () => {
-    setModalVisible(true);
+    if (Platform.OS === "web") {
+      setModalVisible(true);
+    } else {
+      Alert.alert(
+            'Logout',
+            'Are you sure you want to logout？',
+            [
+              { text: 'Yes', onPress: () => confirmLogout() },
+              { text: 'Cancel', style: 'cancel' }
+            ],
+            { cancelable: true }
+          );
+    }
   };
 
   const confirmLogout = async () => {
@@ -57,6 +73,7 @@ const WelcomePage: React.FC = () => {
     try {
       await AsyncStorage.removeItem("authToken");
       await AsyncStorage.removeItem("userInfo");
+      clearCards();
       navigation.navigate("index");
       setModalVisible(false); 
     } catch (error) {
@@ -65,6 +82,12 @@ const WelcomePage: React.FC = () => {
   };
 
   return (
+    <TouchableWithoutFeedback
+    onPress={() => {
+      if (menuVisible) setMenuVisible(false); 
+      Keyboard.dismiss(); 
+    }}
+  >
     <View style={styles.container}>
       {/* Header with Profile Menu */}
       <View style={styles.header}>
@@ -97,7 +120,7 @@ const WelcomePage: React.FC = () => {
             <TouchableOpacity onPress={() => navigation.navigate("editProfile")}>
               <Text style={styles.menuItem}>Edit Profile</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => {navigation.navigate("index");
+            <TouchableOpacity onPress={() => {navigation.navigate("home");
               setMenuVisible(false);
             }}>
               <Text style={styles.menuItem}>Settings</Text>
@@ -132,6 +155,7 @@ const WelcomePage: React.FC = () => {
         </View>
       </Modal>
     </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -141,11 +165,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   header: {
-    height: 60,
+    height: Platform.OS === "web" ? 70 : 120,
     backgroundColor: "#f8f8f8",
     justifyContent: "center",
     alignItems: "flex-end",
     paddingRight: 16,
+    paddingTop: Platform.OS === "web" ? 0 : 70,
     position: "relative",
     zIndex: 2,
   },

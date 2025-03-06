@@ -9,6 +9,8 @@ import {
 import WelcomePage from '../app/(tabs)/home';
 import { NavigationContext } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PaymentProvider } from '@/app/context/PaymentContext';
+import { Platform } from 'react-native';
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -25,9 +27,22 @@ describe('WelcomePage', () => {
   const mockNavigate = jest.fn();
   const mockReset = jest.fn();
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    jest.useFakeTimers();
+    jest.replaceProperty(Platform, "OS", "web");
+    jest.clearAllMocks();
     // By default, return a dummy token so the auth check does nothing.
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue("dummyToken");
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { id: 1, last4: '1234', cardholder_name: 'John Doe', expiration_date: '12/24', card_type: 'visa', is_default: false },
+        { id: 2, last4: '5678', cardholder_name: 'Jane Doe', expiration_date: '11/25', card_type: 'mastercard', is_default: true },
+      ],
+    });
+
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      key === 'authToken' ? Promise.resolve('dummyToken') : Promise.resolve(null)
+    );
   });
 
   afterEach(() => {
@@ -52,17 +67,18 @@ describe('WelcomePage', () => {
 
   const setup = () => {
     return render(
+      <PaymentProvider>
       <NavigationContext.Provider value={customNavigation as any}>
         <WelcomePage />
       </NavigationContext.Provider>
+      </PaymentProvider>
     );
   };
 
   it('renders correctly', async () => {
-    const { getByText } = setup();
-    await waitFor(() => {
-      expect(getByText('Welcome!')).toBeTruthy();
-    });
+    const { findByText } = setup();
+      expect(await findByText('Welcome!')).toBeTruthy();
+
   });
 
   it('toggles menu visibility when profile icon is pressed', async () => {
@@ -73,17 +89,16 @@ describe('WelcomePage', () => {
 
     // Show menu
     const profileIcon = getByText('P');
-    fireEvent.press(profileIcon);
-    await waitFor(() => {
-      expect(getByText('Profile')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(profileIcon);
     });
-
-    // Hide menu
-    fireEvent.press(profileIcon);
-    await waitFor(() => {
-      expect(queryByText('Profile')).toBeNull();
+    await waitFor(() => expect(getByText('Profile')).toBeTruthy(), { timeout: 7000 });
+    
+    await act(async () => {
+      fireEvent.press(profileIcon);
     });
-  });
+    await waitFor(() => expect(queryByText('Profile')).toBeNull(), { timeout: 7000 });
+  }, 10000);
 
   it('navigates to Edit Profile screen when Edit Profile option is pressed', async () => {
     const { getByText } = setup();
@@ -126,29 +141,42 @@ describe('WelcomePage', () => {
 
   it('shows logout modal when "Logout" is pressed and logs out when "Yes" is pressed', async () => {
     const { getByText, queryByText } = setup();
-    // Open menu
-    const profileIcon = getByText('P');
-    fireEvent.press(profileIcon);
-    // Press "Logout" option to display modal
-    const logoutOption = getByText('Logout');
-    fireEvent.press(logoutOption);
-    await waitFor(() => {
-      expect(getByText('Are you sure you want to log out?')).toBeTruthy();
+  
+    // Open the menu
+    fireEvent.press(getByText("P"));
+  
+    // Press "Logout"
+    await act(async () => {
+      fireEvent.press(getByText("Logout"));
     });
-    // Spy on AsyncStorage.removeItem
-    const removeSpy = jest.spyOn(AsyncStorage, 'removeItem');
-    // Press "Yes" to confirm logout
-    fireEvent.press(getByText('Yes'));
-    await waitFor(() => {
-      // Modal should be hidden
-      expect(queryByText('Are you sure you want to log out?')).toBeNull();
+  
+    // Wait for modal visibility state update
+    await act(async () => {
+      await waitFor(() => {
+        expect(getByText("Are you sure you want to log out?")).toBeTruthy();
+      });
+    });  
+    // Press "Yes" button inside the modal
+    await act(async () => {
+      fireEvent.press(getByText("Yes"));
     });
-    // Verify logout actions: removal of tokens and navigation to "index"
-    expect(removeSpy).toHaveBeenCalledWith("authToken");
-    expect(removeSpy).toHaveBeenCalledWith("userInfo");
+  
+    // Ensure modal disappears after clicking "Yes"
+    await act(async () => {
+      await waitFor(() => {
+        expect(queryByText("Are you sure you want to log out?")).toBeNull();
+      });
+    });
+  
+  
+    //Ensure AsyncStorage tokens are removed
+    expect(AsyncStorage.removeItem).toHaveBeenCalledWith("authToken");
+    expect(AsyncStorage.removeItem).toHaveBeenCalledWith("userInfo");
+  
+    // Ensure navigation occurs
     expect(mockNavigate).toHaveBeenCalledWith("index");
-    removeSpy.mockRestore();
   });
+  
 
   it('hides logout modal when "Cancel" is pressed', async () => {
     const { getByText, queryByText } = setup();

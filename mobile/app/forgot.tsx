@@ -2,7 +2,7 @@ import React from 'react';
 import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "./types";
+import { RootStackParamList } from "../types";
 
 export default function ForgotScreen() {
   const navigation = useNavigation();
