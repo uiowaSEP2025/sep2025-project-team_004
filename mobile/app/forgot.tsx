@@ -13,25 +13,27 @@ export default function ForgotScreen() {
   const [verificationCode, setVerificationCode] = useState("");
   const [error, setError] = useState("");
 
-  const handleForgot = () => {
+  const handleForgot = async () => {
+    setError("");
     if (!email) {
       setError("Email is required!");
       return;
     }
-    if (!newPassword) {
-      setError("New password is required!");
-      return;
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/users/auth/request-password-reset/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Error sending reset email. Please try again.");
+      }
+  
+      alert("A password reset link has been sent to your email.");
+    } catch (error) {
+      setError("An unexpected error occurred.");
     }
-    if (!confirmNewPassword) {
-      setError("Please confirm your new password!");
-      return;
-    }
-    if (newPassword !== confirmNewPassword) {
-      setError("Passwords do not match!");
-      return;
-    }
-    setError("");
-    // Additional logic for handling password reset can go here.
   };
 
   return (
@@ -48,22 +50,6 @@ export default function ForgotScreen() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="New Password"
-        value={newPassword}
-        onChangeText={setNewPassword}
-        secureTextEntry={true}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm New Password"
-        value={confirmNewPassword}
-        onChangeText={setConfirmNewPassword}
-        secureTextEntry={true}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleForgot}>
