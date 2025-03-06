@@ -117,13 +117,28 @@
 <a name='L52'></a><a href='#L52'>52</a>
 <a name='L53'></a><a href='#L53'>53</a>
 <a name='L54'></a><a href='#L54'>54</a>
-<a name='L55'></a><a href='#L55'>55</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -133,16 +148,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -159,6 +164,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -179,13 +187,13 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-&nbsp;
+import Toast from "react-native-toast-message";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { CartProvider } from "./context/CartContext";  
+import { PaymentProvider } from "./context/PaymentContext";
 &nbsp;
 // Prevent splash screen from auto-hiding before asset loading is complete
 <span class="cstat-no" title="statement not covered" >SplashScreen.preventAutoHideAsync();</span>
-&nbsp;
 export default function <span class="fstat-no" title="function not covered" >RootLayout(</span>) {
   const colorScheme = <span class="cstat-no" title="statement not covered" >useColorScheme();</span>
   const [loaded] = <span class="cstat-no" title="statement not covered" >useFonts({</span>
@@ -198,6 +206,7 @@ export default function <span class="fstat-no" title="function not covered" >Roo
   const [isAuthenticated, setIsAuthenticated] = <span class="cstat-no" title="statement not covered" >useState&lt;boolean | null&gt;(null);</span>
 &nbsp;
   // Check if user is authenticated
+  
 <span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
     const checkAuth = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {</span>
       const token = <span class="cstat-no" title="statement not covered" >await AsyncStorage.getItem("authToken");</span>
@@ -213,16 +222,19 @@ export default function <span class="fstat-no" title="function not covered" >Roo
   }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
-    &lt;CartProvider&gt;  
-      &lt;ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}&gt;
-        &lt;Stack screenOptions={{ headerShown: false }}&gt;
-          &lt;Stack.Screen 
-            name={isAuthenticated ? "(tabs)" : "index"}  
-          /&gt;
-        &lt;/Stack&gt;
-        &lt;StatusBar style="auto" /&gt;
-      &lt;/ThemeProvider&gt;
-    &lt;/CartProvider&gt;
+    &lt;PaymentProvider&gt;
+      &lt;CartProvider&gt;
+        &lt;ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}&gt;
+          &lt;Stack screenOptions={{ headerShown: false }}&gt;
+            &lt;Stack.Screen 
+             name={isAuthenticated ? "(tabs)" : "index"}  
+           /&gt;
+         &lt;/Stack&gt;
+         &lt;Toast /&gt;
+         &lt;StatusBar style="auto" /&gt;
+        &lt;/ThemeProvider&gt;
+      &lt;/CartProvider&gt;
+    &lt;/PaymentProvider&gt;
   );
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -232,7 +244,7 @@ export default function <span class="fstat-no" title="function not covered" >Roo
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-03-05T00:32:47.529Z
+                at 2025-03-06T04:52:05.898Z
             </div>
         <script src="../prettify.js"></script>
         <script>

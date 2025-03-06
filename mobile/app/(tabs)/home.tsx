@@ -13,12 +13,14 @@ import { RootStackParamList } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Modal } from "react-native";
 import { TouchableWithoutFeedback, Keyboard } from "react-native";
+import { usePayment } from "../context/PaymentContext";
 
 const WelcomePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [menuVisible, setMenuVisible] = useState(false);
   const menuAnimation = useRef(new Animated.Value(0)).current;
   const [modalVisible, setModalVisible] = useState(false);
+  const { clearCards } = usePayment();
 
   
   useEffect(() => {
@@ -71,6 +73,7 @@ const WelcomePage: React.FC = () => {
     try {
       await AsyncStorage.removeItem("authToken");
       await AsyncStorage.removeItem("userInfo");
+      clearCards();
       navigation.navigate("index");
       setModalVisible(false); 
     } catch (error) {

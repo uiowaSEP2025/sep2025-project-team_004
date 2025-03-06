@@ -46,10 +46,6 @@ export default function PaymentMethod() {
     loadCards();
   }, []);
 
-  const handleSetDefault = async (cardId: number) => {
-    await setDefaultPayment(cardId);
-  };
-
   const handleDeleteCard = async (cardId: number) => {
     if (Platform.OS === "web") {
       await deletePaymentMethod(cardId);
@@ -71,18 +67,18 @@ export default function PaymentMethod() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate("./Profile")} style={styles.headerIcon}>
+        <TouchableOpacity testID="back-button" onPress={() => router.navigate("./Profile")} style={styles.headerIcon}>
           <ImageBackground style={styles.backIcon} source={require("@/assets/images/back-arrow.png")} resizeMode="cover" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Payment method</Text>
-        <TouchableOpacity onPress={() => router.push("/add-payment")} style={styles.headerRight}>
+        <TouchableOpacity testID="add-payment-button" onPress={() => router.push("/add-payment")} style={styles.headerRight}>
           <ImageBackground style={styles.headerIconImage} source={require("@/assets/images/add-icon.png")} resizeMode="cover" />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" style={styles.scrollView}>
         <View style={styles.cardContainer}>
-          {cards.map((card) => (
+          {cards.slice(0, 10).map((card) => (
             <View key={card.id} style={styles.cardWrapper}>
               <View style={styles.fancyCard}>
                 <Text style={styles.fancyCardNumber}>
@@ -98,11 +94,12 @@ export default function PaymentMethod() {
               </View>
 
               <View style={styles.defaultContainer}>
-                <TouchableOpacity onPress={() => handleSetDefault(card.id)} style={styles.checkbox}>
+                <TouchableOpacity testID={`default-checkbox-${card.id}`} onPress={() => setDefaultPayment(card.id)} style={styles.checkbox}>
                   {card.is_default && <View style={styles.checked} />}
                 </TouchableOpacity>
                 <Text style={styles.defaultText}>Use as default payment method</Text>
                 <TouchableOpacity
+                  testID={`delete-button-${card.id}`}
                   onPress={() => handleDeleteCard(card.id)}
                   style={[styles.defaultDeleteButton, card.is_default && styles.disabledButton]}
                   disabled={card.is_default}

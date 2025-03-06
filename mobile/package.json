@@ -13,7 +13,10 @@
   },
   "jest": {
     "preset": "jest-expo",
-    "setupFilesAfterEnv": ["@testing-library/jest-native/extend-expect", "<rootDir>/jestSetup.js"],
+    "setupFilesAfterEnv": [
+      "@testing-library/jest-native/extend-expect",
+      "<rootDir>/jestSetup.js"
+    ],
     "collectCoverage": true,
     "collectCoverageFrom": [
       "app/**/*.tsx",

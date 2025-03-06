@@ -154,10 +154,6 @@ export default function RegisterScreen() {
       >
         <Text style={styles.buttonText}>Back to Login</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => useToast("Test", "This is a test message")}>
-  <Text>Test Toast</Text>
-</TouchableOpacity>
     </View>
   );
 }

@@ -3,8 +3,9 @@ import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import EditProfilePage from '../app/editProfile'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
+import { Platform } from 'react-native';
 import { NavigationContext, NavigationProp, ParamListBase } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 // Fake user profile data returned from the GET API call.
 const fakeProfile = {
@@ -41,7 +42,7 @@ describe("EditProfilePage", () => {
     (AsyncStorage.getItem as jest.Mock) = jest.fn(() => Promise.resolve("dummyToken"));
     (AsyncStorage.setItem as jest.Mock) = jest.fn(() => Promise.resolve());
     // Mock Alert.alert so we can verify its usage.
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    jest.spyOn(Toast, 'show').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -112,7 +113,15 @@ describe("EditProfilePage", () => {
 
     // Wait for the success alert to be triggered.
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith("Success", "Your profile has been updated.");
+      expect(Toast.show).toHaveBeenCalledWith({
+              type: "success",
+              text1: "Success",
+              text2: "Your profile has been updated.",
+              position: "top",
+              topOffset: Platform.OS === "web" ? 20 : 70,
+              visibilityTime: 4000,
+              autoHide: true,
+            });
     });
   });
 

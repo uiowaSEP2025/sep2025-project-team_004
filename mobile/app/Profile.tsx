@@ -19,6 +19,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types"; 
 import Constants from "expo-constants";
+import { usePayment } from "./context/PaymentContext";
 
 const API_BASE_URL =
   Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
@@ -36,6 +37,7 @@ export default function Profile() {
   const [user, setUser] = useState({ first_name: "", last_name: "", email: "" });
   const [modalVisible, setModalVisible] = useState(false);
   const [defaultCard, setDefaultCard] = useState<any>(null);
+  const { clearCards } = usePayment();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -107,6 +109,7 @@ export default function Profile() {
     try {
       await AsyncStorage.removeItem("authToken");
       await AsyncStorage.removeItem("userInfo"); // Remove user details too
+      clearCards();
       navigation.reset({ index: 0, routes: [{ name: "index" }] });
       setModalVisible(false);
     } catch (error) {

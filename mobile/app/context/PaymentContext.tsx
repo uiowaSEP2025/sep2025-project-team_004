@@ -11,6 +11,7 @@ interface PaymentContextType {
   addCard: (newCard: any) => Promise<void>;
   setDefaultPayment: (cardId: number) => Promise<void>;
   deletePaymentMethod: (cardId: number) => Promise<void>;
+  clearCards: () => void;
 }
 
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
@@ -77,6 +78,7 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     } catch (error) {
       console.error("Error adding payment method:", error);
+      Alert.alert("Error", "There was an error adding your card.");
     }
   };
 
@@ -88,6 +90,7 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         console.error("User not authenticated.");
         return;
       }
+
       setCards((prevCards) =>
         prevCards.map((card) => ({
           ...card,
@@ -139,12 +142,16 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     loadCards();  
   };
 
+  const clearCards = () => {
+    setCards([]);
+  };
+
   useEffect(() => {
     loadCards();
   }, []);
 
   return (
-    <PaymentContext.Provider value={{ cards, loadCards, addCard, setDefaultPayment, deletePaymentMethod }}>
+    <PaymentContext.Provider value={{ cards, loadCards, addCard, setDefaultPayment, deletePaymentMethod, clearCards }}>
       {children}
     </PaymentContext.Provider>
   );

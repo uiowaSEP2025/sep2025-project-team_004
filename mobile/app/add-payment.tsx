@@ -101,7 +101,6 @@ export default function PaymentMethod() {
       router.replace("/payment-method");
     } catch (error) {
       console.error("Error adding payment method:", error);
-      Alert.alert("Error", "There was an error adding your card.");
     }
   };
 
