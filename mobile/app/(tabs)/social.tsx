@@ -11,7 +11,7 @@ import {
   Animated,
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 
 const chats = [
@@ -43,7 +43,7 @@ const chats = [
 
 
 export default function SocialScreen() {
-  const navigation = useNavigation();
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -57,10 +57,15 @@ export default function SocialScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Image source={require("../../assets/images/avatar-placeholder.png")} style={styles.profileIcon} />
-        <Text style={styles.headerText}>Stream Chat</Text>
-        <TouchableOpacity style={styles.addFriendIconContainer}>
+        <Text style={styles.headerText}>Chat</Text>
+        <TouchableOpacity
+          style={styles.addFriendIconContainer}
+          onPress={() => router.push("../friends")}
+        >
           <MaterialIcons name="person-add" size={28} color="#000" />
         </TouchableOpacity>
+
+
       </View>
 
       {/* Search Bar */}

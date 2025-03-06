@@ -77,3 +77,16 @@ class UserDetailView(APIView):
             "city": user.city,
                
         })
+        
+class SearchUsersView(APIView):
+    permission_classes = [IsAuthenticated]  
+
+    def get(self, request):
+        username_query = request.query_params.get('username', '')
+        if not username_query:
+            return Response({"error": "Username is required"}, status=400)
+
+        users = User.objects.filter(username__icontains=username_query)[:10]
+        serializer = UserSerializer(users, many=True)
+
+        return Response(serializer.data, status=200)
