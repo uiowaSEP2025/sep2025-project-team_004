@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1741236725935" clover="3.2.0">
-  <project timestamp="1741236725935" name="All files">
-    <metrics statements="481" coveredstatements="345" conditionals="213" coveredconditionals="123" methods="123" coveredmethods="81" elements="817" coveredelements="549" complexity="0" loc="481" ncloc="481" packages="3" files="16" classes="16"/>
+<coverage generated="1741238560334" clover="3.2.0">
+  <project timestamp="1741238560334" name="All files">
+    <metrics statements="480" coveredstatements="345" conditionals="213" coveredconditionals="123" methods="123" coveredmethods="81" elements="816" coveredelements="549" complexity="0" loc="480" ncloc="480" packages="3" files="16" classes="16"/>
     <package name="app">
       <metrics statements="306" coveredstatements="212" conditionals="141" coveredconditionals="82" methods="62" coveredmethods="37"/>
       <file name="+not-found.tsx" path="C:\Users\brenn\SEP2025\sep2025-project-team_004\mobile\app\+not-found.tsx">
@@ -445,7 +445,7 @@
       </file>
     </package>
     <package name="app.context">
-      <metrics statements="87" coveredstatements="61" conditionals="28" coveredconditionals="15" methods="28" coveredmethods="22"/>
+      <metrics statements="86" coveredstatements="61" conditionals="28" coveredconditionals="15" methods="28" coveredmethods="22"/>
       <file name="CartContext.tsx" path="C:\Users\brenn\SEP2025\sep2025-project-team_004\mobile\app\context\CartContext.tsx">
         <metrics statements="26" coveredstatements="26" conditionals="8" coveredconditionals="6" methods="15" coveredmethods="15"/>
         <line num="23" count="3" type="stmt"/>
@@ -476,7 +476,7 @@
         <line num="75" count="16" type="stmt"/>
       </file>
       <file name="PaymentContext.tsx" path="C:\Users\brenn\SEP2025\sep2025-project-team_004\mobile\app\context\PaymentContext.tsx">
-        <metrics statements="61" coveredstatements="35" conditionals="20" coveredconditionals="9" methods="13" coveredmethods="7"/>
+        <metrics statements="60" coveredstatements="35" conditionals="20" coveredconditionals="9" methods="13" coveredmethods="7"/>
         <line num="6" count="3" type="cond" truecount="2" falsecount="0"/>
         <line num="17" count="3" type="stmt"/>
         <line num="19" count="3" type="stmt"/>
@@ -515,29 +515,28 @@
         <line num="89" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="90" count="0" type="stmt"/>
         <line num="91" count="0" type="stmt"/>
-        <line num="93" count="0" type="stmt"/>
+        <line num="94" count="0" type="stmt"/>
         <line num="95" count="0" type="stmt"/>
-        <line num="96" count="0" type="stmt"/>
-        <line num="102" count="0" type="stmt"/>
-        <line num="110" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="114" count="0" type="stmt"/>
-        <line num="116" count="0" type="stmt"/>
-        <line num="119" count="44" type="stmt"/>
+        <line num="101" count="0" type="stmt"/>
+        <line num="109" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="113" count="0" type="stmt"/>
+        <line num="115" count="0" type="stmt"/>
+        <line num="118" count="44" type="stmt"/>
+        <line num="119" count="0" type="stmt"/>
         <line num="120" count="0" type="stmt"/>
-        <line num="121" count="0" type="stmt"/>
-        <line num="122" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="121" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="122" count="0" type="stmt"/>
         <line num="123" count="0" type="stmt"/>
-        <line num="124" count="0" type="stmt"/>
-        <line num="127" count="0" type="stmt"/>
-        <line num="129" count="0" type="stmt"/>
-        <line num="137" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="141" count="0" type="stmt"/>
-        <line num="143" count="0" type="stmt"/>
-        <line num="146" count="44" type="stmt"/>
-        <line num="147" count="1" type="stmt"/>
-        <line num="150" count="44" type="stmt"/>
-        <line num="151" count="20" type="stmt"/>
-        <line num="154" count="44" type="stmt"/>
+        <line num="126" count="0" type="stmt"/>
+        <line num="128" count="0" type="stmt"/>
+        <line num="136" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="140" count="0" type="stmt"/>
+        <line num="142" count="0" type="stmt"/>
+        <line num="145" count="44" type="stmt"/>
+        <line num="146" count="1" type="stmt"/>
+        <line num="149" count="44" type="stmt"/>
+        <line num="150" count="20" type="stmt"/>
+        <line num="153" count="44" type="stmt"/>
       </file>
     </package>
   </project>

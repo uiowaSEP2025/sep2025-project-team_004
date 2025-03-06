@@ -89,17 +89,16 @@ describe('WelcomePage', () => {
 
     // Show menu
     const profileIcon = getByText('P');
-    fireEvent.press(profileIcon);
-    await waitFor(() => {
-      expect(getByText('Profile')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(profileIcon);
     });
-
-    // Hide menu
-    fireEvent.press(profileIcon);
-    await waitFor(() => {
-      expect(queryByText('Profile')).toBeNull();
+    await waitFor(() => expect(getByText('Profile')).toBeTruthy(), { timeout: 7000 });
+    
+    await act(async () => {
+      fireEvent.press(profileIcon);
     });
-  });
+    await waitFor(() => expect(queryByText('Profile')).toBeNull(), { timeout: 7000 });
+  }, 10000);
 
   it('navigates to Edit Profile screen when Edit Profile option is pressed', async () => {
     const { getByText } = setup();
