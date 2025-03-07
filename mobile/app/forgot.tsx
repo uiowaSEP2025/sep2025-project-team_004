@@ -1,17 +1,20 @@
 import React from 'react';
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "./types";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Platform } from "react-native";
+import { useNavigation, useRoute, RouteProp, NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../app/types";
+import showMessage from "../hooks/useAlert";
+
+import Constants from "expo-constants";
+
+const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
 export default function ForgotScreen() {
-  const navigation = useNavigation();
-
   const [email, setEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
   const [error, setError] = useState("");
+  const { useToast } = showMessage();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const handleForgot = async () => {
     setError("");
@@ -20,7 +23,7 @@ export default function ForgotScreen() {
       return;
     }
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/users/auth/request-password-reset/`, {
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/users/auth/request-password-reset/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -30,7 +33,9 @@ export default function ForgotScreen() {
         throw new Error("Error sending reset email. Please try again.");
       }
   
-      alert("A password reset link has been sent to your email.");
+      useToast("Success", "A reset link has been sent to your email.");
+      setEmail("");
+      navigation.navigate("index");
     } catch (error) {
       setError("An unexpected error occurred.");
     }
@@ -41,11 +46,12 @@ export default function ForgotScreen() {
       <Text testID="forgot-title" style={styles.title}>
         Forgot Password
       </Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text testID="error-message" style={styles.error}>{error}</Text> : null}
 
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="#888"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -55,6 +61,13 @@ export default function ForgotScreen() {
       <TouchableOpacity style={styles.button} onPress={handleForgot}>
         <Text style={styles.buttonText}>Reset Password</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+              style={[styles.button, styles.backButton]}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.buttonText}>Back to Login</Text>
+            </TouchableOpacity>
     </View>
   );
 }
@@ -89,6 +102,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     width: Dimensions.get("window").width * 0.4,
     alignItems: "center",
+  },
+  backButton: {
+    backgroundColor: "gray",
   },
   buttonText: {
     color: "#fff",

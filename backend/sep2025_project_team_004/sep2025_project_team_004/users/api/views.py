@@ -13,10 +13,11 @@ from rest_framework.generics import UpdateAPIView
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail, BadHeaderError
 from django.contrib.auth.hashers import make_password
-from users.api.serializers import PasswordResetRequestSerializer, PasswordResetSerializer
+from sep2025_project_team_004.users.api.serializers import PasswordResetRequestSerializer, PasswordResetSerializer
 import environ
 import smtplib
 from email.mime.text import MIMEText
+import os
 
 env = environ.Env()
 
@@ -57,14 +58,23 @@ class RequestPasswordResetView(APIView):
                 return Response({"error": "User with this email does not exist."}, status=status.HTTP_400_BAD_REQUEST)
 
             token = default_token_generator.make_token(user)
-            reset_url = f"http://127.0.0.1:8081/ResetPasswordScreen/?email={email}&token={token}"
+            user_agent = request.headers.get("User-Agent", "").lower()
+            print(user_agent)
+            if "mobile" in user_agent or "android" in user_agent or "ios" in user_agent or "expo" in user_agent:
+                # Request came from a mobile device
+                EXPO_DEV_HOST = os.getenv("PC_IP")
+                reset_url = f"{EXPO_DEV_HOST}:8081/--/ResetPasswordScreen/?email={email}&token={token}"
+            else:
+                # Request came from a web browser
+                reset_url = f"http://localhost:8081/ResetPasswordScreen/?email={email}&token={token}"
+
 
             print(f" Sending from: {settings.EMAIL_HOST_USER}")
             print(f" SMTP Password: {settings.EMAIL_HOST_PASSWORD}")
 
             EMAIL_HOST = "smtp.gmail.com"
             EMAIL_PORT = 587
-            EMAIL_HOST_USER = "graysonlottes@gmail.com"
+            EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 
             msg = MIMEText(f"Click the link below to reset your password:\n\n{reset_url}")
             msg["Subject"] = "Password Reset Request"
