@@ -1,37 +1,44 @@
 import React from 'react';
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Platform } from "react-native";
+import { useNavigation, useRoute, RouteProp, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
+import showMessage from "../hooks/useAlert";
+
+import Constants from "expo-constants";
+
+const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
 export default function ForgotScreen() {
-  const navigation = useNavigation();
-
   const [email, setEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
   const [error, setError] = useState("");
+  const { useToast } = showMessage();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
-  const handleForgot = () => {
+  const handleForgot = async () => {
+    setError("");
     if (!email) {
       setError("Email is required!");
       return;
     }
-    if (!newPassword) {
-      setError("New password is required!");
-      return;
+    try {
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/users/auth/request-password-reset/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Error sending reset email. Please try again.");
+      }
+  
+      useToast("Success", "A reset link has been sent to your email.");
+      setEmail("");
+      navigation.navigate("index");
+    } catch (error) {
+      setError("An unexpected error occurred.");
     }
-    if (!confirmNewPassword) {
-      setError("Please confirm your new password!");
-      return;
-    }
-    if (newPassword !== confirmNewPassword) {
-      setError("Passwords do not match!");
-      return;
-    }
-    setError("");
-    // Additional logic for handling password reset can go here.
   };
 
   return (
@@ -39,36 +46,28 @@ export default function ForgotScreen() {
       <Text testID="forgot-title" style={styles.title}>
         Forgot Password
       </Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text testID="error-message" style={styles.error}>{error}</Text> : null}
 
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="#888"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="New Password"
-        value={newPassword}
-        onChangeText={setNewPassword}
-        secureTextEntry={true}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm New Password"
-        value={confirmNewPassword}
-        onChangeText={setConfirmNewPassword}
-        secureTextEntry={true}
-      />
-
       <TouchableOpacity style={styles.button} onPress={handleForgot}>
         <Text style={styles.buttonText}>Reset Password</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+              style={[styles.button, styles.backButton]}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.buttonText}>Back to Login</Text>
+            </TouchableOpacity>
     </View>
   );
 }
@@ -103,6 +102,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     width: Dimensions.get("window").width * 0.4,
     alignItems: "center",
+  },
+  backButton: {
+    backgroundColor: "gray",
   },
   buttonText: {
     color: "#fff",

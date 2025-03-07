@@ -1,7 +1,8 @@
 from django.urls import path
 from django.contrib.auth.views import LoginView, LogoutView
-from .views import RegisterView, ProfileUpdateView, UserProfileView, UserDetailView
+from .views import RegisterView, ProfileUpdateView, UserProfileView, UserDetailView, SearchUsersView, RequestPasswordResetView, ResetPasswordView
 from rest_framework.authtoken.views import obtain_auth_token
+
 
 app_name = "users"
 
@@ -13,5 +14,9 @@ urlpatterns = [
     path("profile/update/", ProfileUpdateView.as_view(), name="profile-update"),
     path("profile/", UserProfileView.as_view(), name="user-profile"),
     path("api-token-auth/", obtain_auth_token, name="api-token-auth"),
+    path('search/', SearchUsersView.as_view(), name='search_users'),
+    path("auth/request-password-reset/", RequestPasswordResetView.as_view(), name="request-password-reset"),
+    path("auth/reset-password/", ResetPasswordView.as_view(), name="reset-password"),
+
 
 ]

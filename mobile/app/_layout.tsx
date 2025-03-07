@@ -1,19 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import * as Linking from "expo-linking";
+
 import { CartProvider } from "./context/CartContext";  
 import { PaymentProvider } from "./context/PaymentContext";
 
 // Prevent splash screen from auto-hiding before asset loading is complete
 SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
@@ -33,7 +36,39 @@ export default function RootLayout() {
       await SplashScreen.hideAsync(); // Hide splash screen after auth check
     };
     checkAuth();
-  }, []);
+
+    const handleDeepLink = (event: { url: string }) => {
+
+      try {
+        // Parse deep link URL
+        const { path, queryParams } = Linking.parse(event.url);
+
+        // Ensure email & token exist before navigating
+        if (
+          path === "ResetPasswordScreen" &&
+          queryParams &&
+          typeof queryParams.email === "string" &&
+          typeof queryParams.token === "string"
+        ) {
+          router.push({
+            pathname: "/ResetPasswordScreen",
+            params: { email: queryParams.email, token: queryParams.token },
+          });
+        } else {
+        }
+      } catch (error) {
+      }
+    };
+  
+    const subscription = Linking.addEventListener("url", handleDeepLink);
+
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+  }, [router]);
+
 
   // Prevent UI from rendering until fonts & auth check are complete
   if (!loaded || isAuthenticated === null) {
@@ -46,11 +81,14 @@ export default function RootLayout() {
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen 
-             name={isAuthenticated ? "(tabs)" : "index"}  
-           />
-         </Stack>
+             name={isAuthenticated ? "(tabs)" : "index"}
+               
+        />
+           <Stack.Screen name="ResetPasswordScreen" />
+      </Stack>
          <Toast />
-         <StatusBar style="auto" />
+         <Toast />
+      <StatusBar style="auto" />
         </ThemeProvider>
       </CartProvider>
     </PaymentProvider>
