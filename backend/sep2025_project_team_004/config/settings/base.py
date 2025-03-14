@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent.parent
-APPS_DIR = BASE_DIR / "sep2025_project_team_004"
+APPS_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 env_file = os.path.join(APPS_DIR, ".env")
 
 env = environ.Env()
@@ -98,6 +98,7 @@ DJANGO_APPS = [
     "django.contrib.admin",
     "django.forms",
     'django_extensions',
+    'pages',
 ]
 THIRD_PARTY_APPS = [
     "crispy_forms",

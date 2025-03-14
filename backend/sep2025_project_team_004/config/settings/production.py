@@ -21,7 +21,9 @@ logging.info("[in production]Directing to Production...")
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["changelater.com"])
+# ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["changelater.com"])
+# ALLOWED_HOSTS = ["172.31.12.165", "3.146.203.239", "3.132.173.23", "3.23.225.66", ".elasticbeanstalk.com", "localhost"]
+ALLOWED_HOSTS = ["*"]
 
 # CACHES
 # ------------------------------------------------------------------------------

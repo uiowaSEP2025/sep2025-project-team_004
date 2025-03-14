@@ -1,6 +1,6 @@
 branch-defaults:
   default:
-    environment: django-s1-5
+    environment: django-s1-6
     group_suffix: null
 global:
   application_name: Icanopy-backend
