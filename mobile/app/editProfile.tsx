@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ImageBackground, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ImageBackground, Dimensions, Platform } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from './types';
+import { RootStackParamList } from '../types';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+import showMessage from "../hooks/useAlert";
+
+const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+
 
 
 const EditProfilePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { useToast, useAlert } = showMessage();
 
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -27,7 +34,7 @@ const EditProfilePage: React.FC = () => {
             return;
         }
 
-        const response = await fetch('http://127.0.0.1:8000/api/users/profile/', {
+        const response = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -75,7 +82,7 @@ const EditProfilePage: React.FC = () => {
             return;
         }
 
-        const response = await fetch("http://127.0.0.1:8000/api/users/profile/update/", {
+        const response = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/update/`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
@@ -100,7 +107,9 @@ const EditProfilePage: React.FC = () => {
         }
 
         const updatedData = await response.json();
-        Alert.alert("Success", "Your profile has been updated.");
+        
+        useToast("Success", "Your profile has been updated.");
+        navigation.goBack();
 
     } catch (error) {
         console.error("Error updating profile:", error);
@@ -207,18 +216,28 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 20,
+    paddingTop: Platform.OS === "ios" ? 80 : 60, 
     backgroundColor: '#fff',
   },
+
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    marginTop: 15,
   },
   form: {
     marginBottom: 20,
   },
-  headerIcon: { width: 20, height: 20 },
-  backIcon: { width: 20, height: 20 },
+  headerIcon: {
+    width: 30,
+    height: 30,
+    position: "absolute", 
+    top: Platform.OS === "ios" ? 60 : 40,  
+    left: 20, 
+    zIndex: 10, 
+  },
+  backIcon: { width: 20, height: 30, left: 3, },
   label: {
     fontSize: 16,
     marginBottom: 5,

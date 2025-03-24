@@ -10,13 +10,19 @@ import {
   TouchableOpacity,
   Modal,
   ImageBackground,
+  Platform,
+  Alert
 } from 'react-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useRouter } from 'expo-router';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../app/types"; 
+import { RootStackParamList } from "../types"; 
+import Constants from "expo-constants";
+import { usePayment } from "./context/PaymentContext";
+
+const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
 
 export const unstable_settings = {
@@ -31,6 +37,7 @@ export default function Profile() {
   const [user, setUser] = useState({ first_name: "", last_name: "", email: "" });
   const [modalVisible, setModalVisible] = useState(false);
   const [defaultCard, setDefaultCard] = useState<any>(null);
+  const { clearCards } = usePayment();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,7 +66,7 @@ export default function Profile() {
             return;
           }
   
-          const response = await fetch("http://127.0.0.1:8000/api/payment/payment-methods/", {
+          const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
             method: "GET",
             headers: {
               "Authorization": `Token ${authToken}`,
@@ -86,7 +93,15 @@ export default function Profile() {
   );
 
   const handleLogout = () => {
-    setModalVisible(true);
+    Platform.OS === "web" ? setModalVisible(true) : Alert.alert(
+                'Logout',
+                'Are you sure you want to logout？',
+                [
+                  { text: 'Yes', onPress: () => confirmLogout() },
+                  { text: 'Cancel', style: 'cancel' }
+                ],
+                { cancelable: true }
+              );
   };
 
   const confirmLogout = async () => {
@@ -94,6 +109,7 @@ export default function Profile() {
     try {
       await AsyncStorage.removeItem("authToken");
       await AsyncStorage.removeItem("userInfo"); // Remove user details too
+      clearCards();
       navigation.reset({ index: 0, routes: [{ name: "index" }] });
       setModalVisible(false);
     } catch (error) {
@@ -302,7 +318,7 @@ const styles = StyleSheet.create({
     padding: 8, 
   },
   headerIcon: { width: 20, height: 20 },
-  backIcon: { width: 24, height: 24 },
+  backIcon: { width: 24 , height: 30 },
   logoutText: {
     fontSize: 16,
     color: '#FF0000',

@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput } from "react-native";
+import React, { useState, useEffect, useContext } from "react";
+import { View, Text, FlatList, Image, TouchableOpacity, Modal, StyleSheet, ActivityIndicator, TextInput, Platform } from "react-native";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
+import { CartContext } from "../context/CartContext";
+import { useRouter } from "expo-router";
+import Constants from "expo-constants";
+
+const API_BASE_URL =
+  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+
 
 
 // Define the Product Type
@@ -9,86 +16,95 @@ interface Product {
   name: string;
   description: string;
   price: number;
-  image?: string; // Optional field for product images
+  image?: string;
 }
-
-
-
-
-const categories = [
-  { id: "1", name: "Popular", icon: "star" },
-  { id: "2", name: "Air", icon: "air" },
-  { id: "3", name: "Soil", icon: "terrain" },
-  { id: "4", name: "Replacement", icon: "build" },
-  { id: "5", name: "Other", icon: "more-horiz" },
-];
 
 export default function StoreScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [modalVisible, setModalVisible] = useState(false);
   
-
+  const router = useRouter();
+  const cartContext = useContext(CartContext);
+  if (!cartContext) {
+    throw new Error("CartContext must be used within a CartProvider");
+  }
+  const { cart, addToCart } = cartContext;
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  
   useEffect(() => {
-    fetch("http://localhost:8000/api/store/products/")
-      .then(response => response.json())
+    fetch(`http://${API_BASE_URL}:8000/api/store/products/`)
+      .then((response) => response.json())
       .then((data: Product[]) => {
         setProducts(data);
         setLoading(false);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error("Error fetching products:", error);
         setLoading(false);
       });
   }, []);
-  
 
   if (loading) {
-    return <ActivityIndicator size="large" color="blue" style={{ marginTop: 20 }} />;
+    return <ActivityIndicator size="large" color="blue" style={{ marginTop: Platform.OS === "web" ? 20 : 70 }} />;
   }
+
+  const openModal = (product: Product) => {
+    setSelectedProduct({ ...product, price: Number(product.price) });  
+    setQuantity(1);
+    setModalVisible(true);
+  };
+  
+
+  const handleAddToCart = () => {
+    if (selectedProduct) {
+      const cartItem = {
+        ...selectedProduct, 
+        quantity, 
+      };
+      addToCart(cartItem, quantity);
+      setModalVisible(false);
+    }
+  };
+  
 
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
         <Feather name="search" size={24} color="black" />
         <Text style={styles.title}>Make your community BETTER</Text>
-        <Feather name="shopping-cart" size={24} color="black" />
-      </View>
-      <View style={styles.fixedHeader}>
-        <View style={styles.searchContainer}>
-          <Feather name="search" size={20} color="gray" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search for products..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearButton}>
-              <Feather name="x-circle" size={20} color="gray" />
-            </TouchableOpacity>
+        <TouchableOpacity testID="top-cart-button" 
+          onPress={() => router.push("/cart")}>
+          <Feather name="shopping-cart" size={24} color="black" />
+          {cart.length > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{totalItems}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        </View>
+        <View style={styles.fixedHeader}>
+          <View style={styles.searchContainer}>
+            <Feather name="search" size={20} color="gray" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search for products..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearButton}>
+                <Feather name="x-circle" size={20} color="gray" />
+             </TouchableOpacity>
           )}
         </View>
       </View>
-
-
-
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-        {categories.map((category) => (
-          <TouchableOpacity key={category.id} style={[styles.categoryButton, category.id === "1" && styles.activeCategory]}>
-            <MaterialIcons name={category.icon as any} size={24} color={category.id === "1" ? "white" : "black"} />
-            <Text style={[styles.categoryText, category.id === "1" && styles.activeText]}>{category.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      
-
       
       <FlatList
         data={filteredProducts}
@@ -97,32 +113,64 @@ export default function StoreScreen() {
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <View style={styles.productCard}>
-            <Image
-              source={
-                item.image
-                  ? { uri: item.image }
-                  : require("../../assets/images/react-logo.png") // Local fallback
-              }
-              style={styles.productImage}
-            />
+            <Image source={item.image ? { uri: item.image } : require("../../assets/images/react-logo.png")} style={styles.productImage} />
             <Text style={styles.productName}>{item.name}</Text>
             <Text style={styles.productPrice}>${Number(item.price).toFixed(2)}</Text>
-            <TouchableOpacity style={styles.cartButton}>
+            <TouchableOpacity
+              testID={`cart-button-${item.id}`}
+              style={styles.cartButton}
+              onPress={() => openModal(item)}
+            >
               <MaterialIcons name="shopping-cart" size={20} color="gray" />
             </TouchableOpacity>
           </View>
         )}
       />
+      
+      {/* Add to Cart Modal */}
+      <Modal testID="product-modal" visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {selectedProduct && (
+              <>
+                <Image source={selectedProduct.image ? { uri: selectedProduct.image } : require("../../assets/images/react-logo.png")} style={styles.modalImage} />
+                <Text style={styles.modalTitle}>{selectedProduct.name}</Text>
+                <Text style={styles.modalPrice}>
+                  ${(Number(selectedProduct.price) * quantity).toFixed(2)}
+                </Text>
 
+                <View style={styles.quantityContainer}>
+                  <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                    <Feather name="minus-circle" size={24} color="black" />
+                  </TouchableOpacity>
+                  <Text style={styles.quantityText}>{quantity}</Text>
+                  <TouchableOpacity testID="plus-button" onPress={() => setQuantity(quantity + 1)}>
+                    <Feather name="plus-circle" size={24} color="black" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity style={styles.modalButton} onPress={handleAddToCart}>
+                    <Text style={styles.modalButtonText}>Add to Cart</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setModalVisible(false)}>
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop: 40,
+    paddingTop: Platform.OS === "web" ? 10 : 70,
   },
   topBar: {
     flexDirection: "row",
@@ -130,6 +178,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 10,
+    marginTop: 10,
   },
   title: {
     fontSize: 16,
@@ -137,15 +186,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   categoryScroll: {
-    paddingVertical: 10,
+    paddingVertical: 5,
     paddingHorizontal: 10,
-    marginTop: 60,
+    marginTop: 10,
+    height: 80,
   },
   categoryButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f0f0f0",
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 20,
     marginRight: 10,
@@ -191,8 +241,8 @@ const styles = StyleSheet.create({
   },
   cartButton: {
     position: "absolute",
-    bottom: 10,
-    right: 10,
+    bottom: Platform.OS === "web" ? 10 :-5,
+    right: Platform.OS === 'web' ? 340 : 10,
     backgroundColor: "#eee",
     borderRadius: 20,
     padding: 6,
@@ -218,14 +268,91 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   fixedHeader: {
-    position: "absolute",
-    top: 40, 
+    position: "relative",
+    top: 0, 
     left: 0,
     right: 0,
     backgroundColor: "#fff",
     paddingVertical: 10,
+    paddingTop: 10,
     zIndex: 10, 
     elevation: 5, 
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "red",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cartBadgeText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)", 
+  },
+  modalContent: {
+    width: 300,
+    padding: 20,
+    backgroundColor: "white",
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalImage: {
+    width: 120,
+    height: 120,
+    resizeMode: "contain",
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  modalPrice: {
+    fontSize: 16,
+    color: "gray",
+    marginBottom: 10,
+  },
+  quantityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  quantityText: {
+    fontSize: 16,
+    marginHorizontal: 10,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 10,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 10,
+    marginHorizontal: 5,
+    backgroundColor: "black",
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  cancelButton: {
+    backgroundColor: "gray",
   },
   
 });

@@ -11,6 +11,8 @@ export type RootStackParamList = {
     "(tabs)": undefined;
     "payment-method": undefined;
     "add-payment": undefined;
+    store: undefined;
+    ResetPasswordScreen: {email: string, token: string},
     // Add other routes as needed
   };
   

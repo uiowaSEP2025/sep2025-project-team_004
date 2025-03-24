@@ -25,7 +25,18 @@ if env("DJANGO_ENV", default="local") == "local":
     environ.Env.read_env(env_file)
 
 
-
+DATABASES = {"default": env.db("DATABASE_URL")}
+DATABASES["default"]["ATOMIC_REQUESTS"] = True
+# https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
+EMAIL_HOST_USER = env("EMAIL_HOST_USER") 
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD") 
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
