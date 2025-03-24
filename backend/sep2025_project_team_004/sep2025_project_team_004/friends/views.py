@@ -32,8 +32,15 @@ class FriendRequestViewSet(viewsets.ViewSet):
         if not friend_request:
             return Response({"error": "Friend request not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Accept the request (updates status and performs any other logic)
         friend_request.accept()
+        
+        # Update the ManyToMany field on both users
+        request.user.friends.add(friend_request.from_user)
+        friend_request.from_user.friends.add(request.user)
+        
         return Response({"message": "Friend request accepted"}, status=status.HTTP_200_OK)
+
 
     def reject_request(self, request, pk):
         """Reject a friend request."""
@@ -46,7 +53,10 @@ class FriendRequestViewSet(viewsets.ViewSet):
 
     def list_pending_requests(self, request):
         """List pending incoming friend requests."""
-        pending_requests = FriendRequest.objects.filter(to_user=request.user)
+        pending_requests = FriendRequest.objects.filter(
+            to_user=request.user, 
+            status='pending'  
+        )
         serializer = FriendRequestSerializer(pending_requests, many=True)
         return Response(serializer.data)
 

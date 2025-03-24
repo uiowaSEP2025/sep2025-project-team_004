@@ -13,6 +13,7 @@ import {
 import Icon from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 const chats = [
   { id: 1, name: "Daniel Atkins", lastMessage: "The weather will be perfect!", unread: 1 },
@@ -43,6 +44,7 @@ const chats = [
 
 
 export default function SocialScreen() {
+  const navigation = useNavigation();
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
