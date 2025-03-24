@@ -14,6 +14,9 @@ jest.mock("expo-font", () => ({
   processFontFamily: jest.fn((font) => font),
 }));
 
+jest.mock('../assets/images/avatar-placeholder.png', () => 'avatar-placeholder.png');
+
+
 // Mocking React Navigation (if used)
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({
