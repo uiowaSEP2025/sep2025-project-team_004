@@ -820,7 +820,7 @@ export default function StoreScreen() {
   const totalItems = cart.reduce(<span class="fstat-no" title="function not covered" >(s</span>um, item) =&gt; <span class="cstat-no" title="statement not covered" >sum + item.quantity,</span> 0);
   
   useEffect(() =&gt; {
-    fetch(`http://${API_BASE_URL}:8000/api/store/products/`)
+    fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/store/products/`)
       .then((response) =&gt; response.json())
       .then((data: Product[]) =&gt; {
         setProducts(data);

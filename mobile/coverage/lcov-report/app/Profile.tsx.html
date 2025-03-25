@@ -969,7 +969,7 @@ export default function <span class="fstat-no" title="function not covered" >Pro
 <span class="cstat-no" title="statement not covered" >            return;</span>
           }
   
-          const response = <span class="cstat-no" title="statement not covered" >await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {</span>
+          const response = <span class="cstat-no" title="statement not covered" >await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`, {</span>
             method: "GET",
             headers: {
               "Authorization": `Token ${authToken}`,

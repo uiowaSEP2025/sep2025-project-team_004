@@ -637,7 +637,7 @@ const EditProfilePage: React.FC = () =&gt; {
 <span class="cstat-no" title="statement not covered" >            return;</span>
         }
 &nbsp;
-        const response = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/`, {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -685,7 +685,7 @@ const EditProfilePage: React.FC = () =&gt; {
 <span class="cstat-no" title="statement not covered" >            return;</span>
         }
 &nbsp;
-        const response = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/update/`, {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/update/`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
