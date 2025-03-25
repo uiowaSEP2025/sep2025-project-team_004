@@ -86,7 +86,7 @@ export const getAllFriends = async () => {
     const authToken = await AsyncStorage.getItem("authToken");
     if (!authToken) throw new Error("User not authenticated");
 
-    const response = await fetch(`${API_URL}/friends/`, { // ✅ Use the correct endpoint
+    const response = await fetch(`${API_URL}/friends/`, { 
       method: "GET",
       headers: {
         "Authorization": `Token ${authToken}`,

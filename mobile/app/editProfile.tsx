@@ -14,7 +14,6 @@ const API_BASE_URL =
 const EditProfilePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { useToast, useAlert } = showMessage();
-
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
