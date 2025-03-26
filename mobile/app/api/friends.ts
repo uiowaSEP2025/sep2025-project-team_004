@@ -55,17 +55,12 @@ export const sendFriendRequest = async (username: string) => {
 
 
 
-/**
- * Fetch pending friend requests
- */
 export const getPendingRequests = async () => {
   try {
     const authToken = await AsyncStorage.getItem("authToken");
-    if (!authToken) {
-      throw new Error("User not authenticated");
-    }
+    if (!authToken) throw new Error("User not authenticated");
 
-    const response = await fetch(`${API_URL}/pending-requests/`, {
+    const response = await fetch(`${API_URL}/pending/`, {
       method: "GET",
       headers: {
         "Authorization": `Token ${authToken}`,
@@ -74,27 +69,24 @@ export const getPendingRequests = async () => {
     });
 
     if (!response.ok) {
+      console.error("Failed to fetch pending requests:", await response.text());
       throw new Error("Failed to fetch pending requests");
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data; // return as-is if the server already filtered pending requests
   } catch (error) {
     console.error("Error fetching pending requests:", error);
     throw error;
   }
 };
 
-/**
- * Fetch all accepted friends
- */
 export const getAllFriends = async () => {
   try {
     const authToken = await AsyncStorage.getItem("authToken");
-    if (!authToken) {
-      throw new Error("User not authenticated");
-    }
+    if (!authToken) throw new Error("User not authenticated");
 
-    const response = await fetch(`${API_URL}/list/`, {
+    const response = await fetch(`${API_URL}/friends/`, { // ✅ Use the correct endpoint
       method: "GET",
       headers: {
         "Authorization": `Token ${authToken}`,
@@ -103,6 +95,7 @@ export const getAllFriends = async () => {
     });
 
     if (!response.ok) {
+      console.error("Failed to fetch friends:", await response.text());
       throw new Error("Failed to fetch friends");
     }
 
@@ -113,9 +106,6 @@ export const getAllFriends = async () => {
   }
 };
 
-/**
- * Accept a friend request
- */
 export const acceptFriendRequest = async (requestId: number) => {
   try {
     const authToken = await AsyncStorage.getItem("authToken");
@@ -123,7 +113,8 @@ export const acceptFriendRequest = async (requestId: number) => {
       throw new Error("User not authenticated");
     }
 
-    const response = await fetch(`${API_URL}/accept-request/${requestId}/`, {
+
+    const response = await fetch(`${API_URL}/accept/${requestId}/`, {
       method: "POST",
       headers: {
         "Authorization": `Token ${authToken}`,
@@ -142,9 +133,6 @@ export const acceptFriendRequest = async (requestId: number) => {
   }
 };
 
-/**
- * Reject a friend request
- */
 export const rejectFriendRequest = async (requestId: number) => {
   try {
     const authToken = await AsyncStorage.getItem("authToken");
@@ -152,7 +140,7 @@ export const rejectFriendRequest = async (requestId: number) => {
       throw new Error("User not authenticated");
     }
 
-    const response = await fetch(`${API_URL}/reject-request/${requestId}/`, {
+    const response = await fetch(`${API_URL}/reject/${requestId}/`, {
       method: "POST",
       headers: {
         "Authorization": `Token ${authToken}`,

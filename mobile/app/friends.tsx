@@ -6,36 +6,55 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  Modal,
+  Image
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { sendFriendRequest, getPendingRequests, getAllFriends } from "./api/friends";
+import { useNavigation } from "@react-navigation/native";
+import {
+  sendFriendRequest,
+  getPendingRequests,
+  getAllFriends,
+  acceptFriendRequest,
+  rejectFriendRequest,
+} from "@/app/api/friends";
+import { useRouter } from "expo-router";
 
-type FriendRequest = {
+const defaultPfp = require("@/assets/images/avatar-placeholder.png");
+
+// For friend requests
+interface FriendRequest {
   id: number;
-  sender_name: string;
-};
+  from_user: number;
+  from_user_username: string;
+  to_user: number;
+  created_at: string;
+}
 
-type Friend = {
+// For actual friends (returned by getAllFriends)
+interface FriendUser {
   id: number;
-  name: string;
-};
-
+  username: string;
+}
 
 export default function FriendRequestsScreen() {
+  const navigation = useNavigation();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("pending");
   const [searchTerm, setSearchTerm] = useState("");
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
-  const [friends, setFriends] = useState<Friend[]>([]);
-
+  const [friends, setFriends] = useState<FriendUser[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const pending = await getPendingRequests();
-        setPendingRequests(pending || []); // Ensure empty array if undefined
+        setPendingRequests(pending);
 
         const allFriends = await getAllFriends();
-        setFriends(allFriends || []);
+        setFriends(allFriends);
       } catch (error) {
         console.error("Error fetching friends:", error);
       }
@@ -45,25 +64,73 @@ export default function FriendRequestsScreen() {
   }, []);
 
   const handleSendRequest = async () => {
-    if (!searchTerm.trim()) {
-      alert("Please enter a username.");
-      return;
-    }
-  
+    if (!searchTerm.trim()) return;
+
     try {
-      const response = await sendFriendRequest(searchTerm.trim());
-      alert("Friend request sent!");
-      setSearchTerm("");
+      await sendFriendRequest(searchTerm.trim());
+      setModalMessage("Friend request sent!");
+      setModalVisible(true);
+      setSearchTerm(""); 
     } catch (error) {
-      alert("Error sending request: " + (error as Error).message);
+      if (error instanceof Error) {
+        console.error("Error sending friend request:", error.message);
+        throw error;
+      } else {
+        console.error("Unexpected error:", error);
+        throw new Error("An unknown error occurred.");
+      }
+    }
+  };
+  const handleAcceptRequest = async (requestId: number) => {
+    try {
+      await acceptFriendRequest(requestId);
+  
+      // Immediately update the pending requests without a refetch
+      setPendingRequests((prevRequests) =>
+        prevRequests.filter((request) => request.id !== requestId)
+      );
+  
+      const updatedFriends = await getAllFriends();
+      setFriends(updatedFriends);
+  
+      setModalMessage("Friend request accepted!");
+      setModalVisible(true);
+    } catch (error) {
+      console.error("Error accepting friend request:", error);
+      setModalMessage("Failed to accept request.");
+      setModalVisible(true);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: number) => {
+    try {
+      await rejectFriendRequest(requestId);
+  
+      // Immediately remove the rejected request from the pending list
+      setPendingRequests((prevRequests) =>
+        prevRequests.filter((request) => request.id !== requestId)
+      );
+  
+      setModalMessage("Friend request rejected!");
+      setModalVisible(true);
+    } catch (error) {
+      console.error("Error rejecting friend request:", error);
+      setModalMessage("Failed to reject friend request.");
+      setModalVisible(true);
     }
   };
   
-
+  
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        {/* Back Button on the Left */}
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+
+        {/* Centered Title */}
         <Text style={styles.headerText}>Friends</Text>
       </View>
 
@@ -73,10 +140,7 @@ export default function FriendRequestsScreen() {
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab.toLowerCase())}
-            style={[
-              styles.tabButton,
-              activeTab === tab.toLowerCase() && styles.activeTab,
-            ]}
+            style={[styles.tabButton, activeTab === tab.toLowerCase() && styles.activeTab]}
           >
             <Text style={styles.tabText}>{tab}</Text>
           </TouchableOpacity>
@@ -85,7 +149,6 @@ export default function FriendRequestsScreen() {
 
       {/* Content */}
       <View style={styles.content}>
-        {/* Add Friend Tab */}
         {activeTab === "add friend" && (
           <View style={styles.addFriendContainer}>
             <TextInput
@@ -101,35 +164,82 @@ export default function FriendRequestsScreen() {
           </View>
         )}
 
-        {/* Pending Friend Requests Tab */}
         {activeTab === "pending" && (
           <FlatList
-            data={pendingRequests}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.friendItem}>
-                <Text style={styles.friendName}>{item.sender_name}</Text>
-                <Text style={styles.friendStatus}>Pending</Text>
+          data={pendingRequests}
+          keyExtractor={(item) => item.id.toString()} // Ensure ID is a string
+          renderItem={({ item }) => (
+            <View style={styles.friendItem}>
+              {/* Profile Picture */}
+              <View style={styles.avatarContainer}>
+                <Image source={defaultPfp} style={styles.avatar} />
               </View>
-            )}
-            ListEmptyComponent={<Text style={styles.emptyText}>No pending requests</Text>}
-          />
+
+              {/* User Info */}
+              <View style={styles.friendInfo}>
+                <Text style={styles.friendName}>{item.from_user_username || "Unknown"}</Text>
+              </View>
+
+              {/* Accept / Reject Buttons */}
+              <View style={styles.friendActions}>
+              <TouchableOpacity
+                style={styles.acceptButton}
+                onPress={() => handleAcceptRequest(item.id)}
+                
+              >
+                <Text style={styles.buttonText}>Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.rejectButton}
+                onPress={() => handleRejectRequest(item.id)} 
+              >
+                <Text style={styles.buttonText}>Reject</Text>
+              </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        />
+
         )}
 
-        {/* All Friends Tab */}
         {activeTab === "all" && (
           <FlatList
             data={friends}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
               <View style={styles.friendItem}>
-                <Text style={styles.friendName}>{item.name}</Text>
+                <Text style={styles.friendName}>{item.username}</Text>
+                <TouchableOpacity
+                onPress={() =>
+                  router.push({
+                    pathname: "/Chat",
+                    params: {
+                      friendId: item.id.toString(),
+                      friendName: item.username,
+                    },
+                  })
+                }
+                  style={styles.messageButton}
+                >
+                <Text style={styles.messageText}>Message</Text>
+                </TouchableOpacity>
               </View>
             )}
-            ListEmptyComponent={<Text style={styles.emptyText}>No friends yet</Text>}
           />
         )}
       </View>
+
+      {/* Modal for Feedback Messages */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>{modalMessage}</Text>
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalButton}>
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -139,13 +249,24 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fcfcfc" },
   header: {
     height: 56,
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#ecebeb",
+    paddingHorizontal: 16,
   },
-  headerText: { fontSize: 18, fontWeight: "700" },
+  backButton: {
+    position: "absolute",
+    left: 16,
+    zIndex: 1,
+  },
+  headerText: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "700",
+  },
   tabs: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -179,17 +300,77 @@ const styles = StyleSheet.create({
   friendItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    alignItems: "center",
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ecebeb",
   },
   friendName: { fontSize: 16 },
-  friendStatus: { fontSize: 14, color: "#888" },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 16,
-    color: "#888",
+  friendStatus: { fontSize: 14, color: "gray" },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalText: { fontSize: 18, marginBottom: 10 },
+  modalButton: {
+    padding: 10,
+    backgroundColor: "#007AFF",
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  modalButtonText: { color: "white", fontSize: 16 },
+  avatarContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  friendInfo: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  friendActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  acceptButton: {
+    backgroundColor: "green",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    marginRight: 5,
+  },
+  rejectButton: {
+    backgroundColor: "red",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  messageButton: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
+  },
+  messageText: {
+    color: "white",
+    fontSize: 14,
   },
 });
-
