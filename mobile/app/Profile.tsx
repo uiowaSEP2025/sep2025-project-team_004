@@ -166,9 +166,7 @@ export default function Profile() {
         {/* List Items */}
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => {
-            /* TODO:  My orders page */
-          }}
+          onPress={() => navigation.navigate("orders")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>

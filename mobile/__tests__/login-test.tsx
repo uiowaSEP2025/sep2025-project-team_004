@@ -1,7 +1,5 @@
 // __tests__/login-test.tsx
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
+
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from "react";
@@ -23,6 +21,10 @@ jest.mock("@react-navigation/native", () => {
     }),
   };
 });
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+);
 
 const renderWithNavigation = () =>
   render(

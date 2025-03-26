@@ -12,6 +12,7 @@ export type RootStackParamList = {
     "payment-method": undefined;
     "add-payment": undefined;
     store: undefined;
+    orders: undefined;
     // Add other routes as needed
   };
   

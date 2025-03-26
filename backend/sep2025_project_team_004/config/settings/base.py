@@ -99,7 +99,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "sep2025_project_team_004.users",
-    # "sep2025_project_team_004.store",
+    "sep2025_project_team_004.store",
     "sep2025_project_team_004.payment",
     # Your stuff: custom apps go here
 ]
