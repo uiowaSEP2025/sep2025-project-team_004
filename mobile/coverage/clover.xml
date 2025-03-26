@@ -3,6 +3,9 @@
 <coverage generated="1741238560334" clover="3.2.0">
   <project timestamp="1741238560334" name="All files">
     <metrics statements="480" coveredstatements="345" conditionals="213" coveredconditionals="123" methods="123" coveredmethods="81" elements="816" coveredelements="549" complexity="0" loc="480" ncloc="480" packages="3" files="16" classes="16"/>
+<coverage generated="1741967114128" clover="3.2.0">
+  <project timestamp="1741967114128" name="All files">
+    <metrics statements="542" coveredstatements="345" conditionals="233" coveredconditionals="123" methods="139" coveredmethods="81" elements="914" coveredelements="549" complexity="0" loc="542" ncloc="542" packages="3" files="17" classes="17"/>
     <package name="app">
       <metrics statements="368" coveredstatements="212" conditionals="161" coveredconditionals="82" methods="78" coveredmethods="37"/>
       <file name="+not-found.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\+not-found.tsx">
