@@ -6,6 +6,9 @@ from django.db.models import CharField
 from django.db.models import EmailField
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.db import models
+
+
 
 from .managers import UserManager
 
@@ -28,6 +31,9 @@ class User(AbstractUser):
     address = CharField(_("Address"), blank=True, max_length=255)
     email = EmailField(_("email address"), unique=True)
     username = CharField(_("username"), unique=True, blank=False, null=False, max_length=255)
+    
+    friends = models.ManyToManyField("self", symmetrical=False, blank=True, related_name="friend_requests")
+
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -42,3 +48,18 @@ class User(AbstractUser):
 
         """
         return reverse("users:detail", args=[self.id])
+
+
+    def add_friend(self, friend):
+        """Adds a friend relationship between two users."""
+        self.friends.add(friend)
+        self.save()
+
+    def remove_friend(self, friend):
+        """Removes a friend relationship between two users."""
+        self.friends.remove(friend)
+        self.save()
+
+    def is_friends_with(self, user):
+        """Checks if the user is friends with another user."""
+        return self.friends.filter(id=user.id).exists()

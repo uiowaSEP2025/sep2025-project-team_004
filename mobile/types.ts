@@ -13,6 +13,7 @@ export type RootStackParamList = {
     "add-payment": undefined;
     store: undefined;
     orders: undefined;
+    ResetPasswordScreen: {email: string, token: string},
     // Add other routes as needed
   };
   
