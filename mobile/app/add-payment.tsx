@@ -1,6 +1,6 @@
 // app/payment-method.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,40 @@ export default function PaymentMethod() {
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [expiry, setExpiry] = useState('');
+  const [defaultCard, setDefaultCard] = useState(null);
+
+
+  useEffect(() => {
+    const fetchDefaultCard = async () => {
+      try {
+        const authToken = await AsyncStorage.getItem("authToken");
+        if (!authToken) return;
+
+        const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
+          method: "GET",
+          headers: {
+            Authorization: `Token ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          console.error("Failed to fetch payment methods");
+          return;
+        }
+
+        const data = await response.json();
+        const defaultOne = data.find((card: any) => card.is_default);
+        if (defaultOne) {
+          setDefaultCard(defaultOne);
+        }
+      } catch (error) {
+        console.error("Error fetching default payment method:", error);
+      }
+    };
+
+    fetchDefaultCard();
+  }, []);
   // Get card type
   const getCardType = (number: string) => {
     const sanitized = number.replace(/\s/g, '');
