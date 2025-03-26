@@ -71,6 +71,16 @@ LOCALE_PATHS = [str(BASE_DIR / "locale")]
 ROOT_URLCONF = "config.urls"
 # https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [env("REDIS_URL", default="redis://localhost:6379/0")],
+        },
+    },
+}
 
 
 # CORS_ORIGIN_ALLOW_ALL = True
@@ -103,6 +113,7 @@ THIRD_PARTY_APPS = [
     "rest_framework.authtoken",
     "corsheaders",
     "drf_spectacular",
+    "channels",
 ]
 
 LOCAL_APPS = [
@@ -110,6 +121,8 @@ LOCAL_APPS = [
     "sep2025_project_team_004.store",
     "sep2025_project_team_004.payment",
     "sep2025_project_team_004.friends",
+    "sep2025_project_team_004.chat",
+
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
