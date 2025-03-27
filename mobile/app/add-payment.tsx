@@ -138,7 +138,6 @@ export default function PaymentMethod() {
     }
   };
 
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentInsetAdjustmentBehavior="automatic">

@@ -39,7 +39,7 @@ export default function StoreScreen() {
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   
   useEffect(() => {
-    fetch(`http://${API_BASE_URL}:8000/api/store/products/`)
+    fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/store/products/`)
       .then((response) => response.json())
       .then((data: Product[]) => {
         setProducts(data);

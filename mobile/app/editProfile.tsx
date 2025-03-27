@@ -38,7 +38,7 @@ const EditProfilePage: React.FC = () => {
             return;
         }
 
-        const response = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/`, {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ const EditProfilePage: React.FC = () => {
             return;
         }
 
-        const response = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/update/`, {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/update/`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
@@ -131,7 +131,7 @@ function getComponent(components: any[], type: string) {
     <ScrollView contentContainerStyle={styles.container}>
       <TouchableOpacity
                 testID="back-button"
-                onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "home" } }]})}
+                onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "profile" } }]})}
                 style={styles.headerIcon}
               >
                 <ImageBackground

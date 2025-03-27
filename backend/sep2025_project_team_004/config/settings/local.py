@@ -10,8 +10,8 @@ import environ
 # In local env, the .env should already been read in base.py, so we don't need to load .env here.
 USE_DOCKER = env("USE_DOCKER", default="yes")
 DATABASE_URL = env("DATABASE_URL", default="")
-print(f"USE_DOCKERaaa: {USE_DOCKER}")
-print(f"DATABASE_URLaaa: {DATABASE_URL}")
+print(f"[in loacal]USE_DOCKER: {USE_DOCKER}")
+print(f"[in local]DATABASE_URL: {DATABASE_URL}")
 
 # GENERAL
 # ------------------------------------------------------------------------------
