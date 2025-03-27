@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = "http://127.0.0.1:8000/api/friends";
+const API_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/friends`;
 
 
 export const sendFriendRequest = async (username: string) => {
@@ -11,7 +11,7 @@ export const sendFriendRequest = async (username: string) => {
     }
 
     // Search user by username
-    const userResponse = await fetch(`http://127.0.0.1:8000/api/users/search/?username=${username}`, {
+    const userResponse = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/search/?username=${username}`, {
       method: "GET",
       headers: {
         "Authorization": `Token ${authToken}`,

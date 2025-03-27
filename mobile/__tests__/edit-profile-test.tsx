@@ -152,7 +152,7 @@ describe("EditProfilePage", () => {
     // Verify that navigation.reset was called with the expected parameters.
     expect(mockNavigation.reset).toHaveBeenCalledWith({
       index: 0,
-      routes: [{ name: "(tabs)", params: { screen: "home" } }],
+      routes: [{ name: "(tabs)", params: { screen: "profile" } }],
     });
   });
 });
