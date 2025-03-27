@@ -5,6 +5,9 @@ import { RootStackParamList } from '../types';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+
+
 
 const API_BASE_URL =
   Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
@@ -23,6 +26,8 @@ const EditProfilePage: React.FC = () => {
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const GooglePlaces = GooglePlacesAutocomplete as any;
+
 
   const fetchUserProfile = async () => {
     try {
@@ -116,6 +121,11 @@ const EditProfilePage: React.FC = () => {
     }
 };
 
+function getComponent(components: any[], type: string) {
+  const component = components.find(c => c.types.includes(type));
+  return component?.long_name || '';
+}
+
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -164,11 +174,28 @@ const EditProfilePage: React.FC = () => {
         />
 
         <Text style={styles.label}>Address:</Text>
-        <TextInput
-          style={styles.input}
-          value={address}
-          onChangeText={setAddress}
-          placeholder="Address"
+        <GooglePlacesAutocomplete
+          placeholder="Enter address..."
+          fetchDetails={true}
+          onPress={(data, details = null) => {
+            if (details) {
+              setAddress(details.formatted_address);
+              const components = details.address_components;
+
+              // Optionally extract city/state/zip:
+              setCity(getComponent(components, 'locality'));
+              setState(getComponent(components, 'administrative_area_level_1'));
+              setZipCode(getComponent(components, 'postal_code'));
+            }
+          }}
+          query={{
+            key: process.env.GOOGLE_PLACES_API_KEY,
+            language: 'en',
+          }}
+          styles={{
+            textInput: styles.input,
+            container: { marginBottom: 15 },
+          }}
         />
 
         <Text style={styles.label}>City:</Text>
