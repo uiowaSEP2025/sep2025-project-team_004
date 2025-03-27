@@ -12,8 +12,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-// Use expo-router instead of react-navigation to match test expectations
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
 import { usePayment } from "./context/PaymentContext"; 
@@ -21,7 +20,7 @@ import { usePayment } from "./context/PaymentContext";
 const API_BASE_URL =
   Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
-// Dynamically load card logo
+// Dynamically load card type based on card info in storage
 const getCardLogo = (cardType: string) => {
   switch (cardType.toLowerCase()) {
     case 'visa':
@@ -85,6 +84,7 @@ export default function PaymentMethod() {
                   <Text style={styles.maskedPart}>* * * * * * * * * * * </Text>
                   <Text style={styles.realPart}>{card.last4}</Text>
                 </Text>
+                {/* card background setting */}
                 <View style={styles.cardBackground} />
                 <Image style={styles.decoration1} source={getCardLogo(card.card_type || "visa")} resizeMode="contain" />
                 <Text style={styles.labelCardHolder} numberOfLines={1}>Card Holder Name</Text>
@@ -191,9 +191,12 @@ const styles = StyleSheet.create({
     left: '70%',
     zIndex: 1,
   },
+
   labelCardHolder: {
     width: '30.63%',
     height: '8.89%',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
     fontFamily: 'Nunito Sans',
     fontSize: 12,
     fontWeight: '600',
@@ -208,6 +211,8 @@ const styles = StyleSheet.create({
   },
   labelExpiry: {
     height: '8.89%',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     fontFamily: 'Nunito Sans',
     fontSize: 12,
     fontWeight: '600',
@@ -221,6 +226,9 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   valueCardHolder: {
+    height: '10.56%',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     fontFamily: 'Nunito Sans',
     fontSize: 14,
     fontWeight: '600',
@@ -234,6 +242,9 @@ const styles = StyleSheet.create({
     zIndex: 6,
   },
   valueExpiry: {
+    height: '10.56%',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     fontFamily: 'Nunito Sans',
     fontSize: 14,
     fontWeight: '600',

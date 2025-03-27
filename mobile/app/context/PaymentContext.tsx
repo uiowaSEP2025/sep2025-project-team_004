@@ -36,7 +36,7 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`, {
         method: "GET",
         headers: {
           "Authorization": `Token ${authToken}`,
@@ -63,7 +63,7 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setCards((prevCards) => [...prevCards, newCard]);
 
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`, {
         method: "POST",
         headers: {
           "Authorization": `Token ${authToken}`,
@@ -98,7 +98,7 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }))
       );
 
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/set-default/${cardId}/`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/set-default/${cardId}/`, {
         method: "POST",
         headers: {
           "Authorization": `Token ${authToken}`,
@@ -125,7 +125,7 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         
       setCards((prevCards) => prevCards.filter((card) => card.id !== cardId));
 
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/delete/${cardId}/`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/delete/${cardId}/`, {
         method: "DELETE",
         headers: {
           "Authorization": `Token ${authToken}`,

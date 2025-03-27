@@ -14,11 +14,10 @@ middleware here, or combine a Django application with an application of another
 framework.
 
 """
-
 import os
 import sys
 from pathlib import Path
-
+import logging
 from django.core.wsgi import get_wsgi_application
 
 # This allows easy placement of apps within the interior
@@ -30,6 +29,9 @@ sys.path.append(str(BASE_DIR / "sep2025_project_team_004"))
 # mod_wsgi daemon mode with each site in its own daemon process, or use
 # os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.production"
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.production")
+
+# Print the default django env mode
+logging.info(f"[in wsgi] DJANGO_SETTINGS_MODULE: {os.environ.get('DJANGO_SETTINGS_MODULE')}")
 
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION

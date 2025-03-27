@@ -175,6 +175,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   profileIcon: {
+    marginTop: 40,
     width: 40,
     height: 40,
     borderRadius: 20,
