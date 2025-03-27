@@ -16,6 +16,14 @@ jest.mock('@expo/vector-icons', () => ({
   MaterialIcons: 'MaterialIcons',
 }));
 
+jest.mock("expo-router", () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+  }),
+}));
+
 describe('SocialScreen', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
@@ -23,7 +31,7 @@ describe('SocialScreen', () => {
 
   it('renders header and search bar correctly', () => {
     const { getByText, getByPlaceholderText } = render(<SocialScreen />);
-    expect(getByText('Stream Chat')).toBeTruthy();
+    expect(getByText('Chat')).toBeTruthy();
     expect(getByPlaceholderText('Search')).toBeTruthy();
   });
 

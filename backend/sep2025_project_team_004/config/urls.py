@@ -11,9 +11,15 @@ from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 from sep2025_project_team_004.store.views import ProductListView
+from django.http import HttpResponse
+from django.urls import path, include
+
+def health_check(request):
+    return HttpResponse("OK", content_type="text/plain")
 
 
 urlpatterns = [
+    path("health/", health_check, name="health_check"),
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
     path(
         "about/",

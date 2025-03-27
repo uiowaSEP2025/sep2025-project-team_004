@@ -33,7 +33,7 @@ export default function HomeScreen() {
     setLoading(true);
 
     try {
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/users/api-token-auth/`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/api-token-auth/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -50,7 +50,7 @@ export default function HomeScreen() {
       if (response.ok && data.token) {
         await AsyncStorage.setItem("authToken", data.token); 
         
-        const userResponse = await fetch(`http://${API_BASE_URL}:8000/api/users/me/`, {
+        const userResponse = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/me/`, {
           method: "GET",
           headers: { "Authorization": `Token ${data.token}` },
         });
