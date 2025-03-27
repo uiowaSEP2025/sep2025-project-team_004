@@ -121,19 +121,6 @@ export default function Profile() {
     <SafeAreaView style={styles.container}>
       {/* Header Bar */}
       <View style={styles.header}>
-        {/* Back Button (Align Left) */}
-        <TouchableOpacity
-                  testID="back-button"
-                  onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "home" } }]})}
-                  style={styles.headerIcon}
-                >
-                  <ImageBackground
-                    style={styles.backIcon}
-                    source={require("@/assets/images/back-arrow.png")}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-
         {/* Centered Title */}
         <Text style={styles.headerTitle}>Profile</Text>
 
@@ -150,7 +137,10 @@ export default function Profile() {
         style={styles.content}
       >
         {/* Personal Info */}
-        <View style={styles.profileInfoContainer}>
+        <TouchableOpacity
+          style={styles.profileInfoContainer}
+          onPress={() => navigation.navigate("editProfile")}
+        >
           <Image
             style={styles.avatar}
             source={require('@/assets/images/avatar-placeholder.png')}
@@ -158,10 +148,10 @@ export default function Profile() {
           <View style={styles.userInfo}>
             <Text style={styles.username}>
               {user ? `${user.first_name} ${user.last_name}` : "Loading..."}
-              </Text>
+            </Text>
             <Text style={styles.email}>{user ? user.email : "Loading..."}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* List Items */}
         <TouchableOpacity
@@ -415,4 +405,5 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
+  
 });

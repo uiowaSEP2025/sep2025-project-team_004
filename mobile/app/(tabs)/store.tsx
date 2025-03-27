@@ -111,27 +111,20 @@ export default function StoreScreen() {
         numColumns={2}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.grid}
-        renderItem={({ item }) => {
-          console.log("Product image:", item.image);
-        
-          return (
-            <View style={styles.productCard}>
-              <Image
-                source={item.image ? { uri: item.image } : require("../../assets/images/react-logo.png")}
-                style={styles.productImage}
-              />
-              <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productPrice}>${Number(item.price).toFixed(2)}</Text>
-              <TouchableOpacity
-                testID={`cart-button-${item.id}`}
-                style={styles.cartButton}
-                onPress={() => openModal(item)}
-              >
-                <MaterialIcons name="shopping-cart" size={20} color="gray" />
-              </TouchableOpacity>
-            </View>
-          );
-        }}
+        renderItem={({ item }) => (
+          <View style={styles.productCard}>
+            <Image source={item.image ? { uri: item.image } : require("../../assets/images/react-logo.png")} style={styles.productImage} />
+            <Text style={styles.productName}>{item.name}</Text>
+            <Text style={styles.productPrice}>${Number(item.price).toFixed(2)}</Text>
+            <TouchableOpacity
+              testID={`cart-button-${item.id}`}
+              style={styles.cartButton}
+              onPress={() => openModal(item)}
+            >
+              <MaterialIcons name="shopping-cart" size={20} color="gray" />
+            </TouchableOpacity>
+          </View>
+        )}
       />
       
       {/* Add to Cart Modal */}

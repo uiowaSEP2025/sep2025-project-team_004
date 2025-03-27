@@ -122,7 +122,7 @@ const EditProfilePage: React.FC = () => {
     <ScrollView contentContainerStyle={styles.container}>
       <TouchableOpacity
                 testID="back-button"
-                onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "home" } }]})}
+                onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "profile" } }]})}
                 style={styles.headerIcon}
               >
                 <ImageBackground
