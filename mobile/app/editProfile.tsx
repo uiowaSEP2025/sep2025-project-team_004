@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ImageBackground, Dimensions, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ImageBackground, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
 import AddressAutocomplete from "../components/AddressAutocomplete";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+
 
 
 
@@ -127,40 +130,37 @@ function getComponent(components: any[], type: string) {
 
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      enableOnAndroid
+      extraScrollHeight={Platform.OS === "ios" ? 100 : 120}
+      keyboardShouldPersistTaps="handled"
+    >
       <TouchableOpacity
-                testID="back-button"
-                onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "profile" } }]})}
-                style={styles.headerIcon}
-              >
-                <ImageBackground
-                  style={styles.backIcon}
-                  source={require("@/assets/images/back-arrow.png")}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
+        testID="back-button"
+        onPress={() =>
+          navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "profile" } }] })
+        }
+        style={styles.headerIcon}
+      >
+        <ImageBackground
+          style={styles.backIcon}
+          source={require("@/assets/images/back-arrow.png")}
+          resizeMode="cover"
+        />
+      </TouchableOpacity>
+
       <Text style={styles.title}>Edit Profile</Text>
+
       <View style={styles.form}>
         <Text style={styles.label}>Username:</Text>
-        <TextInput
-          style={[styles.input, styles.readOnly]}
-          value={username}
-          editable={false}
-        />
+        <TextInput style={[styles.input, styles.readOnly]} value={username} editable={false} />
 
         <Text style={styles.label}>First Name:</Text>
-        <TextInput
-          style={[styles.input, styles.readOnly]}
-          value={firstName}
-          editable={false}
-        />
+        <TextInput style={[styles.input, styles.readOnly]} value={firstName} editable={false} />
 
         <Text style={styles.label}>Last Name:</Text>
-        <TextInput
-          style={[styles.input, styles.readOnly]}
-          value={lastName}
-          editable={false}
-        />
+        <TextInput style={[styles.input, styles.readOnly]} value={lastName} editable={false} />
 
         <Text style={styles.label}>Phone Number:</Text>
         <TextInput
@@ -175,24 +175,21 @@ function getComponent(components: any[], type: string) {
         <Text style={styles.label}>Address:</Text>
         <AddressAutocomplete
           value={address}
-          onSelect={(selected) => setAddress(selected)}
-        />
+          onSelect={(selected, extras) => {
+            setAddress(selected);
+            if (extras) {
+              setCity(extras.city || "");
+              setState(extras.state || "");
+              setZipCode(extras.zip || "");
+            }
+          }}
+/>
 
         <Text style={styles.label}>City:</Text>
-        <TextInput
-          style={styles.input}
-          value={city}
-          onChangeText={setCity}
-          placeholder="City"
-        />
+        <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder="City" />
 
         <Text style={styles.label}>State:</Text>
-        <TextInput
-          style={styles.input}
-          value={state}
-          onChangeText={setState}
-          placeholder="State"
-        />
+        <TextInput style={styles.input} value={state} onChangeText={setState} placeholder="State" />
 
         <Text style={styles.label}>Zip Code:</Text>
         <TextInput
@@ -204,18 +201,16 @@ function getComponent(components: any[], type: string) {
           maxLength={5}
         />
       </View>
-      {/* Update Button */}
-      <TouchableOpacity
-        style={styles.updateButton}
-        onPress={updateUserProfile}
-        disabled={loading}
-      >
+
+      <TouchableOpacity style={styles.updateButton} onPress={updateUserProfile} disabled={loading}>
         <Text style={styles.updateButtonText}>
           {loading ? "Updating..." : "Update Profile"}
         </Text>
       </TouchableOpacity>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
+
+
 };
 
 const styles = StyleSheet.create({

@@ -14,6 +14,7 @@ import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
 
 const API_BASE_URL =
+  process.env.EXPO_PUBLIC_BACKEND_URL ??
   Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
 

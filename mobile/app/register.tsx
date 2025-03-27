@@ -17,6 +17,7 @@ export default function RegisterScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { useToast, useAlert } = showMessage();
   const API_BASE_URL =
+  process.env.EXPO_PUBLIC_BACKEND_URL ??
   Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
   
 
