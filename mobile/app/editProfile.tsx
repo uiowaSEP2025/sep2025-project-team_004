@@ -5,7 +5,7 @@ import { RootStackParamList } from '../types';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import AddressAutocomplete from "../components/AddressAutocomplete";
 
 
 
@@ -26,7 +26,6 @@ const EditProfilePage: React.FC = () => {
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const GooglePlaces = GooglePlacesAutocomplete as any;
 
 
   const fetchUserProfile = async () => {
@@ -174,28 +173,9 @@ function getComponent(components: any[], type: string) {
         />
 
         <Text style={styles.label}>Address:</Text>
-        <GooglePlacesAutocomplete
-          placeholder="Enter address..."
-          fetchDetails={true}
-          onPress={(data, details = null) => {
-            if (details) {
-              setAddress(details.formatted_address);
-              const components = details.address_components;
-
-              // Optionally extract city/state/zip:
-              setCity(getComponent(components, 'locality'));
-              setState(getComponent(components, 'administrative_area_level_1'));
-              setZipCode(getComponent(components, 'postal_code'));
-            }
-          }}
-          query={{
-            key: process.env.GOOGLE_PLACES_API_KEY,
-            language: 'en',
-          }}
-          styles={{
-            textInput: styles.input,
-            container: { marginBottom: 15 },
-          }}
+        <AddressAutocomplete
+          value={address}
+          onSelect={(selected) => setAddress(selected)}
         />
 
         <Text style={styles.label}>City:</Text>
