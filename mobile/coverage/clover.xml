@@ -1,72 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1743091885081" clover="3.2.0">
-  <project timestamp="1743091885081" name="All files">
-    <metrics statements="653" coveredstatements="383" conditionals="285" coveredconditionals="143" methods="175" coveredmethods="88" elements="1113" coveredelements="614" complexity="0" loc="653" ncloc="653" packages="3" files="20" classes="20"/>
+<coverage generated="1743178507313" clover="3.2.0">
+  <project timestamp="1743178507313" name="All files">
+    <metrics statements="733" coveredstatements="604" conditionals="317" coveredconditionals="208" methods="200" coveredmethods="155" elements="1250" coveredelements="967" complexity="0" loc="733" ncloc="733" packages="3" files="21" classes="21"/>
     <package name="app">
-      <metrics statements="416" coveredstatements="241" conditionals="189" coveredconditionals="98" methods="89" coveredmethods="41"/>
-      <file name="+not-found.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\+not-found.tsx">
+      <metrics statements="478" coveredstatements="402" conditionals="209" coveredconditionals="142" methods="105" coveredmethods="90"/>
+      <file name="+not-found.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\+not-found.tsx">
         <metrics statements="2" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="8" count="0" type="stmt"/>
         <line num="21" count="0" type="stmt"/>
       </file>
-      <file name="Chat.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\Chat.tsx">
+      <file name="Chat.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\Chat.tsx">
         <metrics statements="1" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="6" count="0" type="stmt"/>
       </file>
-      <file name="Profile.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\Profile.tsx">
-        <metrics statements="50" coveredstatements="0" conditionals="20" coveredconditionals="0" methods="18" coveredmethods="0"/>
-        <line num="25" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="28" count="0" type="stmt"/>
-        <line num="31" count="0" type="stmt"/>
-        <line num="36" count="0" type="stmt"/>
-        <line num="37" count="0" type="stmt"/>
-        <line num="38" count="0" type="stmt"/>
-        <line num="39" count="0" type="stmt"/>
-        <line num="40" count="0" type="stmt"/>
-        <line num="42" count="0" type="stmt"/>
-        <line num="43" count="0" type="stmt"/>
-        <line num="44" count="0" type="stmt"/>
-        <line num="45" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="46" count="0" type="stmt"/>
-        <line num="49" count="0" type="stmt"/>
-        <line num="53" count="0" type="stmt"/>
-        <line num="55" count="0" type="stmt"/>
-        <line num="56" count="0" type="stmt"/>
-        <line num="57" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="58" count="0" type="stmt"/>
-        <line num="62" count="0" type="stmt"/>
-        <line num="63" count="0" type="stmt"/>
-        <line num="64" count="0" type="stmt"/>
-        <line num="65" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="66" count="0" type="stmt"/>
-        <line num="69" count="0" type="stmt"/>
-        <line num="77" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="78" count="0" type="stmt"/>
-        <line num="81" count="0" type="stmt"/>
-        <line num="82" count="0" type="stmt"/>
-        <line num="84" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="86" count="0" type="stmt"/>
-        <line num="90" count="0" type="stmt"/>
-        <line num="91" count="0" type="stmt"/>
-        <line num="95" count="0" type="stmt"/>
-        <line num="96" count="0" type="cond" truecount="0" falsecount="2"/>
+      <file name="Profile.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\Profile.tsx">
+        <metrics statements="51" coveredstatements="50" conditionals="20" coveredconditionals="17" methods="18" coveredmethods="14"/>
+        <line num="25" count="1" type="cond" truecount="2" falsecount="0"/>
+        <line num="28" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="36" count="97" type="stmt"/>
+        <line num="37" count="97" type="stmt"/>
+        <line num="38" count="96" type="stmt"/>
+        <line num="39" count="96" type="stmt"/>
+        <line num="40" count="96" type="stmt"/>
+        <line num="42" count="96" type="stmt"/>
+        <line num="43" count="11" type="stmt"/>
+        <line num="44" count="11" type="stmt"/>
+        <line num="45" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="49" count="11" type="stmt"/>
+        <line num="53" count="96" type="stmt"/>
+        <line num="55" count="96" type="stmt"/>
+        <line num="56" count="96" type="stmt"/>
+        <line num="57" count="96" type="cond" truecount="2" falsecount="0"/>
+        <line num="58" count="95" type="stmt"/>
+        <line num="62" count="96" type="stmt"/>
+        <line num="63" count="96" type="stmt"/>
+        <line num="64" count="96" type="stmt"/>
+        <line num="65" count="96" type="cond" truecount="2" falsecount="0"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="69" count="95" type="stmt"/>
+        <line num="77" count="62" type="cond" truecount="2" falsecount="0"/>
+        <line num="78" count="17" type="stmt"/>
+        <line num="81" count="17" type="stmt"/>
+        <line num="82" count="17" type="stmt"/>
+        <line num="84" count="17" type="cond" truecount="1" falsecount="1"/>
+        <line num="86" count="78" type="stmt"/>
+        <line num="90" count="96" type="stmt"/>
+        <line num="91" count="96" type="stmt"/>
+        <line num="95" count="96" type="stmt"/>
+        <line num="96" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="100" count="0" type="stmt"/>
-        <line num="107" count="0" type="stmt"/>
-        <line num="108" count="0" type="stmt"/>
-        <line num="109" count="0" type="stmt"/>
-        <line num="110" count="0" type="stmt"/>
-        <line num="111" count="0" type="stmt"/>
-        <line num="112" count="0" type="stmt"/>
-        <line num="113" count="0" type="stmt"/>
-        <line num="114" count="0" type="stmt"/>
-        <line num="116" count="0" type="stmt"/>
-        <line num="120" count="0" type="stmt"/>
-        <line num="127" count="0" type="stmt"/>
-        <line num="209" count="0" type="stmt"/>
-        <line num="278" count="0" type="stmt"/>
-        <line num="291" count="0" type="stmt"/>
+        <line num="107" count="96" type="stmt"/>
+        <line num="108" count="2" type="stmt"/>
+        <line num="109" count="2" type="stmt"/>
+        <line num="110" count="2" type="stmt"/>
+        <line num="111" count="1" type="stmt"/>
+        <line num="112" count="1" type="stmt"/>
+        <line num="113" count="1" type="stmt"/>
+        <line num="114" count="1" type="stmt"/>
+        <line num="116" count="1" type="stmt"/>
+        <line num="120" count="96" type="stmt"/>
+        <line num="127" count="1" type="stmt"/>
+        <line num="169" count="1" type="stmt"/>
+        <line num="207" count="1" type="stmt"/>
+        <line num="276" count="1" type="stmt"/>
+        <line num="289" count="1" type="stmt"/>
       </file>
-      <file name="ResetPasswordScreen.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\ResetPasswordScreen.tsx">
+      <file name="ResetPasswordScreen.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\ResetPasswordScreen.tsx">
         <metrics statements="38" coveredstatements="33" conditionals="28" coveredconditionals="19" methods="4" coveredmethods="4"/>
         <line num="10" count="1" type="cond" truecount="2" falsecount="0"/>
         <line num="15" count="10" type="stmt"/>
@@ -107,7 +108,7 @@
         <line num="72" count="10" type="stmt"/>
         <line num="102" count="1" type="stmt"/>
       </file>
-      <file name="_layout.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\_layout.tsx">
+      <file name="_layout.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\_layout.tsx">
         <metrics statements="23" coveredstatements="0" conditionals="16" coveredconditionals="0" methods="5" coveredmethods="0"/>
         <line num="17" count="0" type="stmt"/>
         <line num="19" count="0" type="stmt"/>
@@ -133,7 +134,7 @@
         <line num="75" count="0" type="stmt"/>
         <line num="78" count="0" type="stmt"/>
       </file>
-      <file name="add-payment.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\add-payment.tsx">
+      <file name="add-payment.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\add-payment.tsx">
         <metrics statements="44" coveredstatements="42" conditionals="22" coveredconditionals="14" methods="6" coveredmethods="6"/>
         <line num="25" count="1" type="cond" truecount="2" falsecount="0"/>
         <line num="28" count="20" type="stmt"/>
@@ -180,7 +181,7 @@
         <line num="113" count="1" type="stmt"/>
         <line num="209" count="1" type="stmt"/>
       </file>
-      <file name="cart.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\cart.tsx">
+      <file name="cart.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\cart.tsx">
         <metrics statements="14" coveredstatements="13" conditionals="6" coveredconditionals="4" methods="8" coveredmethods="8"/>
         <line num="8" count="6" type="stmt"/>
         <line num="9" count="6" type="stmt"/>
@@ -197,7 +198,7 @@
         <line num="66" count="10" type="stmt"/>
         <line num="73" count="1" type="stmt"/>
       </file>
-      <file name="editProfile.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\editProfile.tsx">
+      <file name="editProfile.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\editProfile.tsx">
         <metrics statements="59" coveredstatements="43" conditionals="20" coveredconditionals="10" methods="5" coveredmethods="5"/>
         <line num="10" count="1" type="cond" truecount="2" falsecount="0"/>
         <line num="14" count="1" type="stmt"/>
@@ -259,7 +260,7 @@
         <line num="125" count="1" type="stmt"/>
         <line num="215" count="1" type="stmt"/>
       </file>
-      <file name="forgot.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\forgot.tsx">
+      <file name="forgot.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\forgot.tsx">
         <metrics statements="21" coveredstatements="18" conditionals="8" coveredconditionals="7" methods="3" coveredmethods="2"/>
         <line num="11" count="1" type="cond" truecount="2" falsecount="0"/>
         <line num="14" count="7" type="stmt"/>
@@ -283,73 +284,73 @@
         <line num="67" count="0" type="stmt"/>
         <line num="75" count="1" type="stmt"/>
       </file>
-      <file name="friends.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\friends.tsx">
-        <metrics statements="63" coveredstatements="0" conditionals="14" coveredconditionals="0" methods="20" coveredmethods="0"/>
-        <line num="22" count="0" type="stmt"/>
-        <line num="40" count="0" type="stmt"/>
-        <line num="41" count="0" type="stmt"/>
-        <line num="42" count="0" type="stmt"/>
-        <line num="43" count="0" type="stmt"/>
-        <line num="44" count="0" type="stmt"/>
-        <line num="45" count="0" type="stmt"/>
-        <line num="46" count="0" type="stmt"/>
-        <line num="48" count="0" type="stmt"/>
-        <line num="49" count="0" type="stmt"/>
-        <line num="50" count="0" type="stmt"/>
-        <line num="51" count="0" type="stmt"/>
-        <line num="52" count="0" type="stmt"/>
-        <line num="54" count="0" type="stmt"/>
-        <line num="55" count="0" type="stmt"/>
+      <file name="friends.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\friends.tsx">
+        <metrics statements="63" coveredstatements="51" conditionals="14" coveredconditionals="10" methods="20" coveredmethods="20"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="40" count="21" type="stmt"/>
+        <line num="41" count="20" type="stmt"/>
+        <line num="42" count="20" type="stmt"/>
+        <line num="43" count="20" type="stmt"/>
+        <line num="44" count="20" type="stmt"/>
+        <line num="45" count="20" type="stmt"/>
+        <line num="46" count="20" type="stmt"/>
+        <line num="48" count="20" type="stmt"/>
+        <line num="49" count="6" type="stmt"/>
+        <line num="50" count="6" type="stmt"/>
+        <line num="51" count="6" type="stmt"/>
+        <line num="52" count="6" type="stmt"/>
+        <line num="54" count="6" type="stmt"/>
+        <line num="55" count="6" type="stmt"/>
         <line num="57" count="0" type="stmt"/>
-        <line num="61" count="0" type="stmt"/>
-        <line num="64" count="0" type="stmt"/>
-        <line num="65" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="67" count="0" type="stmt"/>
-        <line num="68" count="0" type="stmt"/>
-        <line num="69" count="0" type="stmt"/>
-        <line num="70" count="0" type="stmt"/>
-        <line num="71" count="0" type="stmt"/>
+        <line num="61" count="6" type="stmt"/>
+        <line num="64" count="20" type="stmt"/>
+        <line num="65" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="67" count="1" type="stmt"/>
+        <line num="68" count="1" type="stmt"/>
+        <line num="69" count="1" type="stmt"/>
+        <line num="70" count="1" type="stmt"/>
+        <line num="71" count="1" type="stmt"/>
         <line num="73" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="74" count="0" type="stmt"/>
         <line num="75" count="0" type="stmt"/>
         <line num="77" count="0" type="stmt"/>
         <line num="78" count="0" type="stmt"/>
-        <line num="82" count="0" type="stmt"/>
-        <line num="83" count="0" type="stmt"/>
-        <line num="84" count="0" type="stmt"/>
-        <line num="87" count="0" type="stmt"/>
-        <line num="88" count="0" type="stmt"/>
-        <line num="91" count="0" type="stmt"/>
-        <line num="92" count="0" type="stmt"/>
-        <line num="94" count="0" type="stmt"/>
-        <line num="95" count="0" type="stmt"/>
+        <line num="82" count="20" type="stmt"/>
+        <line num="83" count="1" type="stmt"/>
+        <line num="84" count="1" type="stmt"/>
+        <line num="87" count="1" type="stmt"/>
+        <line num="88" count="1" type="stmt"/>
+        <line num="91" count="1" type="stmt"/>
+        <line num="92" count="1" type="stmt"/>
+        <line num="94" count="1" type="stmt"/>
+        <line num="95" count="1" type="stmt"/>
         <line num="97" count="0" type="stmt"/>
         <line num="98" count="0" type="stmt"/>
         <line num="99" count="0" type="stmt"/>
-        <line num="103" count="0" type="stmt"/>
-        <line num="104" count="0" type="stmt"/>
-        <line num="105" count="0" type="stmt"/>
-        <line num="108" count="0" type="stmt"/>
-        <line num="109" count="0" type="stmt"/>
-        <line num="112" count="0" type="stmt"/>
-        <line num="113" count="0" type="stmt"/>
+        <line num="103" count="20" type="stmt"/>
+        <line num="104" count="1" type="stmt"/>
+        <line num="105" count="1" type="stmt"/>
+        <line num="108" count="1" type="stmt"/>
+        <line num="109" count="1" type="stmt"/>
+        <line num="112" count="1" type="stmt"/>
+        <line num="113" count="1" type="stmt"/>
         <line num="115" count="0" type="stmt"/>
         <line num="116" count="0" type="stmt"/>
         <line num="117" count="0" type="stmt"/>
-        <line num="122" count="0" type="stmt"/>
-        <line num="127" count="0" type="stmt"/>
-        <line num="138" count="0" type="stmt"/>
-        <line num="140" count="0" type="stmt"/>
-        <line num="168" count="0" type="stmt"/>
-        <line num="170" count="0" type="stmt"/>
-        <line num="185" count="0" type="stmt"/>
-        <line num="192" count="0" type="stmt"/>
-        <line num="206" count="0" type="stmt"/>
-        <line num="208" count="0" type="stmt"/>
-        <line num="221" count="0" type="stmt"/>
-        <line num="232" count="0" type="stmt"/>
+        <line num="122" count="20" type="stmt"/>
+        <line num="127" count="1" type="stmt"/>
+        <line num="138" count="60" type="stmt"/>
+        <line num="140" count="2" type="stmt"/>
+        <line num="168" count="10" type="stmt"/>
+        <line num="170" count="5" type="stmt"/>
+        <line num="185" count="1" type="stmt"/>
+        <line num="192" count="1" type="stmt"/>
+        <line num="206" count="2" type="stmt"/>
+        <line num="208" count="1" type="stmt"/>
+        <line num="221" count="3" type="stmt"/>
+        <line num="232" count="1" type="stmt"/>
       </file>
-      <file name="index.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\index.tsx">
+      <file name="index.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\index.tsx">
         <metrics statements="32" coveredstatements="30" conditionals="20" coveredconditionals="17" methods="4" coveredmethods="3"/>
         <line num="17" count="1" type="cond" truecount="2" falsecount="0"/>
         <line num="21" count="21" type="stmt"/>
@@ -384,7 +385,71 @@
         <line num="124" count="0" type="stmt"/>
         <line num="133" count="1" type="stmt"/>
       </file>
-      <file name="payment-method.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\payment-method.tsx">
+      <file name="orders.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\orders.tsx">
+        <metrics statements="61" coveredstatements="60" conditionals="20" coveredconditionals="17" methods="16" coveredmethods="15"/>
+        <line num="31" count="1" type="cond" truecount="2" falsecount="0"/>
+        <line num="34" count="33" type="stmt"/>
+        <line num="35" count="33" type="stmt"/>
+        <line num="38" count="33" type="stmt"/>
+        <line num="39" count="33" type="stmt"/>
+        <line num="40" count="33" type="stmt"/>
+        <line num="41" count="33" type="stmt"/>
+        <line num="43" count="33" type="stmt"/>
+        <line num="46" count="33" type="stmt"/>
+        <line num="47" count="10" type="stmt"/>
+        <line num="48" count="8" type="stmt"/>
+        <line num="50" count="8" type="stmt"/>
+        <line num="51" count="8" type="stmt"/>
+        <line num="54" count="1" type="stmt"/>
+        <line num="55" count="1" type="stmt"/>
+        <line num="60" count="33" type="stmt"/>
+        <line num="61" count="1" type="stmt"/>
+        <line num="62" count="1" type="stmt"/>
+        <line num="66" count="33" type="stmt"/>
+        <line num="67" count="6" type="stmt"/>
+        <line num="68" count="6" type="stmt"/>
+        <line num="69" count="6" type="stmt"/>
+        <line num="70" count="6" type="stmt"/>
+        <line num="71" count="6" type="stmt"/>
+        <line num="75" count="33" type="stmt"/>
+        <line num="76" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="78" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="79" count="1" type="stmt"/>
+        <line num="80" count="1" type="stmt"/>
+        <line num="83" count="3" type="stmt"/>
+        <line num="90" count="3" type="stmt"/>
+        <line num="92" count="3" type="stmt"/>
+        <line num="93" count="3" type="stmt"/>
+        <line num="101" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="102" count="1" type="stmt"/>
+        <line num="103" count="1" type="stmt"/>
+        <line num="104" count="1" type="stmt"/>
+        <line num="105" count="1" type="stmt"/>
+        <line num="108" count="1" type="stmt"/>
+        <line num="109" count="1" type="stmt"/>
+        <line num="110" count="1" type="stmt"/>
+        <line num="111" count="1" type="stmt"/>
+        <line num="113" count="1" type="stmt"/>
+        <line num="114" count="1" type="stmt"/>
+        <line num="118" count="33" type="cond" truecount="2" falsecount="0"/>
+        <line num="119" count="10" type="stmt"/>
+        <line num="127" count="23" type="stmt"/>
+        <line num="128" count="44" type="stmt"/>
+        <line num="138" count="1" type="stmt"/>
+        <line num="141" count="6" type="stmt"/>
+        <line num="150" count="23" type="stmt"/>
+        <line num="151" count="23" type="stmt"/>
+        <line num="152" count="23" type="stmt"/>
+        <line num="153" count="115" type="stmt"/>
+        <line num="154" count="3" type="stmt"/>
+        <line num="163" count="23" type="stmt"/>
+        <line num="166" count="23" type="stmt"/>
+        <line num="171" count="52" type="stmt"/>
+        <line num="181" count="0" type="stmt"/>
+        <line num="199" count="1" type="stmt"/>
+        <line num="210" count="1" type="stmt"/>
+      </file>
+      <file name="payment-method.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\payment-method.tsx">
         <metrics statements="25" coveredstatements="21" conditionals="15" coveredconditionals="8" methods="10" coveredmethods="10"/>
         <line num="21" count="1" type="cond" truecount="2" falsecount="0"/>
         <line num="24" count="1" type="stmt"/>
@@ -412,12 +477,12 @@
         <line num="103" count="1" type="stmt"/>
         <line num="118" count="1" type="stmt"/>
       </file>
-      <file name="register.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\register.tsx">
+      <file name="register.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\register.tsx">
         <metrics statements="44" coveredstatements="41" conditionals="20" coveredconditionals="19" methods="4" coveredmethods="3"/>
-        <line num="17" count="30" type="stmt"/>
-        <line num="18" count="30" type="stmt"/>
-        <line num="20" count="30" type="cond" truecount="2" falsecount="0"/>
-        <line num="23" count="30" type="stmt"/>
+        <line num="17" count="31" type="stmt"/>
+        <line num="18" count="31" type="stmt"/>
+        <line num="20" count="31" type="cond" truecount="2" falsecount="0"/>
+        <line num="23" count="31" type="stmt"/>
         <line num="24" count="30" type="stmt"/>
         <line num="25" count="30" type="stmt"/>
         <line num="26" count="30" type="stmt"/>
@@ -461,8 +526,8 @@
       </file>
     </package>
     <package name="app.(tabs)">
-      <metrics statements="151" coveredstatements="81" conditionals="68" coveredconditionals="30" methods="58" coveredmethods="25"/>
-      <file name="_layout.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\(tabs)\_layout.tsx">
+      <metrics statements="169" coveredstatements="141" conditionals="80" coveredconditionals="51" methods="67" coveredmethods="43"/>
+      <file name="_layout.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\(tabs)\_layout.tsx">
         <metrics statements="6" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="5" coveredmethods="0"/>
         <line num="11" count="0" type="stmt"/>
         <line num="13" count="0" type="stmt"/>
@@ -471,7 +536,7 @@
         <line num="48" count="0" type="stmt"/>
         <line num="56" count="0" type="stmt"/>
       </file>
-      <file name="home.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\(tabs)\home.tsx">
+      <file name="home.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\(tabs)\home.tsx">
         <metrics statements="41" coveredstatements="35" conditionals="16" coveredconditionals="10" methods="13" coveredmethods="10"/>
         <line num="18" count="1" type="stmt"/>
         <line num="19" count="24" type="stmt"/>
@@ -515,60 +580,60 @@
         <line num="150" count="1" type="stmt"/>
         <line num="162" count="1" type="stmt"/>
       </file>
-      <file name="profile.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\(tabs)\profile.tsx">
-        <metrics statements="50" coveredstatements="0" conditionals="20" coveredconditionals="0" methods="18" coveredmethods="0"/>
-        <line num="25" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="28" count="0" type="stmt"/>
-        <line num="31" count="0" type="stmt"/>
-        <line num="36" count="0" type="stmt"/>
-        <line num="37" count="0" type="stmt"/>
-        <line num="38" count="0" type="stmt"/>
-        <line num="39" count="0" type="stmt"/>
-        <line num="40" count="0" type="stmt"/>
-        <line num="42" count="0" type="stmt"/>
-        <line num="43" count="0" type="stmt"/>
-        <line num="44" count="0" type="stmt"/>
-        <line num="45" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="46" count="0" type="stmt"/>
-        <line num="49" count="0" type="stmt"/>
-        <line num="53" count="0" type="stmt"/>
-        <line num="55" count="0" type="stmt"/>
-        <line num="56" count="0" type="stmt"/>
-        <line num="57" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="58" count="0" type="stmt"/>
-        <line num="62" count="0" type="stmt"/>
-        <line num="63" count="0" type="stmt"/>
-        <line num="64" count="0" type="stmt"/>
-        <line num="65" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="66" count="0" type="stmt"/>
-        <line num="69" count="0" type="stmt"/>
-        <line num="77" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="78" count="0" type="stmt"/>
-        <line num="81" count="0" type="stmt"/>
-        <line num="82" count="0" type="stmt"/>
-        <line num="84" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="86" count="0" type="stmt"/>
-        <line num="90" count="0" type="stmt"/>
-        <line num="91" count="0" type="stmt"/>
-        <line num="95" count="0" type="stmt"/>
-        <line num="96" count="0" type="cond" truecount="0" falsecount="2"/>
+      <file name="profile.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\(tabs)\profile.tsx">
+        <metrics statements="50" coveredstatements="49" conditionals="20" coveredconditionals="17" methods="18" coveredmethods="13"/>
+        <line num="25" count="1" type="cond" truecount="2" falsecount="0"/>
+        <line num="28" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="36" count="154" type="stmt"/>
+        <line num="37" count="154" type="stmt"/>
+        <line num="38" count="153" type="stmt"/>
+        <line num="39" count="153" type="stmt"/>
+        <line num="40" count="153" type="stmt"/>
+        <line num="42" count="153" type="stmt"/>
+        <line num="43" count="12" type="stmt"/>
+        <line num="44" count="12" type="stmt"/>
+        <line num="45" count="12" type="cond" truecount="2" falsecount="0"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="49" count="12" type="stmt"/>
+        <line num="53" count="153" type="stmt"/>
+        <line num="55" count="153" type="stmt"/>
+        <line num="56" count="153" type="stmt"/>
+        <line num="57" count="153" type="cond" truecount="2" falsecount="0"/>
+        <line num="58" count="152" type="stmt"/>
+        <line num="62" count="153" type="stmt"/>
+        <line num="63" count="153" type="stmt"/>
+        <line num="64" count="153" type="stmt"/>
+        <line num="65" count="153" type="cond" truecount="2" falsecount="0"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="69" count="152" type="stmt"/>
+        <line num="77" count="129" type="cond" truecount="2" falsecount="0"/>
+        <line num="78" count="18" type="stmt"/>
+        <line num="81" count="66" type="stmt"/>
+        <line num="82" count="66" type="stmt"/>
+        <line num="84" count="66" type="cond" truecount="1" falsecount="1"/>
+        <line num="86" count="86" type="stmt"/>
+        <line num="90" count="153" type="stmt"/>
+        <line num="91" count="153" type="stmt"/>
+        <line num="95" count="153" type="stmt"/>
+        <line num="96" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="100" count="0" type="stmt"/>
-        <line num="107" count="0" type="stmt"/>
-        <line num="108" count="0" type="stmt"/>
-        <line num="109" count="0" type="stmt"/>
-        <line num="110" count="0" type="stmt"/>
-        <line num="111" count="0" type="stmt"/>
-        <line num="112" count="0" type="stmt"/>
-        <line num="113" count="0" type="stmt"/>
-        <line num="114" count="0" type="stmt"/>
-        <line num="116" count="0" type="stmt"/>
-        <line num="120" count="0" type="stmt"/>
-        <line num="142" count="0" type="stmt"/>
-        <line num="199" count="0" type="stmt"/>
-        <line num="268" count="0" type="stmt"/>
-        <line num="281" count="0" type="stmt"/>
+        <line num="107" count="153" type="stmt"/>
+        <line num="108" count="2" type="stmt"/>
+        <line num="109" count="2" type="stmt"/>
+        <line num="110" count="2" type="stmt"/>
+        <line num="111" count="1" type="stmt"/>
+        <line num="112" count="1" type="stmt"/>
+        <line num="113" count="1" type="stmt"/>
+        <line num="114" count="1" type="stmt"/>
+        <line num="116" count="1" type="stmt"/>
+        <line num="120" count="153" type="stmt"/>
+        <line num="142" count="1" type="stmt"/>
+        <line num="199" count="1" type="stmt"/>
+        <line num="268" count="1" type="stmt"/>
+        <line num="281" count="1" type="stmt"/>
       </file>
-      <file name="social.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\(tabs)\social.tsx">
+      <file name="social.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\(tabs)\social.tsx">
         <metrics statements="11" coveredstatements="9" conditionals="4" coveredconditionals="4" methods="5" coveredmethods="3"/>
         <line num="18" count="1" type="stmt"/>
         <line num="47" count="4" type="stmt"/>
@@ -582,56 +647,74 @@
         <line num="88" count="96" type="stmt"/>
         <line num="115" count="1" type="stmt"/>
       </file>
-      <file name="store.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\(tabs)\store.tsx">
-        <metrics statements="43" coveredstatements="37" conditionals="26" coveredconditionals="16" methods="17" coveredmethods="12"/>
-        <line num="9" count="1" type="cond" truecount="2" falsecount="0"/>
-        <line num="23" count="15" type="stmt"/>
-        <line num="24" count="14" type="stmt"/>
-        <line num="25" count="14" type="stmt"/>
-        <line num="26" count="14" type="stmt"/>
-        <line num="27" count="18" type="stmt"/>
-        <line num="29" count="14" type="stmt"/>
-        <line num="30" count="14" type="stmt"/>
-        <line num="31" count="14" type="stmt"/>
+      <file name="store.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\(tabs)\store.tsx">
+        <metrics statements="61" coveredstatements="48" conditionals="38" coveredconditionals="20" methods="26" coveredmethods="17"/>
+        <line num="10" count="1" type="cond" truecount="2" falsecount="0"/>
+        <line num="31" count="15" type="stmt"/>
+        <line num="32" count="14" type="stmt"/>
         <line num="33" count="14" type="stmt"/>
         <line num="34" count="14" type="stmt"/>
-        <line num="35" count="14" type="cond" truecount="1" falsecount="1"/>
-        <line num="36" count="0" type="stmt"/>
+        <line num="35" count="14" type="stmt"/>
+        <line num="36" count="18" type="stmt"/>
         <line num="38" count="14" type="stmt"/>
         <line num="39" count="14" type="stmt"/>
-        <line num="41" count="14" type="stmt"/>
-        <line num="42" count="5" type="stmt"/>
-        <line num="43" count="5" type="stmt"/>
-        <line num="45" count="5" type="stmt"/>
-        <line num="46" count="5" type="stmt"/>
-        <line num="49" count="0" type="stmt"/>
-        <line num="50" count="0" type="stmt"/>
-        <line num="54" count="14" type="cond" truecount="2" falsecount="0"/>
-        <line num="55" count="5" type="cond" truecount="1" falsecount="1"/>
-        <line num="58" count="9" type="stmt"/>
-        <line num="59" count="2" type="stmt"/>
-        <line num="60" count="2" type="stmt"/>
-        <line num="61" count="2" type="stmt"/>
-        <line num="65" count="9" type="stmt"/>
-        <line num="66" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="67" count="1" type="stmt"/>
-        <line num="71" count="1" type="stmt"/>
-        <line num="72" count="1" type="stmt"/>
-        <line num="77" count="9" type="stmt"/>
-        <line num="83" count="1" type="stmt"/>
-        <line num="102" count="0" type="stmt"/>
-        <line num="112" count="28" type="stmt"/>
-        <line num="115" count="18" type="stmt"/>
-        <line num="122" count="2" type="stmt"/>
-        <line num="143" count="0" type="stmt"/>
-        <line num="147" count="1" type="stmt"/>
-        <line num="155" count="0" type="stmt"/>
-        <line num="169" count="1" type="stmt"/>
+        <line num="40" count="14" type="stmt"/>
+        <line num="42" count="14" type="stmt"/>
+        <line num="43" count="14" type="stmt"/>
+        <line num="44" count="14" type="cond" truecount="1" falsecount="1"/>
+        <line num="45" count="0" type="stmt"/>
+        <line num="47" count="14" type="stmt"/>
+        <line num="48" count="14" type="stmt"/>
+        <line num="51" count="14" type="stmt"/>
+        <line num="52" count="5" type="stmt"/>
+        <line num="53" count="5" type="stmt"/>
+        <line num="55" count="5" type="stmt"/>
+        <line num="56" count="5" type="stmt"/>
+        <line num="59" count="0" type="stmt"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="65" count="14" type="stmt"/>
+        <line num="66" count="5" type="stmt"/>
+        <line num="67" count="5" type="stmt"/>
+        <line num="69" count="5" type="stmt"/>
+        <line num="71" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="72" count="5" type="stmt"/>
+        <line num="75" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="76" count="0" type="stmt"/>
+        <line num="78" count="0" type="stmt"/>
+        <line num="82" count="0" type="stmt"/>
+        <line num="86" count="14" type="cond" truecount="2" falsecount="0"/>
+        <line num="87" count="5" type="stmt"/>
+        <line num="96" count="9" type="stmt"/>
+        <line num="97" count="2" type="stmt"/>
+        <line num="98" count="2" type="stmt"/>
+        <line num="99" count="2" type="stmt"/>
+        <line num="102" count="9" type="stmt"/>
+        <line num="103" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="104" count="1" type="stmt"/>
+        <line num="108" count="1" type="stmt"/>
+        <line num="109" count="1" type="stmt"/>
+        <line num="113" count="9" type="stmt"/>
+        <line num="120" count="1" type="stmt"/>
+        <line num="140" count="0" type="stmt"/>
+        <line num="150" count="28" type="stmt"/>
+        <line num="154" count="18" type="stmt"/>
+        <line num="155" count="36" type="stmt"/>
+        <line num="157" count="18" type="cond" truecount="1" falsecount="1"/>
+        <line num="159" count="0" type="stmt"/>
+        <line num="163" count="18" type="stmt"/>
+        <line num="187" count="2" type="stmt"/>
+        <line num="215" count="0" type="stmt"/>
+        <line num="219" count="1" type="stmt"/>
+        <line num="227" count="0" type="stmt"/>
+        <line num="232" count="8" type="cond" truecount="1" falsecount="1"/>
+        <line num="236" count="0" type="stmt"/>
+        <line num="238" count="0" type="stmt"/>
+        <line num="254" count="1" type="stmt"/>
       </file>
     </package>
     <package name="app.context">
       <metrics statements="86" coveredstatements="61" conditionals="28" coveredconditionals="15" methods="28" coveredmethods="22"/>
-      <file name="CartContext.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\context\CartContext.tsx">
+      <file name="CartContext.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\context\CartContext.tsx">
         <metrics statements="26" coveredstatements="26" conditionals="8" coveredconditionals="6" methods="15" coveredmethods="15"/>
         <line num="23" count="3" type="stmt"/>
         <line num="25" count="3" type="stmt"/>
@@ -660,7 +743,7 @@
         <line num="72" count="1" type="stmt"/>
         <line num="75" count="16" type="stmt"/>
       </file>
-      <file name="PaymentContext.tsx" path="C:\Users\holma\git\sep2025-project-team_004\mobile\app\context\PaymentContext.tsx">
+      <file name="PaymentContext.tsx" path="C:\Users\Georg\OneDrive\Documents\GitHub\sep2025-project-team_004\mobile\app\context\PaymentContext.tsx">
         <metrics statements="60" coveredstatements="35" conditionals="20" coveredconditionals="9" methods="13" coveredmethods="7"/>
         <line num="6" count="3" type="cond" truecount="2" falsecount="0"/>
         <line num="17" count="3" type="stmt"/>

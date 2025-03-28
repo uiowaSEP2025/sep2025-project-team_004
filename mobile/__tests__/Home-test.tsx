@@ -68,17 +68,16 @@ describe('WelcomePage', () => {
   const setup = () => {
     return render(
       <PaymentProvider>
-      <NavigationContext.Provider value={customNavigation as any}>
-        <WelcomePage />
-      </NavigationContext.Provider>
+        <NavigationContext.Provider value={customNavigation as any}>
+          <WelcomePage />
+        </NavigationContext.Provider>
       </PaymentProvider>
     );
   };
 
   it('renders correctly', async () => {
     const { findByText } = setup();
-      expect(await findByText('Welcome!')).toBeTruthy();
-
+    expect(await findByText('Welcome!')).toBeTruthy();
   });
 
   it('toggles menu visibility when profile icon is pressed', async () => {
@@ -91,11 +90,14 @@ describe('WelcomePage', () => {
     const profileIcon = getByText('P');
     await act(async () => {
       fireEvent.press(profileIcon);
+      jest.runAllTimers(); // run pending timers to process any delayed UI updates
     });
     await waitFor(() => expect(getByText('Profile')).toBeTruthy(), { timeout: 7000 });
     
+    // Hide menu
     await act(async () => {
       fireEvent.press(profileIcon);
+      jest.runAllTimers();
     });
     await waitFor(() => expect(queryByText('Profile')).toBeNull(), { timeout: 7000 });
   }, 10000);
@@ -128,8 +130,6 @@ describe('WelcomePage', () => {
     });
   });
 
-  // ---- New tests for uncovered branches ----
-
   it('calls navigation.reset if auth token is missing on mount', async () => {
     // Simulate missing auth token
     (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
@@ -148,6 +148,7 @@ describe('WelcomePage', () => {
     // Press "Logout"
     await act(async () => {
       fireEvent.press(getByText("Logout"));
+      jest.runAllTimers();
     });
   
     // Wait for modal visibility state update
@@ -159,6 +160,7 @@ describe('WelcomePage', () => {
     // Press "Yes" button inside the modal
     await act(async () => {
       fireEvent.press(getByText("Yes"));
+      jest.runAllTimers();
     });
   
     // Ensure modal disappears after clicking "Yes"
@@ -168,8 +170,7 @@ describe('WelcomePage', () => {
       });
     });
   
-  
-    //Ensure AsyncStorage tokens are removed
+    // Ensure AsyncStorage tokens are removed
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith("authToken");
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith("userInfo");
   
@@ -177,7 +178,6 @@ describe('WelcomePage', () => {
     expect(mockNavigate).toHaveBeenCalledWith("index");
   });
   
-
   it('hides logout modal when "Cancel" is pressed', async () => {
     const { getByText, queryByText } = setup();
     // Open menu
