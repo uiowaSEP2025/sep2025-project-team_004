@@ -1,10 +1,16 @@
-import React from 'react';
-import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Platform } from "react-native";
-import { useNavigation, useRoute, RouteProp, NavigationProp } from "@react-navigation/native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  ImageBackground,
+} from "react-native";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 import showMessage from "../hooks/useAlert";
-
 import Constants from "expo-constants";
 
 const API_BASE_URL =
@@ -23,16 +29,17 @@ export default function ForgotScreen() {
       return;
     }
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/auth/request-password-reset/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-  
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/auth/request-password-reset/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
       if (!response.ok) {
         throw new Error("Error sending reset email. Please try again.");
       }
-  
       useToast("Success", "A reset link has been sent to your email.");
       setEmail("");
       navigation.navigate("index");
@@ -42,76 +49,130 @@ export default function ForgotScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text testID="forgot-title" style={styles.title}>
-        Forgot Password
-      </Text>
-      {error ? <Text testID="error-message" style={styles.error}>{error}</Text> : null}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.innerContainer}>
+        <Text style={styles.headerText}>Forgot Password</Text>
+        <View style={styles.formContainer}>
+          <Text style={styles.errorText}>{error || " "}</Text>
+          <Text style={styles.inputLabel}>Email</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Email"
+            placeholderTextColor="#909090"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <View style={styles.inputLine} />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#888"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+          <TouchableOpacity onPress={handleForgot}>
+            <View style={styles.resetButton}>
+              <Text style={styles.resetButtonText}>
+                Reset Password
+              </Text>
+            </View>
+          </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={handleForgot}>
-        <Text style={styles.buttonText}>Reset Password</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-              style={[styles.button, styles.backButton]}
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.buttonText}>Back to Login</Text>
-            </TouchableOpacity>
-    </View>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>Back to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "white",
+    backgroundColor: "#ffffff",
   },
-  title: {
+  innerContainer: {
+    width: 375,
+    height: 812,
+    alignSelf: "center",
+  },
+  headerText: {
+    height: 30,
+    fontFamily: "Merriweather",
     fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "black",
+    fontWeight: "700",
+    lineHeight: 30,
+    color: "#303030",
+    letterSpacing: 1.2,
+    textAlign: "left",
+    marginTop: 30,
+    marginLeft: 30,
   },
-  input: {
-    width: Dimensions.get("window").width * 0.4,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    marginBottom: 10,
-    backgroundColor: "#fff",
+  formContainer: {
+    width: 345,
+    height: 300,
+    backgroundColor: "#ffffff",
+    marginTop: 25,
   },
-  button: {
-    padding: 10,
-    backgroundColor: "#007BFF",
-    borderRadius: 5,
-    marginTop: 10,
-    width: Dimensions.get("window").width * 0.4,
-    alignItems: "center",
-  },
-  backButton: {
-    backgroundColor: "gray",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  error: {
+  errorText: {
     color: "red",
     marginBottom: 10,
+    textAlign: "center",
+    marginLeft: 30,
+  },
+  inputLabel: {
+    height: 18,
+    fontFamily: "Nunito Sans",
+    fontSize: 14,
+    fontWeight: "400",
+    lineHeight: 19,
+    color: "#909090",
+    marginTop: 30,
+    marginLeft: 30,
+  },
+  textInput: {
+    height: 36,
+    fontFamily: "Nunito Sans",
+    fontSize: 14,
+    color: "#303030",
+    marginTop: 10,
+    marginLeft: 30,
+    width: 315,
+    paddingVertical: 4,
+  },
+  inputLine: {
+    width: 315,
+    height: 2,
+    backgroundColor: "#e0e0e0",
+    marginTop: 10,
+    marginLeft: 30,
+  },
+  resetButton: {
+    width: 285,
+    height: 50,
+    backgroundColor: "#232323",
+    borderRadius: 8,
+    marginTop: 50,
+    marginLeft: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  resetButtonText: {
+    fontFamily: "Nunito Sans",
+    fontSize: 18,
+    fontWeight: "600",
+    lineHeight: 24.552,
+    color: "#ffffff",
+    textAlign: "center",
+  },
+  backText: {
+    width: 199,
+    height: 19,
+    fontFamily: "Nunito Sans",
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 19,
+    textAlign: "center",
+    marginTop: 30,
+    marginLeft: 73,
+    color: "#303030",
   },
 });
+
