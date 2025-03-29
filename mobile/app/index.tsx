@@ -84,10 +84,7 @@ export default function HomeScreen() {
           <View style={styles.line} />
           <ImageBackground
             style={styles.logoImage}
-            source={{
-              uri:
-                "https://static.codia.ai/custom_image/2025-03-29/011554/app-logo.svg",
-            }}
+            source={require("../assets/images/login_pic.jpg")}
           />
           <View style={styles.line} />
         </View>
@@ -96,7 +93,9 @@ export default function HomeScreen() {
           <Text style={styles.welcomeBackText}>WELCOME BACK</Text>
         </Text>
         <View style={styles.formContainer}>
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <Text style={styles.errorText}>
+            {error || " "} 
+          </Text>
           <Text style={styles.inputLabel}>Email</Text>
           <TextInput
             style={styles.textInput}
@@ -118,14 +117,7 @@ export default function HomeScreen() {
               value={password}
               onChangeText={setPassword}
             />
-            <ImageBackground
-              style={styles.passwordIcon}
-              source={{
-                uri:
-                  "https://static.codia.ai/custom_image/2025-03-29/011554/password-visibility-icon.svg",
-              }}
-              resizeMode="cover"
-            />
+            
           </View>
           <View style={styles.inputLine} />
           <TouchableOpacity onPress={() => navigation.navigate("forgot")}>
@@ -220,7 +212,7 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     lineHeight: 19,
     color: "#909090",
-    marginTop: 35,
+    marginTop: 15,
   },
   textInput: {
     height: 40,

@@ -237,8 +237,9 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     marginBottom: 10,
-    textAlign: "center",
+    textAlign: "left",
     marginLeft: 30,
+    marginTop: 30,
   },
   inputNameLabel: {
     height: 18,
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     lineHeight: 19,
     color: "#909090",
-    marginTop: 30,
+    marginTop: 0,
   },
   inputLabel: {
     height: 18,

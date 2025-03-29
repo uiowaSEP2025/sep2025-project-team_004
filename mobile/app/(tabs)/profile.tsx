@@ -234,9 +234,7 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => {
-            /* TODO: Setting page */
-          }}
+          onPress={() => navigation.navigate("setting")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
