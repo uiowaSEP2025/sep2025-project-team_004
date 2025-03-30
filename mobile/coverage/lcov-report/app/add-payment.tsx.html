@@ -769,7 +769,9 @@ import { usePayment } from "./context/PaymentContext";
 import { useRouter } from "expo-router";
 &nbsp;
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 &nbsp;
 export default function PaymentMethod() {
   const navigation = useNavigation&lt;NavigationProp&lt;RootStackParamList&gt;&gt;();

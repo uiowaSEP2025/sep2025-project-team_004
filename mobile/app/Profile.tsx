@@ -19,10 +19,11 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types"; 
 import Constants from "expo-constants";
-import { usePayment } from "./context/PaymentContext";
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 
 export const unstable_settings = {
@@ -37,7 +38,6 @@ export default function Profile() {
   const [user, setUser] = useState({ first_name: "", last_name: "", email: "" });
   const [modalVisible, setModalVisible] = useState(false);
   const [defaultCard, setDefaultCard] = useState<any>(null);
-  const { clearCards } = usePayment();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -66,7 +66,7 @@ export default function Profile() {
             return;
           }
   
-          const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`, {
+          const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
             method: "GET",
             headers: {
               "Authorization": `Token ${authToken}`,
@@ -109,7 +109,6 @@ export default function Profile() {
     try {
       await AsyncStorage.removeItem("authToken");
       await AsyncStorage.removeItem("userInfo"); // Remove user details too
-      clearCards();
       navigation.reset({ index: 0, routes: [{ name: "index" }] });
       setModalVisible(false);
     } catch (error) {

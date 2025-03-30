@@ -15,10 +15,11 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
-import { usePayment } from "./context/PaymentContext"; 
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 // Dynamically load card type based on card info in storage
 const getCardLogo = (cardType: string) => {
@@ -39,11 +40,65 @@ const getCardLogo = (cardType: string) => {
 
 export default function PaymentMethod() {
   const router = useRouter();
-  const { cards, loadCards, setDefaultPayment, deletePaymentMethod } = usePayment();
+  const [cards, setCards] = useState<any[]>([]);
 
-  useEffect(() => {
-    loadCards();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadCards();
+    }, [])
+  );
+
+  const loadCards = async () => {
+    try {
+      const authToken = await AsyncStorage.getItem("authToken");
+      if (!authToken) {
+        console.error("User not authenticated.");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch payment methods.");
+
+      const data = await response.json();
+      setCards(data);
+    } catch (error) {
+      console.error("Error loading payment methods:", error);
+    }
+  };
+
+  const deletePaymentMethod = async (cardId: number) => {
+    try {
+      const authToken = await AsyncStorage.getItem("authToken");
+      if (!authToken) {
+        console.error("User not authenticated.");
+        return;
+      }
+        
+      setCards((prevCards) => prevCards.filter((card) => card.id !== cardId));
+
+      const response = await fetch(`${API_BASE_URL}/api/payment/delete/${cardId}/`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to delete payment method.");
+
+      
+    } catch (error) {
+      console.error("Error deleting payment method:", error);
+    }
+    loadCards();  
+  };
 
   const handleDeleteCard = async (cardId: number) => {
     if (Platform.OS === "web") {
@@ -59,6 +114,38 @@ export default function PaymentMethod() {
                 { cancelable: true }
               );
             }
+  };
+
+  const setDefaultPayment = async (cardId: number) => {
+    try {
+      const authToken = await AsyncStorage.getItem("authToken");
+      if (!authToken) {
+        console.error("User not authenticated.");
+        return;
+      }
+
+      setCards((prevCards) =>
+        prevCards.map((card) => ({
+          ...card,
+          is_default: card.id === cardId,
+        }))
+      );
+
+      const response = await fetch(`${API_BASE_URL}/api/payment/set-default/${cardId}/`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to set default payment method.");
+
+      
+    } catch (error) {
+      console.error("Error setting default payment method:", error);
+    }
+    loadCards(); 
   };
   // Only display up to 10 cards
   const renderedCards = cards.slice(0, 10);

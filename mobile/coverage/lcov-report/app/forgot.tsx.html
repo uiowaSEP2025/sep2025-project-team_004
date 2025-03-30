@@ -307,7 +307,9 @@ import showMessage from "../hooks/useAlert";
 import Constants from "expo-constants";
 &nbsp;
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 &nbsp;
 export default function ForgotScreen() {
   const [email, setEmail] = useState("");
@@ -322,7 +324,7 @@ export default function ForgotScreen() {
       return;
     }
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/auth/request-password-reset/`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/auth/request-password-reset/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

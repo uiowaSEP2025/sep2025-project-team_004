@@ -14,7 +14,10 @@ import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
+
 
 
 export default function HomeScreen() {
@@ -33,7 +36,7 @@ export default function HomeScreen() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/api-token-auth/`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/api-token-auth/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -50,7 +53,7 @@ export default function HomeScreen() {
       if (response.ok && data.token) {
         await AsyncStorage.setItem("authToken", data.token); 
         
-        const userResponse = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/me/`, {
+        const userResponse = await fetch(`${API_BASE_URL}/api/users/me/`, {
           method: "GET",
           headers: { "Authorization": `Token ${data.token}` },
         });

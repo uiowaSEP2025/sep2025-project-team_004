@@ -925,7 +925,9 @@ import Constants from "expo-constants";
 import { usePayment } from "./context/PaymentContext";
 &nbsp;
 const API_BASE_URL =
-<span class="cstat-no" title="statement not covered" >  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";</span>
+<span class="cstat-no" title="statement not covered" >  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;</span>
 &nbsp;
 &nbsp;
 export const unstable_settings = <span class="cstat-no" title="statement not covered" >{</span>
@@ -969,7 +971,7 @@ export default function <span class="fstat-no" title="function not covered" >Pro
 <span class="cstat-no" title="statement not covered" >            return;</span>
           }
   
-          const response = <span class="cstat-no" title="statement not covered" >await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`, {</span>
+          const response = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {</span>
             method: "GET",
             headers: {
               "Authorization": `Token ${authToken}`,

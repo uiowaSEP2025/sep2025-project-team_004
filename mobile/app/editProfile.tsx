@@ -7,7 +7,9 @@ import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 
 
@@ -34,7 +36,7 @@ const EditProfilePage: React.FC = () => {
             return;
         }
 
-        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/profile/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -82,7 +84,7 @@ const EditProfilePage: React.FC = () => {
             return;
         }
 
-        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/update/`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/profile/update/`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",

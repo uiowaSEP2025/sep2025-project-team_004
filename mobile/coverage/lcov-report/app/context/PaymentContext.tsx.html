@@ -384,7 +384,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { Alert } from "react-native";
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 &nbsp;
 interface PaymentContextType {
   cards: any[];
@@ -417,7 +419,7 @@ export const PaymentProvider: React.FC&lt;{ children: React.ReactNode }&gt; = ({
         return;
       }
 &nbsp;
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`, {
+      const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
         method: "GET",
         headers: {
           "Authorization": `Token ${authToken}`,
@@ -444,7 +446,7 @@ export const PaymentProvider: React.FC&lt;{ children: React.ReactNode }&gt; = ({
 &nbsp;
       setCards((prevCards) =&gt; [...prevCards, newCard]);
 &nbsp;
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/payment-methods/`, {
+      const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
         method: "POST",
         headers: {
           "Authorization": `Token ${authToken}`,
@@ -479,7 +481,7 @@ export const PaymentProvider: React.FC&lt;{ children: React.ReactNode }&gt; = ({
         }))
       );
 &nbsp;
-      const response = <span class="cstat-no" title="statement not covered" >await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/set-default/${cardId}/`, {</span>
+      const response = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE_URL}/api/payment/set-default/${cardId}/`, {</span>
         method: "POST",
         headers: {
           "Authorization": `Token ${authToken}`,
@@ -506,7 +508,7 @@ export const PaymentProvider: React.FC&lt;{ children: React.ReactNode }&gt; = ({
         
 <span class="cstat-no" title="statement not covered" >      setCards(<span class="fstat-no" title="function not covered" >(p</span>revCards) =&gt; <span class="cstat-no" title="statement not covered" >prevCards.filter(<span class="fstat-no" title="function not covered" >(c</span>ard) =&gt; <span class="cstat-no" title="statement not covered" >card.id !== cardId)</span>)</span>;</span>
 &nbsp;
-      const response = <span class="cstat-no" title="statement not covered" >await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payment/delete/${cardId}/`, {</span>
+      const response = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE_URL}/api/payment/delete/${cardId}/`, {</span>
         method: "DELETE",
         headers: {
           "Authorization": `Token ${authToken}`,
