@@ -65,6 +65,7 @@ export default function Profile() {
           if (!authToken) {
             return;
           }
+          console.log("User info: ", await AsyncStorage.getItem("userInfo"));
   
           const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
             method: "GET",
@@ -79,6 +80,7 @@ export default function Profile() {
           }
   
           const data = await response.json();
+          console.log("Payment methods: ", data);
           const defaultCard = data.find((card: any) => card.is_default);
   
           setDefaultCard(defaultCard || null);
@@ -233,7 +235,7 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => navigation.navigate("settings")}
+          onPress={() => navigation.navigate("setting")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
