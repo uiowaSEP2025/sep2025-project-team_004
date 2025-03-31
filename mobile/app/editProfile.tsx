@@ -132,7 +132,9 @@ const EditProfilePage: React.FC = () => {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity 
+            testID="back-button"
+            onPress={() => navigation.goBack()} style={styles.backButton}>
             <ImageBackground
               source={require('@/assets/images/back-arrow.png')}
               style={styles.backIcon}
