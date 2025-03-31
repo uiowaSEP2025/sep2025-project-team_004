@@ -257,7 +257,7 @@ export default function Profile() {
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>Setting</Text>
+              <Text style={styles.infoTitle}>Settings</Text>
               <Text style={styles.infoSubtitle}>
                 Notification, Password, FAQ, Contact
               </Text>
