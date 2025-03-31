@@ -16,7 +16,10 @@ import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
+
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -32,30 +35,29 @@ export default function HomeScreen() {
     }
     setLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/api-token-auth/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: email, // Django expects "username" instead of "email"
-            password: password,
-          }),
-        }
-      );
+      const fullUrl = `${API_BASE_URL}/api/users/api-token-auth/`;
+      console.log("API URL:", fullUrl);
+      const response = await fetch(`${API_BASE_URL}/api/users/api-token-auth/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: email,  // Django expects "username" instead of "email"
+          password: password,
+        }),
+      });
+
       const data = await response.json();
       console.log("API Response:", data);
       if (response.ok && data.token) {
-        await AsyncStorage.setItem("authToken", data.token);
-        const userResponse = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/me/`,
-          {
-            method: "GET",
-            headers: { Authorization: `Token ${data.token}` },
-          }
-        );
+        await AsyncStorage.setItem("authToken", data.token); 
+        
+        const userResponse = await fetch(`${API_BASE_URL}/api/users/me/`, {
+          method: "GET",
+          headers: { "Authorization": `Token ${data.token}` },
+        });
+  
         const userData = await userResponse.json();
         if (userResponse.ok) {
           await AsyncStorage.setItem("userInfo", JSON.stringify(userData));

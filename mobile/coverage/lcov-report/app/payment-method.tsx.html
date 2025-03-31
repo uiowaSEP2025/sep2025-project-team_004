@@ -679,7 +679,9 @@ import Constants from "expo-constants";
 import { usePayment } from "./context/PaymentContext"; 
 &nbsp;
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 &nbsp;
 // Dynamically load card type based on card info in storage
 const getCardLogo = (cardType: string) =&gt; {

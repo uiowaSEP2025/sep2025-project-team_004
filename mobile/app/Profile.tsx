@@ -17,7 +17,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../../types"; 
+import { RootStackParamList } from "../types"; 
 import Constants from "expo-constants";
 
 const API_BASE_URL =
@@ -120,6 +120,19 @@ export default function Profile() {
     <SafeAreaView style={styles.container}>
       {/* Header Bar */}
       <View style={styles.header}>
+        {/* Back Button (Align Left) */}
+        <TouchableOpacity
+                  testID="back-button"
+                  onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "home" } }]})}
+                  style={styles.headerIcon}
+                >
+                  <ImageBackground
+                    style={styles.backIcon}
+                    source={require("@/assets/images/back-arrow.png")}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+
         {/* Centered Title */}
         <Text style={styles.headerTitle}>Profile</Text>
 
@@ -136,10 +149,7 @@ export default function Profile() {
         style={styles.content}
       >
         {/* Personal Info */}
-        <TouchableOpacity
-          style={styles.profileInfoContainer}
-          onPress={() => navigation.navigate("editProfile")}
-        >
+        <View style={styles.profileInfoContainer}>
           <Image
             style={styles.avatar}
             source={require('@/assets/images/avatar-placeholder.png')}
@@ -147,15 +157,17 @@ export default function Profile() {
           <View style={styles.userInfo}>
             <Text style={styles.username}>
               {user ? `${user.first_name} ${user.last_name}` : "Loading..."}
-            </Text>
+              </Text>
             <Text style={styles.email}>{user ? user.email : "Loading..."}</Text>
           </View>
-        </TouchableOpacity>
+        </View>
 
         {/* List Items */}
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => navigation.navigate("my-orders")}
+          onPress={() => {
+            /* TODO:  My orders page */
+          }}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
@@ -233,7 +245,9 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => navigation.navigate("setting")}
+          onPress={() => {
+            /* TODO: Setting page */
+          }}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
@@ -384,9 +398,9 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   infoTitle: {
-    fontFamily: 'Nunito Sans', 
+    fontFamily: 'NunitoSansBold', 
     fontWeight: '700',
-    fontSize: 18,
+    fontSize: 16,
     color: '#232323',
     marginBottom: 4,
   },
@@ -400,5 +414,5 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
-  
 });
+

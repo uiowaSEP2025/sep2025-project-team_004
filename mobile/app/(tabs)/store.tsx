@@ -6,7 +6,9 @@ import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 
 
@@ -39,7 +41,7 @@ export default function StoreScreen() {
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   
   useEffect(() => {
-    fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/store/products/`)
+    fetch(`${API_BASE_URL}/api/store/products/`)
       .then((response) => response.json())
       .then((data: Product[]) => {
         setProducts(data);

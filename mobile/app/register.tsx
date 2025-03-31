@@ -17,7 +17,10 @@ export default function RegisterScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { useToast, useAlert } = showMessage();
   const API_BASE_URL =
-    Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
+  
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -47,20 +50,19 @@ export default function RegisterScreen() {
     setError("");
     setLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/register/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            first_name: firstName,
-            last_name: lastName,
-            username: username,
-            email: email,
-            password: password,
-          }),
-        }
-      );
+      
+      const response = await fetch(`${API_BASE_URL}/api/users/register/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          username: username,
+          email: email,
+          password: password,
+        }),
+      });
+      
       const data = await response.json();
       console.log("Backend response:", data);
       if (response.ok) {

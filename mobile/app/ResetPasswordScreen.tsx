@@ -7,7 +7,9 @@ import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 type ResetPasswordScreenRouteProp = RouteProp<RootStackParamList, "ResetPasswordScreen">;
 
@@ -52,7 +54,7 @@ export default function ResetPasswordScreen() {
     }
   
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/auth/reset-password/`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/auth/reset-password/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, token, new_password: newPassword }),
