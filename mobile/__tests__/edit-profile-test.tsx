@@ -1,13 +1,11 @@
-// __tests__/editProfile.test.tsx
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import EditProfilePage from '../app/editProfile'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { NavigationContext, NavigationProp, ParamListBase } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 
-// Fake user profile data returned from the GET API call.
 const fakeProfile = {
   username: "testuser",
   first_name: "Test",
@@ -32,16 +30,15 @@ const mockNavigation: NavigationProp<ParamListBase> = {
   canGoBack: jest.fn(),
   getParent: jest.fn(),
   getState: jest.fn(),
-  
-}as any as NavigationProp<ParamListBase>;
+} as any as NavigationProp<ParamListBase>;
 
 describe("EditProfilePage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Ensure AsyncStorage returns a dummy auth token.
+    // Ensure AsyncStorage returns a dummy auth token by default.
     (AsyncStorage.getItem as jest.Mock) = jest.fn(() => Promise.resolve("dummyToken"));
     (AsyncStorage.setItem as jest.Mock) = jest.fn(() => Promise.resolve());
-    // Mock Alert.alert so we can verify its usage.
+    // Mock Toast.show so we can verify its usage.
     jest.spyOn(Toast, 'show').mockImplementation(() => {});
   });
 
@@ -111,17 +108,17 @@ describe("EditProfilePage", () => {
       fireEvent.press(updateButton);
     });
 
-    // Wait for the success alert to be triggered.
+    // Wait for the success toast to be triggered.
     await waitFor(() => {
       expect(Toast.show).toHaveBeenCalledWith({
-              type: "success",
-              text1: "Success",
-              text2: "Your profile has been updated.",
-              position: "top",
-              topOffset: Platform.OS === "web" ? 20 : 70,
-              visibilityTime: 4000,
-              autoHide: true,
-            });
+        type: "success",
+        text1: "Success",
+        text2: "Your profile has been updated.",
+        position: "top",
+        topOffset: Platform.OS === "web" ? 20 : 70,
+        visibilityTime: 4000,
+        autoHide: true,
+      });
     });
   });
 
@@ -153,6 +150,121 @@ describe("EditProfilePage", () => {
     expect(mockNavigation.reset).toHaveBeenCalledWith({
       index: 0,
       routes: [{ name: "(tabs)", params: { screen: "profile" } }],
+    });
+  });
+
+  // New test: Check for missing auth token during profile fetch.
+  it("shows an alert when user is not authenticated during profile fetch", async () => {
+    // Simulate missing auth token.
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    render(
+      <NavigationContext.Provider value={mockNavigation}>
+        <EditProfilePage />
+      </NavigationContext.Provider>
+    );
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("Error", "User is not authenticated.");
+    });
+  });
+
+  // New test: Check for 403 Forbidden response during profile fetch.
+  it("alerts the user when the profile fetch returns a 403 Forbidden error", async () => {
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce("dummyToken");
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      status: 403,
+      ok: false,
+      json: () => Promise.resolve({}),
+    });
+
+    render(
+      <NavigationContext.Provider value={mockNavigation}>
+        <EditProfilePage />
+      </NavigationContext.Provider>
+    );
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("Error", "You do not have permission to access this resource.");
+    });
+  });
+
+  // New test: Check update failure due to server error.
+  it("displays an error alert when updating the profile fails", async () => {
+    global.fetch = jest.fn()
+      // Simulate successful GET request.
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(fakeProfile),
+      })
+      // Simulate PATCH request failure.
+      .mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ detail: "Update failed due to server error." }),
+      });
+
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { getByText, getByPlaceholderText } = render(
+      <NavigationContext.Provider value={mockNavigation}>
+        <EditProfilePage />
+      </NavigationContext.Provider>
+    );
+
+    // Wait until the profile is loaded.
+    await waitFor(() => {
+      expect(getByText("Edit Profile")).toBeTruthy();
+    });
+
+    // Update the phone number to trigger the update call.
+    const phoneInput = getByPlaceholderText("Phone Number");
+    act(() => {
+      fireEvent.changeText(phoneInput, "0987654321");
+    });
+
+    const updateButton = getByText("Update Profile");
+    act(() => {
+      fireEvent.press(updateButton);
+    });
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("Error", "Update failed due to server error.");
+    });
+  });
+
+  // New test: Check exception handling during profile update.
+  it("shows an alert when an exception occurs during profile update", async () => {
+    global.fetch = jest.fn()
+      // Simulate successful GET request.
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(fakeProfile),
+      })
+      // Simulate PATCH request throwing an error.
+      .mockRejectedValueOnce(new Error("Network error"));
+
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { getByText } = render(
+      <NavigationContext.Provider value={mockNavigation}>
+        <EditProfilePage />
+      </NavigationContext.Provider>
+    );
+
+    await waitFor(() => {
+      expect(getByText("Edit Profile")).toBeTruthy();
+    });
+
+    const updateButton = getByText("Update Profile");
+    act(() => {
+      fireEvent.press(updateButton);
+    });
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("Error", "Failed to update profile.");
     });
   });
 });
