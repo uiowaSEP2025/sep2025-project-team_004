@@ -7,7 +7,9 @@ import Constants from "expo-constants";
 
 // Base URL configuration
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 // Define the Product Type
 interface Product {
@@ -49,7 +51,7 @@ export default function StoreScreen() {
 
   // Fetch products
   useEffect(() => {
-    fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/store/products/`)
+    fetch(`${API_BASE_URL}/api/store/products/`)
       .then((response) => response.json())
       .then((data: Product[]) => {
         setProducts(data);

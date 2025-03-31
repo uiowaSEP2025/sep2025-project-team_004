@@ -1,4 +1,4 @@
-// app/payment-method.tsx
+// app/add-payment.tsx
 
 import React, { useState } from 'react';
 import {
@@ -18,20 +18,22 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
-import { usePayment } from "./context/PaymentContext";
 import { useRouter } from "expo-router";
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 export default function PaymentMethod() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const {useToast, useAlert} = showMessage();
+  const { useToast } = showMessage();
   const router = useRouter();
-  const { addCard } = usePayment();
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [expiry, setExpiry] = useState('');
+    const [cards, setCards] = useState<any[]>([]);
+  
   // Get card type
   const getCardType = (number: string) => {
     const sanitized = number.replace(/\s/g, '');
@@ -93,6 +95,35 @@ export default function PaymentMethod() {
       expiration_date: expiry,
       cardholder_name: cardHolder,
       card_type: detectedCardType,
+    };
+
+    const addCard = async (newCard: any) => {
+      try {
+        const authToken = await AsyncStorage.getItem("authToken");
+        if (!authToken) {
+          console.error("User not authenticated.");
+          return;
+        }
+  
+        setCards((prevCards) => [...prevCards, newCard]);
+  
+        const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Token ${authToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newCard),
+        });
+  
+        if (!response.ok) throw new Error("Failed to add payment method.");
+  
+        const addedCard = await response.json();
+  
+      } catch (error) {
+        console.error("Error adding payment method:", error);
+        Alert.alert("Error", "There was an error adding your card.");
+      }
     };
 
     try {
