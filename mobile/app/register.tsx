@@ -92,7 +92,7 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
-        <Text style={styles.headerText} numberOfLines={1}>
+        <Text style={styles.headerText} testID="register-title" numberOfLines={1}>
           WELCOME!
         </Text>
 
@@ -198,7 +198,7 @@ export default function RegisterScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>
+            <Text style={styles.backText}> 
               Already have account? SIGN IN
             </Text>
           </TouchableOpacity>

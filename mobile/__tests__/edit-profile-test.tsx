@@ -56,7 +56,7 @@ describe("EditProfilePage", () => {
       json: () => Promise.resolve(fakeProfile),
     });
 
-    const { getByDisplayValue } = render(
+    const { getByText, getByDisplayValue } = render(
       <NavigationContext.Provider value={mockNavigation}>
         <EditProfilePage />
       </NavigationContext.Provider>
@@ -64,9 +64,9 @@ describe("EditProfilePage", () => {
 
     // Wait for the profile fields to be populated.
     await waitFor(() => {
-      expect(getByDisplayValue("testuser")).toBeTruthy();
-      expect(getByDisplayValue("Test")).toBeTruthy();
-      expect(getByDisplayValue("User")).toBeTruthy();
+      expect(getByText("testuser")).toBeTruthy();
+      expect(getByText("Test")).toBeTruthy();
+      expect(getByText("User")).toBeTruthy();
       expect(getByDisplayValue("1234567890")).toBeTruthy();
       expect(getByDisplayValue("123 Main St")).toBeTruthy();
       expect(getByDisplayValue("Test City")).toBeTruthy();
@@ -150,9 +150,7 @@ describe("EditProfilePage", () => {
     });
 
     // Verify that navigation.reset was called with the expected parameters.
-    expect(mockNavigation.reset).toHaveBeenCalledWith({
-      index: 0,
-      routes: [{ name: "(tabs)", params: { screen: "profile" } }],
-    });
+    expect(mockNavigation.goBack).toHaveBeenCalled();
+
   });
 });

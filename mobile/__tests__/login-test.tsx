@@ -41,16 +41,16 @@ describe("HomeScreen", () => {
     const { getByTestId, getByPlaceholderText, getByText } = renderWithNavigation();
 
     expect(getByTestId("login-title")).toBeTruthy();
-    expect(getByPlaceholderText("Email")).toBeTruthy();
-    expect(getByPlaceholderText("Password")).toBeTruthy();
+    expect(getByTestId("email-input")).toBeTruthy();
+    expect(getByTestId("password-input")).toBeTruthy();
     expect(getByTestId("login-button")).toBeTruthy();
-    expect(getByText("Register")).toBeTruthy();
+    expect(getByText("SIGN UP")).toBeTruthy();
   });
 
   it("updates email and password inputs", () => {
-    const { getByPlaceholderText, getByDisplayValue } = renderWithNavigation();
-    const emailInput = getByPlaceholderText("Email");
-    const passwordInput = getByPlaceholderText("Password");
+    const { getByTestId, getByPlaceholderText, getByDisplayValue } = renderWithNavigation();
+    const emailInput = getByTestId("email-input");
+    const passwordInput = getByTestId("password-input");
 
     fireEvent.changeText(emailInput, "test@example.com");
     fireEvent.changeText(passwordInput, "password123");
@@ -96,8 +96,8 @@ describe("HomeScreen", () => {
       });
 
     const { getByPlaceholderText, getByTestId } = renderWithNavigation();
-    fireEvent.changeText(getByPlaceholderText("Email"), "test@example.com");
-    fireEvent.changeText(getByPlaceholderText("Password"), "password123");
+    fireEvent.changeText(getByTestId("email-input"), "test@example.com");
+    fireEvent.changeText(getByTestId("password-input"), "password123");
 
     await act(async () => {
       fireEvent.press(getByTestId("login-button"));
@@ -124,8 +124,8 @@ describe("HomeScreen", () => {
     });
 
     const { getByPlaceholderText, getByTestId, queryByText } = renderWithNavigation();
-    fireEvent.changeText(getByPlaceholderText("Email"), "wrong@example.com");
-    fireEvent.changeText(getByPlaceholderText("Password"), "wrongpassword");
+    fireEvent.changeText(getByTestId("email-input"), "wrong@example.com");
+    fireEvent.changeText(getByTestId("password-input"), "wrongpassword");
 
     await act(async () => {
       fireEvent.press(getByTestId("login-button"));
@@ -140,8 +140,8 @@ describe("HomeScreen", () => {
     (global.fetch as jest.Mock) = jest.fn().mockRejectedValue(new Error("Network error"));
 
     const { getByPlaceholderText, getByTestId, queryByText } = renderWithNavigation();
-    fireEvent.changeText(getByPlaceholderText("Email"), "error@example.com");
-    fireEvent.changeText(getByPlaceholderText("Password"), "password123");
+    fireEvent.changeText(getByTestId("email-input"), "error@example.com");
+    fireEvent.changeText(getByTestId("password-input"), "password123");
 
     await act(async () => {
       fireEvent.press(getByTestId("login-button"));

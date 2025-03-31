@@ -41,13 +41,7 @@ const getCardLogo = (cardType: string) => {
 export default function PaymentMethod() {
   const router = useRouter();
   const [cards, setCards] = useState<any[]>([]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadCards();
-    }, [])
-  );
-
+  
   const loadCards = async () => {
     try {
       const authToken = await AsyncStorage.getItem("authToken");
@@ -72,6 +66,12 @@ export default function PaymentMethod() {
       console.error("Error loading payment methods:", error);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCards();
+    }, [])
+  );
 
   const deletePaymentMethod = async (cardId: number) => {
     try {
