@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, } from "react";
 import {
   View,
   Text,
@@ -10,12 +10,13 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  TouchableWithoutFeedback, 
+  Keyboard,
+  Modal,
 } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Modal } from "react-native";
-import { TouchableWithoutFeedback, Keyboard } from "react-native";
 import { usePayment } from "../context/PaymentContext";
 import { LineChart } from "react-native-chart-kit";
 
@@ -26,10 +27,13 @@ const WelcomePage: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const { clearCards } = usePayment();
 
-  // 🟡 Sensor chart state
+
   const [sensorData, setSensorData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRange, setSelectedRange] = useState<"today" | "week" | "month">("month");
+  const [selectedRange, setSelectedRange] = useState<"today" | "week" | "month">("today");
+  const [tempData, setTempData] = useState<any>(null);
+  const [presData, setPresData] = useState<any>(null);
+  const [humData, setHumData] = useState<any>(null);
 
   const SENSOR_URL = process.env.EXPO_PUBLIC_SENSOR_DATA_URL;
   console.log(SENSOR_URL);
@@ -41,6 +45,7 @@ const WelcomePage: React.FC = () => {
     humidity: string;
     [key: string]: any;
   };
+
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,13 +64,14 @@ const WelcomePage: React.FC = () => {
 
           if (json.points && Array.isArray(json.points)) {
             const points: SensorDataPoint[] = json.points;
-            console.log(points);
+            //console.log(points);
 
             const sorted = points.sort((a, b) =>
               new Date(a.time).getTime() - new Date(b.time).getTime()
             );
 
             setSensorData(sorted);
+            //console.log(sorted);
           } else {
             console.warn("No points array in response.");
           }
@@ -81,6 +87,8 @@ const WelcomePage: React.FC = () => {
     checkAuth();
     fetchSensorData();
   }, []);
+
+  
 
   const handleMenuToggle = () => {
     if (menuVisible) {
@@ -98,6 +106,63 @@ const WelcomePage: React.FC = () => {
       }).start();
     }
   };
+
+  useEffect(() => {
+    if (sensorData.length === 0) return;
+
+    setLoading(true);
+
+    const timeout = setTimeout(() => {
+
+    const now = new Date();
+    let cutoff = new Date(0);
+    if (selectedRange === "today") {
+      cutoff = new Date(now.setHours(0, 0, 0, 0));
+    } else if (selectedRange === "week") {
+      cutoff = new Date(now.setDate(now.getDate() - 7));
+    } else {
+      cutoff = new Date(now.setDate(now.getDate() - 30));
+    }
+
+    const makeChartData = (key: string) => {
+      const values: number[] = [];
+      const labels: string[] = [];
+
+      sensorData.forEach((d) => {
+        const time = new Date(d.time);
+        if (time >= cutoff) {
+          const val = parseFloat(d[key]);
+          if (!isNaN(val) && isFinite(val)) {
+            values.push(val);
+            labels.push(
+              time.toLocaleString("en-US", {
+                ...(selectedRange === "today"
+                  ? { hour: "2-digit", minute: "2-digit", hour12: false }
+                  : { month: "short", day: "numeric" }),
+                timeZone: "UTC",
+              })
+            );
+          }
+        }
+      });
+
+      const step = Math.ceil(labels.length / 6);
+      const finalLabels = labels.map((label, i) => (i % step === 0 ? label : ""));
+
+      return {
+        labels: finalLabels,
+        datasets: [{ data: values }],
+      };
+    };
+
+    setTempData(makeChartData("temperature"));
+    setPresData(makeChartData("pressure"));
+    setHumData(makeChartData("humidity"));
+    setLoading(false);
+  }, 50);
+
+  return () => clearTimeout(timeout);
+}, [sensorData, selectedRange]);
 
   const handleLogout = async () => {
     if (Platform.OS === "web") {
@@ -122,55 +187,30 @@ const WelcomePage: React.FC = () => {
     }
   };
 
-  const formatChartData = (key: string, min: number, max: number) => {
-  const now = new Date();
-  let cutoff = new Date(0); // default to earliest possible date
-  if (selectedRange === "today") {
-    cutoff = new Date(now.setHours(0, 0, 0, 0));
-  } else if (selectedRange === "week") {
-   cutoff = new Date(now.setDate(now.getDate() - 7));
-  }
-
-  const values: number[] = [];
-  const labels: string[] = [];
-
-  sensorData.forEach((d) => {
-    const time = new Date(d.time);
-    if (time >= cutoff) {
-      const val = parseFloat(d[key]);
-      if (!isNaN(val) && isFinite(val)) {
-        values.push(val);
-        labels.push(
-          time.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
-        );
-      }
-    }
-  });
-
-  const step = Math.ceil(values.length / 10);
-  const filteredValues = values.filter((_, i) => i % step === 0);
-  const filteredLabels = labels.map((label, i) =>
-    i % step === 0 ? label : ""
-  );
-
-  if (filteredLabels.length > 0) {
-    filteredLabels.push("");
-  }
-
-  const paddedValues = filteredValues;
-
-  return {
-    labels: filteredLabels,
-    datasets: [{ data: paddedValues }],
-  };
-};
-
-  
-
   const chartWidth = Dimensions.get("window").width - 32;
+
+  const SensorChart = ({ title, data, config }: { title: string, data: any, config: any }) => (
+    <View style={styles.card}>
+      <Text style={styles.chartTitle}>{title}</Text>
+      <LineChart
+        data={data}
+        width={chartWidth}
+        height={220}
+        chartConfig={config}
+        withInnerLines
+        withOuterLines
+        withVerticalLines={false}
+        fromZero={false}
+        withHorizontalLabels
+        withVerticalLabels
+        yLabelsOffset={8}
+        xLabelsOffset={-4}
+        horizontalLabelRotation={0}
+        style={{ transform: [{ translateX: -12 }] }}
+        withShadow={false}
+      />
+    </View>
+  );
 
   return (
     <TouchableWithoutFeedback
@@ -255,68 +295,9 @@ const WelcomePage: React.FC = () => {
             <ActivityIndicator size="large" color="#007bff" />
           ) : (
             <>
-              <View style={styles.card}>
-                <Text style={styles.chartTitle}>Temperature (°C)</Text>
-                <LineChart
-                  data={formatChartData("temperature", -15, 30)}
-                  width={chartWidth}
-                  height={220}
-                  chartConfig={chartConfig}
-                  bezier
-                  withInnerLines={true}
-                  withOuterLines={true}
-                  withVerticalLines={false}
-                  fromZero={false}
-                  withHorizontalLabels={true}
-                  withVerticalLabels={true}
-                  yLabelsOffset={8}
-                  xLabelsOffset={-4}
-                  horizontalLabelRotation={0}
-                  style={{transform: [{translateX: -12}]}}
-                />
-              </View>
-
-              <View style={styles.card}>
-                <Text style={styles.chartTitle}>Pressure (hPa)</Text>
-                <LineChart
-                  data={formatChartData("pressure", 800, 1100)}
-                  width={chartWidth}
-                  height={220}
-                  chartConfig={chartConfig}
-                  bezier
-                  withInnerLines={true}
-                  withOuterLines={true}
-                  withVerticalLines={false}
-                  fromZero={false}
-                  withHorizontalLabels={true}
-                  withVerticalLabels={true}
-                  yLabelsOffset={8}
-                  xLabelsOffset={-4}
-                  horizontalLabelRotation={0}
-                  style={{transform: [{translateX: -12}]}}
-                />
-              </View>
-
-              <View style={styles.card}>
-                <Text style={styles.chartTitle}>Humidity (%)</Text>
-                <LineChart
-                  data={formatChartData("humidity", 0, 100)}
-                  width={chartWidth}
-                  height={220}
-                  chartConfig={chartConfig}
-                  bezier
-                  withInnerLines={true}
-                  withOuterLines={true}
-                  withVerticalLines={false}
-                  fromZero={false}
-                  withHorizontalLabels={true}
-                  withVerticalLabels={true}
-                  yLabelsOffset={8}
-                  xLabelsOffset={-4}
-                  horizontalLabelRotation={0}
-                  style={{transform: [{translateX: -12}]}}
-                />
-              </View>
+              {tempData && <SensorChart title="Temperature (°C)" data={tempData} config={tempChartConfig} />}
+              {presData && <SensorChart title="Pressure (hPa)" data={presData} config={presChartConfig} />}
+              {humData && <SensorChart title="Humidity (%)" data={humData} config={humChartConfig} />}  
             </>
           )}
         </ScrollView>
@@ -345,22 +326,55 @@ const WelcomePage: React.FC = () => {
   );
 };
 
-const chartConfig = {
+const tempChartConfig = {
   backgroundGradientFrom: "#ffffff",
   backgroundGradientTo: "#ffffff",
   decimalPlaces: 1,
-  color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`, // blue line
+  color: () => `rgb(32, 190, 58)`,
   labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  strokeWidth: 2,
+  strokeWidth: 2.5,
   propsForDots: {
-    r: "1", // smaller dots
+    r: "0", // smaller dots
     strokeWidth: "0",
   },
   propsForBackgroundLines: {
     stroke: "#e3e3e3", // light gray grid lines
     strokeDasharray: "", // solid lines
   },
-  
+};
+
+const presChartConfig = {
+  backgroundGradientFrom: "#ffffff",
+  backgroundGradientTo: "#ffffff",
+  decimalPlaces: 1,
+  color: () => `rgb(152, 13, 199)`,
+  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+  strokeWidth: 2.5,
+  propsForDots: {
+    r: "0", // smaller dots
+    strokeWidth: "0",
+  },
+  propsForBackgroundLines: {
+    stroke: "#e3e3e3", // light gray grid lines
+    strokeDasharray: "", // solid lines
+  },
+};
+
+const humChartConfig = {
+  backgroundGradientFrom: "#ffffff",
+  backgroundGradientTo: "#ffffff",
+  decimalPlaces: 1,
+  color: () => `rgb(37, 147, 238)`,
+  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+  strokeWidth: 2.5,
+  propsForDots: {
+    r: "0", // smaller dots
+    strokeWidth: "0",
+  },
+  propsForBackgroundLines: {
+    stroke: "#e3e3e3", // light gray grid lines
+    strokeDasharray: "", // solid lines
+  },
 };
 
 
@@ -406,15 +420,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     fontSize: 16,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  welcomeText: {
-    fontSize: 24,
   },
   modalContainer: {
     flex: 1,
