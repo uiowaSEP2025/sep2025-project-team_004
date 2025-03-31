@@ -35,6 +35,8 @@ export default function HomeScreen() {
     }
     setLoading(true);
     try {
+      const fullUrl = `${API_BASE_URL}/api/users/api-token-auth/`;
+      console.log("API URL:", fullUrl);
       const response = await fetch(`${API_BASE_URL}/api/users/api-token-auth/`, {
         method: "POST",
         headers: {

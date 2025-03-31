@@ -88,7 +88,7 @@ const EditProfilePage: React.FC = () => {
         return;
       }
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/update/`,
+        `${API_BASE_URL}/api/users/profile/update/`,
         {
           method: 'PATCH',
           headers: {
