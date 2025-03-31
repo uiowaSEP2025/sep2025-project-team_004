@@ -155,9 +155,7 @@ export default function Profile() {
         {/* List Items */}
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => {
-            /* TODO:  My orders page */
-          }}
+          onPress={() => navigation.navigate("my-orders")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
@@ -235,9 +233,7 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => {
-            /* TODO: Setting page */
-          }}
+          onPress={() => navigation.navigate("setting")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
@@ -388,9 +384,9 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   infoTitle: {
-    fontFamily: 'NunitoSansBold', 
+    fontFamily: 'Nunito Sans', 
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 18,
     color: '#232323',
     marginBottom: 4,
   },
