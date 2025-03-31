@@ -1,4 +1,4 @@
-// app/payment-method.tsx
+// app/add-payment.tsx
 
 import React, { useState } from 'react';
 import {

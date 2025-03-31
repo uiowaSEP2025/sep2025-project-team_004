@@ -17,7 +17,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://d1ay4ew8u8imzj.cloudfront.net"
+        "EXPO_PUBLIC_BACKEND_URL": "https://dx6di13ye1mpk.cloudfront.net"
       }
     }
   },

@@ -66,7 +66,7 @@ export default function PaymentMethod() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity testID="back-button" onPress={() => router.navigate("./Profile")} style={styles.headerIcon}>
+        <TouchableOpacity testID="back-button" onPress={() => router.back()} style={styles.headerIcon}>
           <ImageBackground style={styles.backIcon} source={require("@/assets/images/back-arrow.png")} resizeMode="cover" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Payment method</Text>
