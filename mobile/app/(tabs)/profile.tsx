@@ -19,6 +19,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types"; 
 import Constants from "expo-constants";
+import * as SecureStore from 'expo-secure-store';
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
@@ -60,34 +61,52 @@ export default function Profile() {
       };
 
       const fetchDefaultCard = async () => {
-        try {
-          const authToken = await AsyncStorage.getItem("authToken");
-          if (!authToken) {
-            return;
+        if (await SecureStore.getItemAsync("paymentInfo") === null) {
+          try {
+            const authToken = await AsyncStorage.getItem("authToken");
+            if (!authToken) {
+              return;
+            }
+          
+            const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
+              method: "GET",
+              headers: {
+                "Authorization": `Token ${authToken}`,
+                "Content-Type": "application/json",
+              },
+            });
+  
+            if (!response.ok) {
+              throw new Error("Failed to fetch payment methods.");
+            }
+  
+            const data = await response.json();
+            await SecureStore.setItemAsync('paymentInfo', JSON.stringify(data));
+            const defaultCard = data.find((card: any) => card.is_default);
+          
+            setDefaultCard(defaultCard || null);
+          } catch (error) {
+            console.error("Error fetching default payment method:", error);
           }
-          console.log("User info: ", await AsyncStorage.getItem("userInfo"));
-  
-          const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
-            method: "GET",
-            headers: {
-              "Authorization": `Token ${authToken}`,
-              "Content-Type": "application/json",
-            },
-          });
-  
-          if (!response.ok) {
-            throw new Error("Failed to fetch payment methods.");
+      }
+      else {
+        const getDefaultCard = async () => {
+          const stored = await SecureStore.getItemAsync('paymentInfo');
+          if (stored) {
+            try {
+              const cards = JSON.parse(stored);
+              const defaultCardStorage = cards.find((card: any) => card.is_default);
+              return defaultCardStorage;
+            } catch (err) {
+              console.error('Failed to parse stored payment info:', err);
+            }
           }
-  
-          const data = await response.json();
-          console.log("Payment methods: ", data);
-          const defaultCard = data.find((card: any) => card.is_default);
-  
-          setDefaultCard(defaultCard || null);
-        } catch (error) {
-          console.error("Error fetching default payment method:", error);
-        }
-      };
+          return null;
+        };
+        const defaultCard = await getDefaultCard();
+        setDefaultCard(defaultCard || null);
+      }
+    };
 
       fetchUserInfo();
       fetchDefaultCard();
@@ -107,10 +126,9 @@ export default function Profile() {
   };
 
   const confirmLogout = async () => {
-    console.log("Confirm logout function triggered");
     try {
-      await AsyncStorage.removeItem("authToken");
-      await AsyncStorage.removeItem("userInfo"); // Remove user details too
+      await AsyncStorage.clear();
+      await SecureStore.deleteItemAsync('paymentInfo'); 
       navigation.reset({ index: 0, routes: [{ name: "index" }] });
       setModalVisible(false);
     } catch (error) {
