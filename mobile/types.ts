@@ -14,5 +14,6 @@ export type RootStackParamList = {
   store: undefined;
   ResetPasswordScreen: {email: string, token: string},
   "my-orders": undefined;
+  "settings": undefined;
   // Add other routes as needed
 };

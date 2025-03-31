@@ -92,7 +92,7 @@ export default function HomeScreen() {
         </View>
         <Text style={styles.welcomeText}>
           <Text style={styles.helloText}>Hello!{"\n"}</Text>
-          <Text style={styles.welcomeBackText}>WELCOME BACK</Text>
+          <Text testID = "login-title" style={styles.welcomeBackText}>WELCOME BACK</Text>
         </Text>
         <View style={styles.formContainer}>
           <Text style={styles.errorText}>
@@ -100,6 +100,7 @@ export default function HomeScreen() {
           </Text>
           <Text style={styles.inputLabel}>Email</Text>
           <TextInput
+            testID="email-input"
             style={styles.textInput}
             placeholder=" "
             placeholderTextColor="#909090"
@@ -112,6 +113,7 @@ export default function HomeScreen() {
           <Text style={[styles.inputLabel, { marginTop: 35 }]}>Password</Text>
           <View style={{ position: "relative" }}>
             <TextInput
+              testID="password-input"
               style={styles.textInput}
               placeholder=" "
               placeholderTextColor="#909090"
@@ -127,13 +129,13 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <TouchableOpacity onPress={handleLogin} disabled={loading}>
             <View style={styles.loginButton}>
-              <Text style={styles.loginButtonText}>
+              <Text testID="login-button" style={styles.loginButtonText}>
                 {loading ? "Loading..." : "Log in"}
               </Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate("register")}>
-            <Text style={styles.signUp}>SIGN UP</Text>
+            <Text testID="register-button" style={styles.signUp}>SIGN UP</Text>
           </TouchableOpacity>
         </View>
       </View>

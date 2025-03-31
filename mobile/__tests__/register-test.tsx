@@ -1,7 +1,7 @@
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { NavigationContainer } from "@react-navigation/native";
-import RegisterScreen from "../app/register"; 
+import RegisterScreen from "../app/register";
 import fetchMock from "jest-fetch-mock";
 
 fetchMock.enableMocks(); // Enable jest-fetch-mock globally
@@ -39,30 +39,27 @@ describe("RegisterScreen", () => {
   it("renders correctly", () => {
     const { getByTestId, getByPlaceholderText, getAllByText, getByText } = renderWithNavigation();
 
-    // Check title and input fields
     expect(getByTestId("register-title")).toBeTruthy();
+    expect(getByText("WELCOME!")).toBeTruthy();
+
     expect(getByPlaceholderText("First Name")).toBeTruthy();
     expect(getByPlaceholderText("Last Name")).toBeTruthy();
-    expect(getByPlaceholderText("Username")).toBeTruthy(); // Check for Username field
+    expect(getByPlaceholderText("Username")).toBeTruthy();
     expect(getByPlaceholderText("Email")).toBeTruthy();
     expect(getByPlaceholderText("Password")).toBeTruthy();
     expect(getByPlaceholderText("Confirm Password")).toBeTruthy();
 
-    // Since both the title and the register button have "Register", getAllByText will return an array.
-    const registerElements = getAllByText("Register");
-    expect(registerElements.length).toBeGreaterThan(1);
-    expect(registerElements[1]).toBeTruthy();
-
-    // Check for the "Back to Login" button
-    expect(getByText("Back to Login")).toBeTruthy();
+    const registerElements = getAllByText("SIGN UP");
+    expect(registerElements.length).toBeGreaterThan(0);
+    expect(registerElements[0]).toBeTruthy();
+    expect(getByText("Already have account? SIGN IN")).toBeTruthy();
   });
 
   it("shows error when fields are empty", async () => {
     const { getAllByText, queryByText } = renderWithNavigation();
 
-    // Target the register button (second "Register" element)
-    const registerButtons = getAllByText("Register");
-    const registerButton = registerButtons[1];
+    const registerButtons = getAllByText("SIGN UP");
+    const registerButton = registerButtons[0];
     fireEvent.press(registerButton);
 
     await waitFor(() => {
@@ -75,13 +72,13 @@ describe("RegisterScreen", () => {
 
     fireEvent.changeText(getByPlaceholderText("First Name"), "Alice");
     fireEvent.changeText(getByPlaceholderText("Last Name"), "Smith");
-    fireEvent.changeText(getByPlaceholderText("Username"), "alice123"); // Added username
+    fireEvent.changeText(getByPlaceholderText("Username"), "alice123");
     fireEvent.changeText(getByPlaceholderText("Email"), "alice@example.com");
     fireEvent.changeText(getByPlaceholderText("Password"), "password123");
     fireEvent.changeText(getByPlaceholderText("Confirm Password"), "differentPassword");
 
-    const registerButtons = getAllByText("Register");
-    const registerButton = registerButtons[1];
+    const registerButtons = getAllByText("SIGN UP");
+    const registerButton = registerButtons[0];
     fireEvent.press(registerButton);
 
     await waitFor(() => {
@@ -90,49 +87,48 @@ describe("RegisterScreen", () => {
   });
 
   it("navigates back when registration is successful", async () => {
-    // Mocking a successful registration response
-    fetchMock.mockResponseOnce(JSON.stringify({ message: "Account created successfully!" }), {
-      status: 201,
-    });
+    fetchMock.mockResponseOnce(
+      JSON.stringify({ message: "Account created successfully!" }),
+      { status: 201 }
+    );
 
     const { getByPlaceholderText, getAllByText, queryByText } = renderWithNavigation();
 
     fireEvent.changeText(getByPlaceholderText("First Name"), "Bob");
     fireEvent.changeText(getByPlaceholderText("Last Name"), "Jones");
-    fireEvent.changeText(getByPlaceholderText("Username"), "bob123"); // Added username
+    fireEvent.changeText(getByPlaceholderText("Username"), "bob123");
     fireEvent.changeText(getByPlaceholderText("Email"), "bob@example.com");
     fireEvent.changeText(getByPlaceholderText("Password"), "password123");
     fireEvent.changeText(getByPlaceholderText("Confirm Password"), "password123");
 
-    const registerButtons = getAllByText("Register");
-    const registerButton = registerButtons[1];
+    const registerButtons = getAllByText("SIGN UP");
+    const registerButton = registerButtons[0];
     fireEvent.press(registerButton);
 
     await waitFor(() => {
       expect(queryByText("Please fill out all fields.")).toBeNull();
       expect(queryByText("Passwords do not match.")).toBeNull();
-      // Ensure navigation.navigate() is called on successful registration
       expect(mockedNavigate).toHaveBeenCalledWith("index");
     });
   });
 
   it("shows error message when registration fails", async () => {
-    // Mocking a failed registration response
-    fetchMock.mockResponseOnce(JSON.stringify({ errors: { email: ["Email already exists."] } }), {
-      status: 400,
-    });
+    fetchMock.mockResponseOnce(
+      JSON.stringify({ errors: { email: ["Email already exists."] } }),
+      { status: 400 }
+    );
 
     const { getByPlaceholderText, getAllByText, queryByText } = renderWithNavigation();
 
     fireEvent.changeText(getByPlaceholderText("First Name"), "Bob");
     fireEvent.changeText(getByPlaceholderText("Last Name"), "Jones");
-    fireEvent.changeText(getByPlaceholderText("Username"), "bob123"); // Added username
+    fireEvent.changeText(getByPlaceholderText("Username"), "bob123");
     fireEvent.changeText(getByPlaceholderText("Email"), "existing@example.com");
     fireEvent.changeText(getByPlaceholderText("Password"), "password123");
     fireEvent.changeText(getByPlaceholderText("Confirm Password"), "password123");
 
-    const registerButtons = getAllByText("Register");
-    const registerButton = registerButtons[1];
+    const registerButtons = getAllByText("SIGN UP");
+    const registerButton = registerButtons[0];
     fireEvent.press(registerButton);
 
     await waitFor(() => {
@@ -142,7 +138,7 @@ describe("RegisterScreen", () => {
 
   it('navigates back when "Back to Login" button is pressed', () => {
     const { getByText } = renderWithNavigation();
-    const backButton = getByText("Back to Login");
+    const backButton = getByText("Already have account? SIGN IN");
     fireEvent.press(backButton);
     expect(mockedGoBack).toHaveBeenCalled();
   });

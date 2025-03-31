@@ -51,9 +51,9 @@ export default function ForgotScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
-        <Text style={styles.headerText}>Forgot Password</Text>
+      <Text style={styles.headerText} testID="forgot-title">Forgot Password</Text>
         <View style={styles.formContainer}>
-          <Text style={styles.errorText}>{error || " "}</Text>
+        <Text style={styles.errorText} testID="error-message">{error || " "}</Text>
           <Text style={styles.inputLabel}>Email</Text>
           <TextInput
             style={styles.textInput}
