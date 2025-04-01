@@ -44,23 +44,6 @@ const EditProfilePage: React.FC = () => {
         Alert.alert('Error', 'User is not authenticated.');
         return;
       }
-  //    const response = await fetch(`${API_BASE_URL}/api/users/profile/`, {
-  //      method: 'GET',
-  //      headers: {
- // //          'Content-Type': 'application/json',
-  //          'Authorization': `Token ${token}`, 
-  //      },
-  //  });
-//
-  //    if (response.status === 403) {
-  //      console.error('403 Forbidden - Check Django permissions');
-  //      Alert.alert('Error', 'You do not have permission to access this resource.');
-  //    }
-  //    if (!response.ok) {
-  //      throw new Error(`Failed to fetch profile: ${response.statusText}`);
-  //    }
-  //    //const userData = await response.json();
-
       setUsername(JSON.parse(await AsyncStorage.getItem('userInfo') || '{}')?.username);
       setFirstName(JSON.parse(await AsyncStorage.getItem('userInfo') || '{}')?.first_name);
       setLastName(JSON.parse(await AsyncStorage.getItem('userInfo') || '{}')?.last_name);
@@ -114,7 +97,6 @@ const EditProfilePage: React.FC = () => {
       }
       const updatedUser = await response.json();
       await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
-      console.log("New user info: ", await AsyncStorage.getItem("userInfo"));
       useToast('Success', 'Your profile has been updated.');
       if (navigation.canGoBack()) {
         navigation.goBack();
