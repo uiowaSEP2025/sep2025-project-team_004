@@ -32,17 +32,19 @@ DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
 
-# CACHES
-# ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#caches
+REDIS_URL = "redis://default:ceOtEWHFQxyGfVpIjOh71BKAeElB6GuQ@redis-15945.c91.us-east-1-3.ec2.redns.redis-cloud.com:15945"
+REDIS_SSL = REDIS_URL.startswith("rediss://")
 CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "",
-    },
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
 }
+
 
 # EMAIL
 # ------------------------------------------------------------------------------

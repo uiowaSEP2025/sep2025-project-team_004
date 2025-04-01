@@ -83,7 +83,6 @@ DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
 
 
 # URLS
@@ -133,6 +132,7 @@ LOCAL_APPS = [
     "sep2025_project_team_004.payment",
     "sep2025_project_team_004.friends",
     # Your stuff: custom apps go here
+    'sep2025_project_team_004.sensor_data.apps.SensorDataConfig',
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -307,8 +307,18 @@ LOGGING = {
     "root": {"level": "INFO", "handlers": ["console"]},
 }
 
-REDIS_URL = "redis://redis:6379/0"
+REDIS_URL = "redis://default:ceOtEWHFQxyGfVpIjOh71BKAeElB6GuQ@redis-15945.c91.us-east-1-3.ec2.redns.redis-cloud.com:15945"
 REDIS_SSL = REDIS_URL.startswith("rediss://")
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
 
 # Celery
 # ------------------------------------------------------------------------------
@@ -320,7 +330,7 @@ CELERY_BROKER_URL = REDIS_URL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
 CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_SSL else None
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
-CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_RESULT_BACKEND = "redis://default:ceOtEWHFQxyGfVpIjOh71BKAeElB6GuQ@redis-15945.c91.us-east-1-3.ec2.redns.redis-cloud.com:15945"
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
 CELERY_REDIS_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-extended

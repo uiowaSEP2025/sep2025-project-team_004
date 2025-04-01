@@ -9,7 +9,6 @@ from sentry_sdk.integrations.redis import RedisIntegration
 
 from .base import *
 from .base import INSTALLED_APPS
-from .base import REDIS_URL
 from .base import SPECTACULAR_SETTINGS
 from .base import env
 
@@ -25,20 +24,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 # ALLOWED_HOSTS = ["172.31.12.165", "3.146.203.239", "3.132.173.23", "3.23.225.66", ".elasticbeanstalk.com", "localhost"]
 ALLOWED_HOSTS = ["*"]
 
-# CACHES
-# ------------------------------------------------------------------------------
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            # Mimicking memcache behavior.
-            # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
-            "IGNORE_EXCEPTIONS": True,
-        },
-    },
-}
+
 
 # SECURITY
 # ------------------------------------------------------------------------------
