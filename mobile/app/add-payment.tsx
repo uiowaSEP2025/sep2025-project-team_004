@@ -19,6 +19,7 @@ import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
@@ -119,6 +120,12 @@ export default function PaymentMethod() {
         if (!response.ok) throw new Error("Failed to add payment method.");
   
         const addedCard = await response.json();
+
+        const stored = await SecureStore.getItemAsync("paymentInfo");
+        const existing = stored ? JSON.parse(stored) : [];
+        const updated = [...existing, addedCard];
+
+        await SecureStore.setItemAsync("paymentInfo", JSON.stringify(updated));
   
       } catch (error) {
         console.error("Error adding payment method:", error);

@@ -38,8 +38,11 @@ const mockNavigation: NavigationProp<ParamListBase> = {
 describe("EditProfilePage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Ensure AsyncStorage returns a dummy auth token.
-    (AsyncStorage.getItem as jest.Mock) = jest.fn(() => Promise.resolve("dummyToken"));
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === "authToken") return Promise.resolve("dummyToken");
+      if (key === "userInfo") return Promise.resolve(JSON.stringify(fakeProfile));
+      return Promise.resolve(null);
+    });
     (AsyncStorage.setItem as jest.Mock) = jest.fn(() => Promise.resolve());
     // Mock Alert.alert so we can verify its usage.
     jest.spyOn(Toast, 'show').mockImplementation(() => {});
