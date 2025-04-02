@@ -15,6 +15,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
+import * as SecureStore from 'expo-secure-store';
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
@@ -49,19 +50,8 @@ export default function PaymentMethod() {
         console.error("User not authenticated.");
         return;
       }
-
-      const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Token ${authToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch payment methods.");
-
-      const data = await response.json();
-      setCards(data);
+      const data = await SecureStore.getItemAsync("paymentInfo");
+      setCards(data ? JSON.parse(data) : []);
     } catch (error) {
       console.error("Error loading payment methods:", error);
     }
@@ -92,6 +82,13 @@ export default function PaymentMethod() {
       });
 
       if (!response.ok) throw new Error("Failed to delete payment method.");
+
+      const stored = await SecureStore.getItemAsync("paymentInfo");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const updated = parsed.filter((card: any) => card.id !== cardId);
+        await SecureStore.setItemAsync("paymentInfo", JSON.stringify(updated));
+      }
 
       
     } catch (error) {
@@ -140,6 +137,16 @@ export default function PaymentMethod() {
       });
 
       if (!response.ok) throw new Error("Failed to set default payment method.");
+
+      const stored = await SecureStore.getItemAsync("paymentInfo");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const updated = parsed.map((card: any) => ({
+          ...card,
+          is_default: card.id === cardId,
+        }));
+        await SecureStore.setItemAsync("paymentInfo", JSON.stringify(updated));
+      }
 
       
     } catch (error) {

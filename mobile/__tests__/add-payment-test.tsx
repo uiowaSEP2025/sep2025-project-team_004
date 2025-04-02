@@ -6,17 +6,14 @@ import {
   waitFor,
   act,
   cleanup,
+  renderHook,
 } from '@testing-library/react-native';
 import PaymentMethod from '../app/add-payment';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Platform } from 'react-native';
 import { NavigationContext, NavigationProp, ParamListBase } from '@react-navigation/native';
-import { PaymentProvider } from '@/app/context/PaymentContext';
 import Toast from 'react-native-toast-message'
 
-const renderWithProvider = (component: React.ReactNode) => {
-  return render(<PaymentProvider>{component}</PaymentProvider>);
-};
 
 
 const mockNavigation: NavigationProp<ParamListBase> = {
@@ -49,6 +46,12 @@ jest.mock('@/assets/images/card-logo/discover.png', () => 'discover.png');
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(),
   setItem: jest.fn(),
+}));
+
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn(() => Promise.resolve(null)),
+  setItemAsync: jest.fn(() => Promise.resolve()),
+  deleteItemAsync: jest.fn(() => Promise.resolve()),
 }));
 
 // --- Mock expo-router's useRouter ---
@@ -85,7 +88,7 @@ beforeEach(() => {
 
 describe("Add Payment Screen (PaymentMethod)", () => {
   it("renders header and input fields", async () => {
-    const { getByText, getByPlaceholderText } = renderWithProvider(<PaymentMethod />);
+    const { getByText, getByPlaceholderText } = render(<PaymentMethod />);
     
     await waitFor(() => {
       expect(getByText("Add payment method")).toBeTruthy();
@@ -98,7 +101,7 @@ describe("Add Payment Screen (PaymentMethod)", () => {
   });
 
   it("formats card number correctly when input changes", async () => {
-    const { getByPlaceholderText, getByText } = renderWithProvider(<PaymentMethod />);
+    const { getByPlaceholderText, getByText } = render(<PaymentMethod />);
     const cardNumberInput = getByPlaceholderText("Card Number");
 
     act(() => {
@@ -125,7 +128,7 @@ describe("Add Payment Screen (PaymentMethod)", () => {
     });
 
     const toastSpy = jest.spyOn(Toast, "show").mockImplementation(() => {});
-    const { getByPlaceholderText, getByTestId } = renderWithProvider(<PaymentMethod />);
+    const { getByPlaceholderText, getByTestId } = render(<PaymentMethod />);
     const cardNumberInput = getByPlaceholderText("Card Number");
     const cardHolderInput = getByPlaceholderText("Card Holder Name");
     const expiryInput = getByPlaceholderText("Expiry Date");
@@ -161,7 +164,7 @@ describe("Add Payment Screen (PaymentMethod)", () => {
     (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null); // Simulate no authToken
     const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
 
-    const { getByTestId } = renderWithProvider(<PaymentMethod />);
+    const { getByTestId } = render(<PaymentMethod />);
     const doneButton = getByTestId("done-button");
 
     await act(async () => {
@@ -192,7 +195,7 @@ describe("Add Payment Screen (PaymentMethod)", () => {
     
 
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
-    const { getByPlaceholderText, getByTestId } = renderWithProvider(<PaymentMethod />);
+    const { getByPlaceholderText, getByTestId } = render(<PaymentMethod />);
     const cardNumberInput = getByPlaceholderText("Card Number");
     const cardHolderInput = getByPlaceholderText("Card Holder Name");
     const expiryInput = getByPlaceholderText("Expiry Date");
@@ -214,7 +217,7 @@ describe("Add Payment Screen (PaymentMethod)", () => {
   });
 
   it("navigates back when back button is pressed", async () => {
-    const { getByTestId } = renderWithProvider(
+    const { getByTestId } = render(
       <NavigationContext.Provider value={mockNavigation}>
         <PaymentMethod />
       </NavigationContext.Provider>
@@ -245,7 +248,7 @@ describe("Add Payment Screen (PaymentMethod)", () => {
       });
     });
     const toastSpy = jest.spyOn(Toast, "show").mockImplementation(() => {});
-    const { getByTestId } = renderWithProvider(<PaymentMethod />);
+    const { getByTestId } = render(<PaymentMethod />);
     const addNewCardButton = getByTestId("add-new-card-button");
 
     await act(async () => {

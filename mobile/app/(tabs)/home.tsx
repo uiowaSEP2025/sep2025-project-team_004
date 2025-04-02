@@ -26,7 +26,7 @@ const WelcomePage: React.FC = () => {
   const [humData, setHumData] = useState<any>(null);
 
   const SENSOR_URL = process.env.EXPO_PUBLIC_SENSOR_DATA_URL;
-  console.log("SENSOR_URL:", SENSOR_URL);
+  // console.log(SENSOR_URL);
 
   type SensorDataPoint = {
     time: string;
