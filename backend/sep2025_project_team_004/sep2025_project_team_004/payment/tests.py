@@ -22,6 +22,8 @@ class TestPaymentViews:
             card_number="4111111111111111",
             expiration_date="12/25",
             card_type="visa",
+            cardholder_name= "Man man",
+            last4="1111",
             is_default=True
         )
 
@@ -31,7 +33,7 @@ class TestPaymentViews:
 
     def test_get_payment_methods(self):
         """Test retrieving a user's payment methods"""
-        response = self.client.get(self.payment_url)
+        response = self.client.get(self.payment_url, follow=True)
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1  # Should return the one we created
         assert response.data[0]["card_type"].lower() == "visa"
@@ -41,11 +43,13 @@ class TestPaymentViews:
         data = {
             "card_number": "5555444433332222",
             "expiration_date": "01/26",
-            "card_type": "mastercard"
+            "card_type": "mastercard",
+            "cardholder_name": "Man Dude",
         }
         response = self.client.post(self.payment_url, data, format="json")
         assert response.status_code == status.HTTP_201_CREATED
         assert PaymentMethod.objects.filter(user=self.user, card_type="mastercard").exists()
+
 
     def test_create_payment_method_invalid(self):
         """Test creating a payment method with missing data"""
