@@ -42,12 +42,12 @@ export default function Order() {
       <View style={styles.fixedHeader}>
         <View style={styles.header}>
           <TouchableOpacity testID="back-button" onPress={() => router.back()}>
-                      <ImageBackground
-                        style={styles.backIcon}
-                        source={require('@/assets/images/back-arrow.png')}
-                        resizeMode="cover"
-                      />
-                    </TouchableOpacity>
+            <ImageBackground
+              style={styles.backIcon}
+              source={require('@/assets/images/back-arrow.png')}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
             My order
           </Text>
@@ -60,7 +60,11 @@ export default function Order() {
 
         <View style={styles.orderTabs}>
           {tabs.map(tab => (
-            <TouchableOpacity key={tab} onPress={() => setSelectedTab(tab)}>
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setSelectedTab(tab)}
+              testID={`tab-${tab}`}
+            >
               <Text style={selectedTab === tab ? styles.tabActive : styles.tabInactive} numberOfLines={1}>
                 {tab}
               </Text>

@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useContext } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, Modal, StyleSheet, ActivityIndicator, TextInput, Platform } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  ActivityIndicator,
+  TextInput,
+  Platform,
+} from "react-native";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 import { CartContext } from "../context/CartContext";
 import { useRouter } from "expo-router";
@@ -20,18 +31,8 @@ interface Product {
   image?: string;
 }
 
-// Define a Review Type (adjust fields as per your backend)
-interface Review {
-  id: number;
-  productId: number;
-  rating: number;
-  comment: string;
-  createdAt: string;
-}
-
 export default function StoreScreen() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const filteredProducts = products.filter((product) =>
@@ -60,28 +61,6 @@ export default function StoreScreen() {
       .catch((error) => {
         console.error("Error fetching products:", error);
         setLoading(false);
-      });
-  }, []);
-
-  // Fetch reviews with error checking for the response format
-  useEffect(() => {
-    fetch(`http://${API_BASE_URL}:8000/api/store/reviews/`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Reviews API response:", data);
-        // If the response is an array, use it directly.
-        if (Array.isArray(data)) {
-          setReviews(data);
-        } 
-        // If the response is an object with a 'reviews' property that is an array.
-        else if (data && Array.isArray(data.reviews)) {
-          setReviews(data.reviews);
-        } else {
-          console.error("Unexpected reviews response format:", data);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching reviews:", error);
       });
   }, []);
 
@@ -151,48 +130,31 @@ export default function StoreScreen() {
         numColumns={2}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.grid}
-        renderItem={({ item }) => {
-          // Filter reviews related to the current product
-          const productReviews = reviews.filter(
-            (review) => review.productId === item.id
-          );
-          const avgRating = productReviews.length
-            ? (
-                productReviews.reduce((sum, review) => sum + review.rating, 0) /
-                productReviews.length
-              ).toFixed(1)
-            : null;
-          return (
-            <View style={styles.productCard}>
-              <Image
-                source={
-                  item.image
-                    ? { uri: item.image }
-                    : require("../../assets/images/react-logo.png")
-                }
-                style={styles.productImage}
-              />
-              <Text style={styles.productName}>{item.name}</Text>
-              {/* Display product description */}
-              <Text style={styles.productDescription}>{item.description}</Text>
-              <Text style={styles.productPrice}>
-                ${Number(item.price).toFixed(2)}
-              </Text>
-              {avgRating && (
-                <Text style={styles.reviewRating}>
-                  {avgRating} ⭐ ({productReviews.length})
-                </Text>
-              )}
-              <TouchableOpacity
-                testID={`cart-button-${item.id}`}
-                style={styles.cartButton}
-                onPress={() => openModal(item)}
-              >
-                <MaterialIcons name="shopping-cart" size={20} color="gray" />
-              </TouchableOpacity>
-            </View>
-          );
-        }}
+        renderItem={({ item }) => (
+          <View style={styles.productCard}>
+            <Image
+              source={
+                item.image
+                  ? { uri: item.image }
+                  : require("../../assets/images/react-logo.png")
+              }
+              style={styles.productImage}
+            />
+            <Text style={styles.productName}>{item.name}</Text>
+            {/* Display product description */}
+            <Text style={styles.productDescription}>{item.description}</Text>
+            <Text style={styles.productPrice}>
+              ${Number(item.price).toFixed(2)}
+            </Text>
+            <TouchableOpacity
+              testID={`cart-button-${item.id}`}
+              style={styles.cartButton}
+              onPress={() => openModal(item)}
+            >
+              <MaterialIcons name="shopping-cart" size={20} color="gray" />
+            </TouchableOpacity>
+          </View>
+        )}
       />
       
       {/* Add to Cart Modal */}
@@ -230,20 +192,6 @@ export default function StoreScreen() {
                     <Text style={styles.modalButtonText}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
-                
-                {reviews.filter((review) => review.productId === selectedProduct.id).length > 0 && (
-                  <View style={styles.reviewSection}>
-                    <Text style={styles.reviewSectionTitle}>Reviews:</Text>
-                    {reviews
-                      .filter((review) => review.productId === selectedProduct.id)
-                      .map((review) => (
-                        <View key={review.id} style={styles.reviewItem}>
-                          <Text style={styles.reviewRatingText}>{review.rating} ⭐</Text>
-                          <Text style={styles.reviewComment}>{review.comment}</Text>
-                        </View>
-                      ))}
-                  </View>
-                )}
               </>
             )}
           </View>
@@ -304,11 +252,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "black",
-  },
-  reviewRating: {
-    marginTop: 4,
-    fontSize: 12,
-    color: "gray",
   },
   cartButton: {
     position: "absolute",
@@ -424,27 +367,5 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: "gray",
-  },
-  reviewSection: {
-    marginTop: 15,
-    width: "100%",
-  },
-  reviewSectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  reviewItem: {
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingVertical: 5,
-  },
-  reviewRatingText: {
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  reviewComment: {
-    fontSize: 14,
-    color: "gray",
   },
 });

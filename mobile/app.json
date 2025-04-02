@@ -49,7 +49,9 @@
       },
       "eas": {
         "projectId": "cbd6dc7a-9ae3-4ce9-a294-9c155eb48a08"
-      }
+      },
+      "EXPO_PUBLIC_BACKEND_URL": "https://dx6di13ye1mpk.cloudfront.net/",
+      "EXPO_PUBLIC_DEV_FLAG": "false"
     }
   }
 }

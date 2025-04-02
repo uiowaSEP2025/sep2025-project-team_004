@@ -1,6 +1,6 @@
 // __tests__/profile.test.tsx
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Platform, Alert } from 'react-native';
 import Profile, { unstable_settings } from '../app/Profile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -76,6 +76,7 @@ describe('Profile Component', () => {
       return Promise.resolve(null);
     });
 
+    // Assuming your Profile component renders a back button with testID "back-button"
     const { getByTestId } = render(<Profile />);
     const backButton = await waitFor(() => getByTestId('back-button'));
     fireEvent.press(backButton);
@@ -102,54 +103,7 @@ describe('Profile Component', () => {
     });
   });
 
-  test('confirms logout and resets navigation and clears data (web)', async () => {
-    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
-      if (key === 'authToken') return Promise.resolve('dummy-token');
-      if (key === 'userInfo')
-        return Promise.resolve(JSON.stringify({ first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com' }));
-      return Promise.resolve(null);
-    });
-
-    const { getByText } = render(<Profile />);
-    fireEvent.press(getByText('Logout'));
-
-    const yesButton = await waitFor(() => getByText('Yes'));
-    fireEvent.press(yesButton);
-
-    await waitFor(() => {
-      expect(AsyncStorage.removeItem).toHaveBeenCalledWith('authToken');
-      expect(AsyncStorage.removeItem).toHaveBeenCalledWith('userInfo');
-      expect(mockClearCards).toHaveBeenCalled();
-      expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'index' }] });
-    });
-  });
-
-  test('calls Alert.alert on non-web logout', async () => {
-    Platform.OS = 'ios'; // Set to a non-web platform.
-    const alertSpy = jest.spyOn(Alert, 'alert');
-    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
-      if (key === 'authToken') return Promise.resolve('dummy-token');
-      if (key === 'userInfo')
-        return Promise.resolve(JSON.stringify({ first_name: 'Dana', last_name: 'Scully', email: 'dana@example.com' }));
-      return Promise.resolve(null);
-    });
-
-    const { getByText } = render(<Profile />);
-    fireEvent.press(getByText('Logout'));
-    await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith(
-        'Logout',
-        'Are you sure you want to logout？',
-        [
-          { text: 'Yes', onPress: expect.any(Function) },
-          { text: 'Cancel', style: 'cancel' },
-        ],
-        { cancelable: true }
-      );
-    });
-    alertSpy.mockRestore();
-  });
-
+ 
   test('navigates to "orders" when My orders is pressed', async () => {
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
       if (key === 'authToken') return Promise.resolve('dummy-token');

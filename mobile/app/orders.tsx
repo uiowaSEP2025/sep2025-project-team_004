@@ -14,17 +14,16 @@ import {
 } from "react-native";
 import Constants from "expo-constants";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../types"; // Adjust the path as necessary
+import { useRouter } from "expo-router";
 
 // Define the Order (or Product) type.
 interface Order {
   id: number;
   name: string;
   description: string;
-  price: number | string; // Allow string to handle API response.
+  price: number | string;
   image?: string;
-  orderDate?: string; // Optional if API doesn't return it.
+  orderDate?: string;
 }
 
 const API_BASE_URL =
@@ -33,6 +32,9 @@ const API_BASE_URL =
 export default function OrderHistoryScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Search state.
+  const [searchQuery, setSearchQuery] = useState("");
 
   // States for review modal.
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
@@ -40,26 +42,34 @@ export default function OrderHistoryScreen() {
   const [rating, setRating] = useState<number>(0);
   const [reviewText, setReviewText] = useState<string>("");
 
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  // Use Expo Router's useRouter hook.
+  const router = useRouter();
 
-  // Fetch the actual products from the backend.
+  // Fetch products from the backend.
   useEffect(() => {
-    fetch(`http://${API_BASE_URL}:8000/api/store/products/`)
-      .then((response) => response.json())
-      .then((data: Order[]) => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch(`http://${API_BASE_URL}:8000/api/store/products/`);
+        const data: Order[] = await response.json();
         setOrders(data);
-        setLoading(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching products:", error);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    fetchOrders();
   }, []);
+
+  // Filter orders based on search query.
+  const filteredOrders = orders.filter(order => 
+    order.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Handler for the Return button.
   const handleReturn = (order: Order) => {
     console.log("Return product with id", order.id);
-    navigation.navigate("orders");
+    router.push("/orders"); // Navigate to the orders screen.
   };
 
   // Handler for the Review button.
@@ -86,7 +96,6 @@ export default function OrderHistoryScreen() {
       comment: reviewText,
     };
 
-    // Log the payload to check what is being sent
     console.log("Submitting review payload:", reviewData);
 
     try {
@@ -108,7 +117,7 @@ export default function OrderHistoryScreen() {
       console.log("Review submitted successfully.");
       Alert.alert("Success", "Your review has been submitted.");
       setReviewModalVisible(false);
-      navigation.navigate("orders");
+      router.push("/orders");
     } catch (error) {
       console.error("Error submitting review:", error);
       Alert.alert("Error", "An error occurred while submitting your review.");
@@ -118,15 +127,15 @@ export default function OrderHistoryScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
-        <ActivityIndicator size="large" color="blue" />
+        <ActivityIndicator testID="loading-indicator" size="large" color="blue" />
       </View>
     );
   }
 
-  // Render each order item.
   const renderOrderItem = ({ item }: { item: Order }) => (
     <View style={styles.orderCard}>
       <Image 
+        testID={`order-image-${item.id}`}
         source={ item.image ? { uri: item.image } : { uri: "https://via.placeholder.com/150" } }
         style={styles.orderImage} 
       />
@@ -146,12 +155,11 @@ export default function OrderHistoryScreen() {
     </View>
   );
 
-  // Render a simple star rating component.
   const renderStarRating = () => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       stars.push(
-        <TouchableOpacity key={i} onPress={() => setRating(i)}>
+        <TouchableOpacity key={i} testID={`star-${i}`} onPress={() => setRating(i)}>
           <MaterialIcons 
             name={i <= rating ? "star" : "star-border"} 
             size={32} 
@@ -166,8 +174,16 @@ export default function OrderHistoryScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Order History</Text>
+      {/* Search Input */}
+      <TextInput
+        testID="search-input"
+        style={styles.searchInput}
+        placeholder="Search for products..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
       <FlatList
-        data={orders}
+        data={filteredOrders}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderOrderItem}
         contentContainerStyle={styles.listContainer}
@@ -180,11 +196,12 @@ export default function OrderHistoryScreen() {
         transparent={true}
         onRequestClose={() => setReviewModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
+        <View testID="product-modal" style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalHeader}>Review Product</Text>
             {renderStarRating()}
             <TextInput
+              testID="review-text-input"
               style={styles.textInput}
               placeholder="Write your review (max 255 characters)"
               maxLength={255}
@@ -218,6 +235,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginVertical: 10,
+  },
+  searchInput: {
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginBottom: 10,
   },
   listContainer: {
     paddingBottom: 20,

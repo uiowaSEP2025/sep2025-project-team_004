@@ -20,8 +20,9 @@ class Product(models.Model):
     class Meta:
         app_label = "store"
 
+
 class Review(models.Model):
-    product = models.ForeignKey(Product, related_name="reviews", on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name="new_reviews", on_delete=models.CASCADE)
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )

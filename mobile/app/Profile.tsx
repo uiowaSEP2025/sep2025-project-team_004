@@ -1,5 +1,5 @@
 // app/(tabs)/Profile.tsx
-import React, {useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,7 +25,6 @@ const API_BASE_URL =
     ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
     : process.env.EXPO_PUBLIC_BACKEND_URL;
 
-
 export const unstable_settings = {
   title: 'Profile',
   tabBarIcon: ({ color }: { color: string }) => (
@@ -48,7 +47,6 @@ export default function Profile() {
     };
     checkAuth();
   }, []);
-
 
   useFocusEffect(
     useCallback(() => {
@@ -94,14 +92,14 @@ export default function Profile() {
 
   const handleLogout = () => {
     Platform.OS === "web" ? setModalVisible(true) : Alert.alert(
-                'Logout',
-                'Are you sure you want to logout？',
-                [
-                  { text: 'Yes', onPress: () => confirmLogout() },
-                  { text: 'Cancel', style: 'cancel' }
-                ],
-                { cancelable: true }
-              );
+      'Logout',
+      'Are you sure you want to logout？',
+      [
+        { text: 'Yes', onPress: () => confirmLogout() },
+        { text: 'Cancel', style: 'cancel' }
+      ],
+      { cancelable: true }
+    );
   };
 
   const confirmLogout = async () => {
@@ -122,16 +120,16 @@ export default function Profile() {
       <View style={styles.header}>
         {/* Back Button (Align Left) */}
         <TouchableOpacity
-                  testID="back-button"
-                  onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "home" } }]})}
-                  style={styles.headerIcon}
-                >
-                  <ImageBackground
-                    style={styles.backIcon}
-                    source={require("@/assets/images/back-arrow.png")}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
+          testID="back-button"
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: "(tabs)", params: { screen: "home" } }] })}
+          style={styles.headerIcon}
+        >
+          <ImageBackground
+            style={styles.backIcon}
+            source={require("@/assets/images/back-arrow.png")}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
 
         {/* Centered Title */}
         <Text style={styles.headerTitle}>Profile</Text>
@@ -141,7 +139,6 @@ export default function Profile() {
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>
-
 
       {/* Content */}
       <ScrollView
@@ -157,7 +154,7 @@ export default function Profile() {
           <View style={styles.userInfo}>
             <Text style={styles.username}>
               {user ? `${user.first_name} ${user.last_name}` : "Loading..."}
-              </Text>
+            </Text>
             <Text style={styles.email}>{user ? user.email : "Loading..."}</Text>
           </View>
         </View>
@@ -224,9 +221,7 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => {
-            /* TODO:  My Reviews page */
-          }}
+          onPress={() => navigation.navigate("my-orders")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
@@ -283,8 +278,6 @@ export default function Profile() {
   );
 }
 
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -315,7 +308,7 @@ const styles = StyleSheet.create({
     padding: 8, 
   },
   headerIcon: { width: 20, height: 20 },
-  backIcon: { width: 24 , height: 30 },
+  backIcon: { width: 24, height: 30 },
   logoutText: {
     fontSize: 16,
     color: '#FF0000',
@@ -339,7 +332,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   username: {
-    fontFamily: 'NunitoSansBold', 
+    fontFamily: 'NunitoSansBold',
     fontWeight: '700',
     fontSize: 20,
     color: '#232323',
@@ -376,7 +369,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelButton: { backgroundColor: "#888" },
-  modalButtonText: { color: "white", fontSize: 16
+  modalButtonText: {
+    color: "white",
+    fontSize: 16,
   },
   infoItem: {
     backgroundColor: '#fff',
@@ -396,14 +391,14 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   infoTitle: {
-    fontFamily: 'NunitoSansBold', 
+    fontFamily: 'NunitoSansBold',
     fontWeight: '700',
     fontSize: 16,
     color: '#232323',
     marginBottom: 4,
   },
   infoSubtitle: {
-    fontFamily: 'NunitoSans', 
+    fontFamily: 'NunitoSans',
     fontWeight: '700',
     fontSize: 14,
     color: '#808080',
@@ -413,4 +408,3 @@ const styles = StyleSheet.create({
     height: 20,
   },
 });
-

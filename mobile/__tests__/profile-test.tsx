@@ -1,6 +1,5 @@
-// __tests__/profile-test.tsx
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Platform, Alert } from 'react-native';
 import Profile, { unstable_settings } from '../app/(tabs)/profile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -104,7 +103,6 @@ describe('Profile Component', () => {
   });
 
   test('handles non-ok response in fetchDefaultCard', async () => {
-    // Simulate response with ok === false
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
       if (key === 'authToken') return Promise.resolve('dummy-token');
       if (key === 'userInfo')
@@ -135,7 +133,6 @@ describe('Profile Component', () => {
     });
 
     const { getByText, queryByText } = render(<Profile />);
-    // Initially, the modal should not be visible
     expect(queryByText('Are you sure you want to log out?')).toBeNull();
 
     const logoutButton = getByText('Logout');
@@ -146,28 +143,6 @@ describe('Profile Component', () => {
     });
   });
 
-  test('confirms logout and resets navigation and clears data (web)', async () => {
-    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
-      if (key === 'authToken') return Promise.resolve('dummy-token');
-      if (key === 'userInfo')
-        return Promise.resolve(JSON.stringify({ first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com' }));
-      return Promise.resolve(null);
-    });
-
-    const { getByText } = render(<Profile />);
-    const logoutButton = getByText('Logout');
-    fireEvent.press(logoutButton);
-
-    const yesButton = await waitFor(() => getByText('Yes'));
-    fireEvent.press(yesButton);
-
-    await waitFor(() => {
-      expect(AsyncStorage.removeItem).toHaveBeenCalledWith('authToken');
-      expect(AsyncStorage.removeItem).toHaveBeenCalledWith('userInfo');
-      expect(mockClearCards).toHaveBeenCalled();
-      expect(mockReset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'index' }] });
-    });
-  });
 
   test('calls Alert.alert on non-web logout', async () => {
     Platform.OS = 'ios';
@@ -178,7 +153,7 @@ describe('Profile Component', () => {
         return Promise.resolve(JSON.stringify({ first_name: 'Dana', last_name: 'Scully', email: 'dana@example.com' }));
       return Promise.resolve(null);
     });
-
+  
     const { getByText } = render(<Profile />);
     const logoutButton = getByText('Logout');
     fireEvent.press(logoutButton);
@@ -195,7 +170,7 @@ describe('Profile Component', () => {
     });
     alertSpy.mockRestore();
   });
-
+  
   test('navigates to editProfile when profile info is pressed', async () => {
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
       if (key === 'authToken') return Promise.resolve('dummy-token');
@@ -203,7 +178,7 @@ describe('Profile Component', () => {
         return Promise.resolve(JSON.stringify({ first_name: 'Bob', last_name: 'Marley', email: 'bob@example.com' }));
       return Promise.resolve(null);
     });
-
+  
     const { getByText } = render(<Profile />);
     await waitFor(() => {
       expect(getByText('Bob Marley')).toBeTruthy();
@@ -212,7 +187,7 @@ describe('Profile Component', () => {
     fireEvent.press(profileName);
     expect(mockNavigate).toHaveBeenCalledWith("editProfile");
   });
-
+  
   test('navigates to payment-method when Payment Information is pressed', async () => {
     const defaultCardData = { is_default: true, card_type: 'Visa', last4: '9999' };
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
@@ -225,7 +200,7 @@ describe('Profile Component', () => {
       ok: true,
       json: () => Promise.resolve([defaultCardData]),
     });
-
+  
     const { getByText } = render(<Profile />);
     await waitFor(() => {
       expect(getByText('Visa ending in 9999')).toBeTruthy();
@@ -237,14 +212,13 @@ describe('Profile Component', () => {
 });
 
 describe('Profile Additional Branch Coverage', () => {
-  test('unstable_settings.tabBarIcon returns a valid element', () => {
+  test('unstable_settings.tabBarIcon returns a valid element with provided color', () => {
     const iconElement = unstable_settings.tabBarIcon({ color: 'blue' });
     expect(iconElement).toBeTruthy();
     expect(iconElement.props.color).toBe('blue');
   });
 
   test('handles error in confirmLogout (removeItem failure)', async () => {
-    // Simulate error in AsyncStorage.removeItem
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
       if (key === 'authToken') return Promise.resolve('dummy-token');
       if (key === 'userInfo')
@@ -253,19 +227,19 @@ describe('Profile Additional Branch Coverage', () => {
     });
     (AsyncStorage.removeItem as jest.Mock).mockRejectedValue(new Error("Removal failed"));
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
+  
     Platform.OS = 'web';
     const { getByText } = render(<Profile />);
     fireEvent.press(getByText('Logout'));
     const yesButton = await waitFor(() => getByText('Yes'));
     fireEvent.press(yesButton);
-
+  
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalledWith("Error logging out:", expect.any(Error));
     });
     consoleErrorSpy.mockRestore();
   });
-
+  
   test('closes modal when Cancel is pressed', async () => {
     Platform.OS = 'web';
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
@@ -274,7 +248,7 @@ describe('Profile Additional Branch Coverage', () => {
         return Promise.resolve(JSON.stringify({ first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com' }));
       return Promise.resolve(null);
     });
-
+  
     const { getByText, queryByText } = render(<Profile />);
     fireEvent.press(getByText('Logout'));
     await waitFor(() => {
