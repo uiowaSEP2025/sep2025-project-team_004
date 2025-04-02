@@ -132,6 +132,7 @@ LOCAL_APPS = [
     "sep2025_project_team_004.store",
     "sep2025_project_team_004.payment",
     "sep2025_project_team_004.friends",
+    "sep2025_project_team_004.sensors",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
