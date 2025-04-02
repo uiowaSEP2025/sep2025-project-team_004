@@ -1,8 +1,9 @@
 import React from 'react';
-import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Platform, Alert } from 'react-native';
 import Profile, { unstable_settings } from '../app/(tabs)/profile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 // Create mock functions for navigation
 const mockReset = jest.fn();
@@ -17,24 +18,28 @@ jest.mock('@react-navigation/native', () => ({
   useFocusEffect: (callback: () => void) => callback(),
 }));
 
-// Mock the usePayment hook from the correct path
-const mockClearCards = jest.fn();
-jest.mock('../app/context/PaymentContext', () => ({
-  usePayment: () => ({
-    clearCards: mockClearCards,
-  }),
-}));
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(),
-  removeItem: jest.fn(),
+  clear: jest.fn(),
+}));
+
+// Mock SecureStore
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
 }));
 
 describe('Profile Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     Platform.OS = 'web';
+    // Set default mocks for SecureStore methods
+    (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(null);
+    (SecureStore.setItemAsync as jest.Mock).mockResolvedValue();
+    (SecureStore.deleteItemAsync as jest.Mock).mockResolvedValue();
   });
 
   test('redirects to index if authToken is missing', async () => {
@@ -143,7 +148,6 @@ describe('Profile Component', () => {
     });
   });
 
-
   test('calls Alert.alert on non-web logout', async () => {
     Platform.OS = 'ios';
     const alertSpy = jest.spyOn(Alert, 'alert');
@@ -218,14 +222,14 @@ describe('Profile Additional Branch Coverage', () => {
     expect(iconElement.props.color).toBe('blue');
   });
 
-  test('handles error in confirmLogout (removeItem failure)', async () => {
+  test('handles error in confirmLogout (clear failure)', async () => {
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
       if (key === 'authToken') return Promise.resolve('dummy-token');
       if (key === 'userInfo')
         return Promise.resolve(JSON.stringify({ first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com' }));
       return Promise.resolve(null);
     });
-    (AsyncStorage.removeItem as jest.Mock).mockRejectedValue(new Error("Removal failed"));
+    (AsyncStorage.clear as jest.Mock).mockRejectedValue(new Error("Clear failed"));
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   
     Platform.OS = 'web';

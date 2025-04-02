@@ -2,6 +2,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Platform, Alert } from 'react-native';
+// Update the import path to reflect the new location of Profile
 import Profile, { unstable_settings } from '../app/Profile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -19,14 +20,6 @@ jest.mock('@react-navigation/native', () => ({
     navigate: mockNavigate,
   }),
   useFocusEffect: (callback: () => void) => callback(),
-}));
-
-// Mock the usePayment hook from the correct path
-const mockClearCards = jest.fn();
-jest.mock('../app/context/PaymentContext', () => ({
-  usePayment: () => ({
-    clearCards: mockClearCards,
-  }),
 }));
 
 // Mock AsyncStorage
@@ -76,7 +69,7 @@ describe('Profile Component', () => {
       return Promise.resolve(null);
     });
 
-    // Assuming your Profile component renders a back button with testID "back-button"
+    // Profile renders a back button with testID "back-button"
     const { getByTestId } = render(<Profile />);
     const backButton = await waitFor(() => getByTestId('back-button'));
     fireEvent.press(backButton);
@@ -95,6 +88,7 @@ describe('Profile Component', () => {
     });
 
     const { getByText, queryByText } = render(<Profile />);
+    // Initially, the logout confirmation text should not be visible.
     expect(queryByText('Are you sure you want to log out?')).toBeNull();
 
     fireEvent.press(getByText('Logout'));
@@ -103,7 +97,6 @@ describe('Profile Component', () => {
     });
   });
 
- 
   test('navigates to "orders" when My orders is pressed', async () => {
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
       if (key === 'authToken') return Promise.resolve('dummy-token');

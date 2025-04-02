@@ -9,7 +9,6 @@ import {
 import WelcomePage from '../app/(tabs)/home';
 import { NavigationContext } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PaymentProvider } from '@/app/context/PaymentContext';
 import { Platform } from 'react-native';
 
 // Use the AsyncStorage mock provided by the package.
@@ -30,8 +29,8 @@ describe('WelcomePage', () => {
 
   beforeEach(async () => {
     jest.useFakeTimers();
-    // Set Platform to web.
-    jest.replaceProperty(Platform, "OS", "web");
+    // Set Platform to web by directly assigning to Platform.OS.
+    Platform.OS = 'web';
     jest.clearAllMocks();
     // Dummy fetch response for sensor data.
     global.fetch = jest.fn().mockResolvedValue({
@@ -88,11 +87,9 @@ describe('WelcomePage', () => {
 
   const setup = () => {
     return render(
-      <PaymentProvider>
-        <NavigationContext.Provider value={customNavigation as any}>
-          <WelcomePage />
-        </NavigationContext.Provider>
-      </PaymentProvider>
+      <NavigationContext.Provider value={customNavigation as any}>
+        <WelcomePage />
+      </NavigationContext.Provider>
     );
   };
 
@@ -136,7 +133,7 @@ describe('WelcomePage', () => {
     act(() => {
       fireEvent.press(weekToggle);
     });
-    // Use the toHaveStyle matcher to check active style.
+    // Verify that the toggle's style changes to indicate active selection.
     expect(weekToggle).toHaveStyle({ backgroundColor: "#007AFF" });
   });
 

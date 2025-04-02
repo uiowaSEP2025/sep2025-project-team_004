@@ -6,10 +6,10 @@ import {
   act,
   cleanup,
 } from "@testing-library/react-native";
-import PaymentMethod, { getCardLogo } from "../app/payment-method";
-import { PaymentProvider } from "@/app/context/PaymentContext";
+import PaymentMethod from "../app/payment-method";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert, Platform } from "react-native";
+import * as SecureStore from "expo-secure-store";
 
 // --- Mock images to avoid require() errors ---
 jest.mock("@/assets/images/back-arrow.png", () => "back-arrow.png");
@@ -27,12 +27,18 @@ const mockedRouter = {
   navigate: jest.fn(),
 };
 
-jest.mock("expo-router", () => ({
-  useRouter: () => mockedRouter,
-  useFocusEffect: (callback: () => void) => {
-    callback();
-  },
-}));
+jest.mock("expo-router", () => {
+  const React = require("react");
+  return {
+    useRouter: () => mockedRouter,
+    useFocusEffect: (callback: () => void) => {
+      // Call the callback once on mount.
+      React.useEffect(() => {
+        callback();
+      }, []);
+    },
+  };
+});
 
 // --- Mock AsyncStorage ---
 jest.mock("@react-native-async-storage/async-storage", () => ({
@@ -41,7 +47,13 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   removeItem: jest.fn(),
 }));
 
-// Partial payment context with two cards.
+// --- Mock expo-secure-store ---
+jest.mock("expo-secure-store", () => ({
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+}));
+
+// Partial payment data with two cards.
 const mockPaymentContext = {
   cards: [
     {
@@ -65,26 +77,23 @@ const mockPaymentContext = {
 
 beforeEach(() => {
   jest.clearAllMocks();
-
   // Global fetch returns the mock cards.
   global.fetch = jest.fn().mockResolvedValue({
     ok: true,
     json: async () => mockPaymentContext.cards,
   });
-
-  // For most tests, AsyncStorage.getItem returns a dummy token.
+  // By default, AsyncStorage.getItem returns a dummy token.
   (AsyncStorage.getItem as jest.Mock).mockResolvedValue("dummyToken");
+  // By default, SecureStore returns our stored cards.
+  (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(
+    JSON.stringify(mockPaymentContext.cards)
+  );
 });
 
 afterEach(cleanup);
 
-// Helper to render PaymentMethod wrapped with PaymentProvider.
-const renderPaymentMethod = () =>
-  render(
-    <PaymentProvider>
-      <PaymentMethod />
-    </PaymentProvider>
-  );
+// Helper: render PaymentMethod (no extra act wrapper on render)
+const renderPaymentMethod = () => render(<PaymentMethod />);
 
 describe("PaymentMethod Screen", () => {
   describe("Card Rendering", () => {
@@ -110,20 +119,15 @@ describe("PaymentMethod Screen", () => {
         card_type: "visa",
         is_default: false,
       }));
-
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: async () => manyCards,
-      });
-
+      (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(
+        JSON.stringify(manyCards)
+      );
       const { getAllByTestId } = renderPaymentMethod();
       await waitFor(() => {
-        expect(getAllByTestId(/default-checkbox-/).length).toBe(10);
+        const checkboxes = getAllByTestId(/default-checkbox-/);
+        expect(checkboxes.length).toBe(10);
       });
     });
-
-    // Test getCardLogo in a way that handles either a string or an object.
-    
   });
 
   describe("Navigation", () => {
@@ -148,10 +152,10 @@ describe("PaymentMethod Screen", () => {
 
   describe("Payment Method Actions", () => {
     it("sets default payment when default checkbox is pressed", async () => {
-      // For this test, let the initial load succeed and then simulate a failure for setDefaultPayment.
+      // Force AsyncStorage.getItem to return a token for both calls.
       (AsyncStorage.getItem as jest.Mock)
-        .mockResolvedValueOnce("dummyToken") // for initial loadCards call
-        .mockResolvedValueOnce("dummyToken"); // for setDefaultPayment call
+        .mockResolvedValueOnce("dummyToken") // for loadCards
+        .mockResolvedValueOnce("dummyToken"); // for setDefaultPayment
 
       global.fetch = jest
         .fn()
@@ -176,7 +180,6 @@ describe("PaymentMethod Screen", () => {
         fireEvent.press(getByTestId("default-checkbox-1"));
       });
       await waitFor(() => {
-        // Check that the POST call was attempted.
         expect(global.fetch).toHaveBeenCalledWith(
           expect.stringContaining("/api/payment/set-default/1/"),
           expect.objectContaining({ method: "POST" })
@@ -186,7 +189,7 @@ describe("PaymentMethod Screen", () => {
 
     describe("Delete Payment Method", () => {
       it("shows alert and deletes card when delete button is pressed (non-web)", async () => {
-        jest.replaceProperty(Platform, "OS", "ios");
+        Platform.OS = "ios";
         const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(
           (title, message, buttons) => {
             const yesButton = buttons?.find((button) => button.text === "Yes");
@@ -216,7 +219,7 @@ describe("PaymentMethod Screen", () => {
       });
 
       it("deletes card directly on web without showing alert", async () => {
-        jest.replaceProperty(Platform, "OS", "web");
+        Platform.OS = "web";
         const { getByTestId } = renderPaymentMethod();
         await waitFor(() => expect(getByTestId("delete-button-1")).toBeTruthy());
         await act(async () => {
@@ -235,11 +238,13 @@ describe("PaymentMethod Screen", () => {
   describe("Error Handling", () => {
     it("logs an error when no auth token is found during loadCards", async () => {
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      // For loadCards, chain: first call returns dummyToken (so cards load) then subsequent call returns null.
-      (AsyncStorage.getItem as jest.Mock)
-        .mockResolvedValueOnce("dummyToken")
-        .mockResolvedValueOnce(null);
+      // Simulate missing token by having getItem return null.
+      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
       renderPaymentMethod();
+      // Flush pending microtasks.
+      await act(async () => {
+        await Promise.resolve();
+      });
       await waitFor(() => {
         expect(
           consoleSpy.mock.calls.some((call) => call[0] === "User not authenticated.")
@@ -250,10 +255,12 @@ describe("PaymentMethod Screen", () => {
 
     it("logs an error when fetch fails in loadCards", async () => {
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-      });
+      // Simulate an error in SecureStore.
+      (SecureStore.getItemAsync as jest.Mock).mockRejectedValue(new Error("Test error"));
       renderPaymentMethod();
+      await act(async () => {
+        await Promise.resolve();
+      });
       await waitFor(() => {
         expect(
           consoleSpy.mock.calls.some((call) =>
@@ -266,12 +273,11 @@ describe("PaymentMethod Screen", () => {
 
     it("logs an error when no auth token is found in deletePaymentMethod", async () => {
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      // Chain AsyncStorage so that the initial load gets a token and the deletion call gets null.
+      // Simulate token available for loadCards but missing during deletion.
       (AsyncStorage.getItem as jest.Mock)
-        .mockResolvedValueOnce("dummyToken") // loadCards call
-        .mockResolvedValueOnce(null); // deletePaymentMethod call
-      jest.replaceProperty(Platform, "OS", "web");
-
+        .mockResolvedValueOnce("dummyToken")
+        .mockResolvedValueOnce(null);
+      Platform.OS = "web";
       const { getByTestId } = renderPaymentMethod();
       await waitFor(() => expect(getByTestId("delete-button-1")).toBeTruthy());
       await act(async () => {
@@ -279,46 +285,7 @@ describe("PaymentMethod Screen", () => {
       });
       await waitFor(() => {
         expect(
-          consoleSpy.mock.calls.some(
-            (call) => call[0] === "User not authenticated."
-          )
-        ).toBe(true);
-      });
-      consoleSpy.mockRestore();
-    });
-
-    it("logs an error when fetch fails in setDefaultPayment", async () => {
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      // Chain AsyncStorage: first call for loadCards, second for setDefaultPayment.
-      (AsyncStorage.getItem as jest.Mock)
-        .mockResolvedValueOnce("dummyToken")
-        .mockResolvedValueOnce("dummyToken");
-      global.fetch = jest
-        .fn()
-        // First call: loadCards GET
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockPaymentContext.cards,
-        })
-        // Second call: setDefaultPayment POST failure
-        .mockResolvedValueOnce({
-          ok: false,
-        })
-        // Third call: loadCards after error
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockPaymentContext.cards,
-        });
-      const { getByTestId } = renderPaymentMethod();
-      await waitFor(() => expect(getByTestId("default-checkbox-1")).toBeTruthy());
-      await act(async () => {
-        fireEvent.press(getByTestId("default-checkbox-1"));
-      });
-      await waitFor(() => {
-        expect(
-          consoleSpy.mock.calls.some((call) =>
-            call[0].includes("Error setting default payment method:")
-          )
+          consoleSpy.mock.calls.some((call) => call[0] === "User not authenticated.")
         ).toBe(true);
       });
       consoleSpy.mockRestore();
