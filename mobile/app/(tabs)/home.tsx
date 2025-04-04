@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
@@ -258,23 +259,37 @@ const chartWidth = Dimensions.get("window").width - 32;
     </View>
   )}
 
-  {showMap && defaultRegion ? (
-    <MapView
-      style={StyleSheet.absoluteFillObject}
-      initialRegion={defaultRegion}
-    >
-      {userSensors.map((sensor, index) => (
-    <Marker
-      key={index}
-      coordinate={{
-        latitude: sensor.latitude,
-        longitude: sensor.longitude,
-      }}
-      title={sensor.nickname || sensor.id}
-      description={`Type: ${sensor.sensor_type}`}
-    />
-  ))}
-    </MapView>
+{showMap && defaultRegion ? (
+  <MapView
+    style={StyleSheet.absoluteFillObject}
+    initialRegion={defaultRegion}
+  >
+    {userSensors.map((sensor, index) => (
+      <Marker
+        key={index}
+        coordinate={{
+          latitude: sensor.latitude,
+          longitude: sensor.longitude,
+        }}
+        title={sensor.nickname || sensor.id}
+        description={`Type: ${sensor.sensor_type}`}
+      >
+        <View style={styles.markerContainer}>
+          <View style={styles.markerCircle}>
+            <Image
+              source={
+                sensor.sensor_type === "air"
+                  ? require("../../assets/images/air-sensor.png")
+                  : require("../../assets/images/soil-sensor.png")
+              }
+              style={styles.markerImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+      </Marker>
+    ))}
+  </MapView>
   ) : (
     <ScrollView contentContainerStyle={styles.scrollContent}>
       {loading ? (
@@ -422,6 +437,29 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 22,
   },
+  markerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  
+  markerCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  
+  markerImage: {
+    width: 80,
+    height: 80,
+  },
+  
 });
 
 export default WelcomePage;
