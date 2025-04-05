@@ -230,7 +230,7 @@ export default function FriendRequestsScreen() {
 
 /* Styles */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fcfcfc" },
+  container: { flex: 1, backgroundColor: "#fcfcfc", },
   header: {
     height: 56,
     flexDirection: "row",
@@ -239,6 +239,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#ecebeb",
     paddingHorizontal: 16,
+    marginTop: 50,
   },
   backButton: {
     position: "absolute",

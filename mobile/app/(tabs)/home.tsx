@@ -30,6 +30,10 @@ const WelcomePage: React.FC = () => {
   const [defaultRegion, setDefaultRegion] = useState<Region | null>(null);
   const [userSensors, setUserSensors] = useState<any[]>([]);
 
+  const [selectedSensor, setSelectedSensor] = useState<any>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+
   const [sensorData, setSensorData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState<"today" | "week" | "month">("today");
@@ -72,9 +76,12 @@ const WelcomePage: React.FC = () => {
         if (storedSensors) {
           const sensors = JSON.parse(storedSensors);
           setUserSensors(sensors);
+
   
           const defaultSensor = sensors.find((s: any) => s.is_default);
-          console.log("default sensor:", defaultSensor);
+          if (defaultSensor) {
+            setSelectedSensor(defaultSensor);
+          }
   
           if (defaultSensor && defaultSensor.latitude && defaultSensor.longitude) {
             setDefaultRegion({
@@ -235,6 +242,60 @@ const chartWidth = Dimensions.get("window").width - 32;
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={styles.container}>
+    {/* Sensor Selector */}
+<View style={styles.sensorSelectorWrapper}>
+  <TouchableOpacity onPress={() => setShowDropdown(!showDropdown)} style={styles.sensorSelector}>
+    <Image
+      source={
+        selectedSensor?.sensor_type === "air"
+          ? require("../../assets/images/air-sensor.png")
+          : require("../../assets/images/soil-sensor.png")
+      }
+      style={styles.sensorIcon}
+    />
+    <View style={styles.sensorInfo}>
+      <Text style={styles.sensorNickname}>{selectedSensor?.nickname || "Unnamed Sensor"}</Text>
+      <Text style={styles.sensorType}>{selectedSensor?.sensor_type === "air" ? "Air Sensor" : "Soil Sensor"}</Text>
+    </View>
+    <Text style={styles.dropdownArrow}>{showDropdown ? "▲" : "▼"}</Text>
+  </TouchableOpacity>
+
+  {/* Dropdown List */}
+  {showDropdown && loading && (
+    <View style={styles.dropdown}>
+      {userSensors.map((sensor, index) => (
+        <TouchableOpacity
+          key={sensor.id}
+          style={styles.dropdownItem}
+          onPress={async () => {
+            if (sensor.id !== selectedSensor?.id) {
+            setSelectedSensor(sensor);
+            await fetchSensorData(sensor.id);
+            }
+            setShowDropdown(false);
+          }}
+        >
+          <Image
+            source={
+              sensor.sensor_type === "air"
+                ? require("../../assets/images/air-sensor.png")
+                : require("../../assets/images/soil-sensor.png")
+            }
+            style={styles.sensorIconSmall}
+          />
+          <View style={styles.dropdownInfo}>
+            <Text style={styles.dropdownNickname}>{sensor.nickname}</Text>
+            <Text style={styles.dropdownType}>{sensor.sensor_type === "air" ? "Air Sensor" : "Soil Sensor"}</Text>
+          </View>
+          <Image
+            source={require("../../assets/images/settingsIcon.png")} // placeholder for now
+            style={styles.settingsIcon}
+          />
+        </TouchableOpacity>
+      ))}
+    </View>
+  )}
+</View>
   {!showMap && (
     <View style={styles.toggleContainer}>
       {["today", "week", "month"].map((range) => (
@@ -398,7 +459,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginVertical: 12,
-    marginTop: 80,
+    marginTop: 20,
   },
   toggleButton: {
     paddingHorizontal: 12,
@@ -458,6 +519,72 @@ const styles = StyleSheet.create({
   markerImage: {
     width: 80,
     height: 80,
+  },
+  sensorSelectorWrapper: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+    marginTop: 60,
+  },
+  sensorSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  sensorIcon: {
+    width: 40,
+    height: 40,
+    marginRight: 12,
+  },
+  sensorInfo: {
+    flex: 1,
+  },
+  sensorNickname: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  sensorType: {
+    fontSize: 14,
+    color: "#666",
+  },
+  dropdownArrow: {
+    fontSize: 20,
+    marginLeft: 8,
+  },
+  dropdown: {
+    marginTop: 12,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 8,
+    paddingVertical: 8,
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  sensorIconSmall: {
+    width: 30,
+    height: 30,
+    marginRight: 12,
+  },
+  dropdownInfo: {
+    flex: 1,
+  },
+  dropdownNickname: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  dropdownType: {
+    fontSize: 13,
+    color: "#666",
+  },
+  settingsIcon: {
+    width: 20,
+    height: 20,
+    tintColor: "#999",
   },
   
 });
