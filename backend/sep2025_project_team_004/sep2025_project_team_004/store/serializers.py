@@ -11,3 +11,10 @@ class ProductSerializer(serializers.ModelSerializer):
         if obj.image:
             return obj.image.url
         return None
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'
+        read_only_fields = ('created_at',)
