@@ -239,6 +239,13 @@ const chartWidth = Dimensions.get("window").width - 32;
 
 
   console.log(userSensors);
+  if (!selectedSensor) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={styles.container}>
@@ -261,7 +268,7 @@ const chartWidth = Dimensions.get("window").width - 32;
   </TouchableOpacity>
 
   {/* Dropdown List */}
-  {showDropdown && loading && (
+  {showDropdown && (
     <View style={styles.dropdown}>
       {userSensors.map((sensor, index) => (
         <TouchableOpacity
@@ -269,8 +276,9 @@ const chartWidth = Dimensions.get("window").width - 32;
           style={styles.dropdownItem}
           onPress={async () => {
             if (sensor.id !== selectedSensor?.id) {
-            setSelectedSensor(sensor);
-            await fetchSensorData(sensor.id);
+              setSensorData([]);
+              setSelectedSensor(sensor);
+              await fetchSensorData(sensor.id);
             }
             setShowDropdown(false);
           }}
@@ -365,14 +373,14 @@ const chartWidth = Dimensions.get("window").width - 32;
     </ScrollView>
   )}
 
-  {/* Toggle Button */}
-  <TouchableOpacity
-    style={styles.mapToggleButton}
-    onPress={() => setShowMap((prev) => !prev)}
-  >
-    <Text style={styles.mapToggleText}>{showMap ? "↩" : "🗺"}</Text>
-  </TouchableOpacity>
-</View>
+        {/* Toggle Button */}
+        <TouchableOpacity
+          style={styles.mapToggleButton}
+          onPress={() => setShowMap((prev) => !prev)}
+          >
+          <Text style={styles.mapToggleText}>{showMap ? "↩" : "🗺"}</Text>
+        </TouchableOpacity>
+      </View>
 
     </TouchableWithoutFeedback>
   );
@@ -548,19 +556,21 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   dropdownArrow: {
-    fontSize: 20,
-    marginLeft: 8,
+    fontSize: 30,
+    marginLeft: 10,
+    marginRight: 15,
+    marginTop: 3,
   },
   dropdown: {
     marginTop: 12,
-    backgroundColor: "#f8f8f8",
-    borderRadius: 8,
-    paddingVertical: 8,
+    backgroundColor: "#ffffff",
+    borderRadius: 5,
+    paddingVertical: 5,
   },
   dropdownItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ddd",
@@ -585,8 +595,8 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: "#999",
+    marginRight: 8,
   },
-  
 });
 
 export default WelcomePage;
