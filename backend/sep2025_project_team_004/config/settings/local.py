@@ -10,8 +10,6 @@ import environ
 # In local env, the .env should already been read in base.py, so we don't need to load .env here.
 USE_DOCKER = env("USE_DOCKER", default="yes")
 DATABASE_URL = env("DATABASE_URL", default="")
-print(f"[in loacal]USE_DOCKER: {USE_DOCKER}")
-print(f"[in local]DATABASE_URL: {DATABASE_URL}")
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -36,13 +34,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REDIS_URL = env("REDIS_URL")
 REDIS_SSL = REDIS_URL.startswith("rediss://")
 CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # Mimicking memcache behavior.
+            # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
+            "IGNORE_EXCEPTIONS": True,
+        },
+    },
 }
 
 
@@ -56,7 +57,7 @@ CELERY_BROKER_URL = REDIS_URL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
 CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_SSL else None
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
-CELERY_RESULT_BACKEND = "redis://default:ceOtEWHFQxyGfVpIjOh71BKAeElB6GuQ@redis-15945.c91.us-east-1-3.ec2.redns.redis-cloud.com:15945"
+CELERY_RESULT_BACKEND = REDIS_URL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
 CELERY_REDIS_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-extended

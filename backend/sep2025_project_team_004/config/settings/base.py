@@ -36,7 +36,6 @@ else:
         DJANGO_ENV = "test"
 
 logger.debug(f"[in base]Final DJANGO_ENV: {DJANGO_ENV}")
-REDIS_URL = "redis://default:AAAAOtEWHsdQxRwerpIjOh71BK23423uQ@redis-15945.c91.us-east-1-3.ec2.redns.redis-cloud.com:15945"
 DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD

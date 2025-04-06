@@ -14,6 +14,7 @@ app = Celery("scheduler_backend")
 #   should have a `CELERY_` prefix.
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
+import scheduler_backend.celery.tasks
 
 @setup_logging.connect
 def config_loggers(*args, **kwargs):
