@@ -6,33 +6,28 @@ import {
   waitFor,
   act,
   cleanup,
-  renderHook,
 } from '@testing-library/react-native';
 import PaymentMethod from '../app/add-payment';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Platform } from 'react-native';
 import { NavigationContext, NavigationProp, ParamListBase } from '@react-navigation/native';
-import Toast from 'react-native-toast-message'
+import Toast from 'react-native-toast-message';
 
-
-
+// --- Navigation mock ---
 const mockNavigation: NavigationProp<ParamListBase> = {
-    reset: jest.fn(),
-    dispatch: jest.fn(),
-    navigate: jest.fn(),
-    replace: jest.fn(),
-    goBack: jest.fn(),
-    setParams: jest.fn(),
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    isFocused: jest.fn(),
-    canGoBack: jest.fn(),
-    getParent: jest.fn(),
-    getState: jest.fn(),
-    
-  }as any as NavigationProp<ParamListBase>;
-
-
+  reset: jest.fn(),
+  dispatch: jest.fn(),
+  navigate: jest.fn(),
+  replace: jest.fn(),
+  goBack: jest.fn(),
+  setParams: jest.fn(),
+  addListener: jest.fn(),
+  removeListener: jest.fn(),
+  isFocused: jest.fn(),
+  canGoBack: jest.fn(),
+  getParent: jest.fn(),
+  getState: jest.fn(),
+} as any as NavigationProp<ParamListBase>;
 
 // --- Mock asset images so that require() returns dummy strings ---
 jest.mock('@/assets/images/back-arrow.png', () => 'back-arrow.png');
@@ -48,6 +43,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(),
 }));
 
+// --- Mock expo-secure-store ---
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(() => Promise.resolve(null)),
   setItemAsync: jest.fn(() => Promise.resolve()),
@@ -72,6 +68,27 @@ jest.mock('@react-navigation/native', () => {
   };
 });
 
+// --- Mock the custom useAlert hook so that useToast calls Toast.show ---
+jest.mock('../hooks/useAlert', () => {
+  return () => ({
+    useToast: jest.fn((title: string, message: string) => {
+      const { Platform } = require('react-native');
+      const Toast = require('react-native-toast-message').default;
+      Toast.show({
+        type: "success",
+        text1: title,
+        text2: message,
+        position: "top",
+        topOffset: Platform.OS === "web" ? 20 : 70,
+        visibilityTime: 4000,
+        autoHide: true,
+      });
+    }),
+  });
+});
+
+
+
 // --- Set a default fetch mock for GET requests (used in loadCards) ---
 beforeEach(() => {
   cleanup();
@@ -81,9 +98,8 @@ beforeEach(() => {
   );
   global.fetch = jest.fn().mockResolvedValue({
     ok: true,
-    json: async () => [], // Return an empty array to avoid .find() error
+    json: async () => [],
   });
-  
 });
 
 describe("Add Payment Screen (PaymentMethod)", () => {
@@ -115,16 +131,16 @@ describe("Add Payment Screen (PaymentMethod)", () => {
 
   it("successfully adds a card when auth token is present and API call succeeds", async () => {
     global.fetch = jest.fn().mockImplementation((url, options) => {
-        if (options && options.method === "POST") {
-            return Promise.resolve({
-                ok: true,
-                json: async () => ({ card_id: 1 }),
-            });
-        }
+      if (options && options.method === "POST") {
         return Promise.resolve({
-            ok: true,
-            json: async () => [],
+          ok: true,
+          json: async () => ({ card_id: 1 }),
         });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => [],
+      });
     });
 
     const toastSpy = jest.spyOn(Toast, "show").mockImplementation(() => {});
@@ -134,34 +150,33 @@ describe("Add Payment Screen (PaymentMethod)", () => {
     const expiryInput = getByPlaceholderText("Expiry Date");
 
     act(() => {
-        fireEvent.changeText(cardNumberInput, "4111111111111111");
-        fireEvent.changeText(cardHolderInput, "John Doe");
-        fireEvent.changeText(expiryInput, "12/24");
+      fireEvent.changeText(cardNumberInput, "4111111111111111");
+      fireEvent.changeText(cardHolderInput, "John Doe");
+      fireEvent.changeText(expiryInput, "12/24");
     });
 
     const doneButton = getByTestId("done-button");
     await act(async () => {
-        fireEvent.press(doneButton);
+      fireEvent.press(doneButton);
     });
 
     await waitFor(() => {
-          expect(toastSpy).toHaveBeenCalledWith({
-                  type: "success",
-                  text1: "Success",
-                  text2: "Your payment method has been added.",
-                  position: "top",
-                  topOffset: Platform.OS === "web" ? 20 : 70,
-                  visibilityTime: 4000,
-                  autoHide: true,
-                });
-        });
-        expect(mockedRouter.replace).toHaveBeenCalledWith("/payment-method");
-        toastSpy.mockRestore();
+      expect(toastSpy).toHaveBeenCalledWith({
+        type: "success",
+        text1: "Success",
+        text2: "Your payment method has been added.",
+        position: "top",
+        topOffset: Platform.OS === "web" ? 20 : 70,
+        visibilityTime: 4000,
+        autoHide: true,
+      });
     });
-
+    expect(mockedRouter.replace).toHaveBeenCalledWith("/payment-method");
+    toastSpy.mockRestore();
+  });
 
   it("shows error alert when auth token is missing", async () => {
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null); // Simulate no authToken
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null); // Simulate missing authToken
     const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
 
     const { getByTestId } = render(<PaymentMethod />);
@@ -169,13 +184,12 @@ describe("Add Payment Screen (PaymentMethod)", () => {
 
     await act(async () => {
       fireEvent.press(doneButton);
-   });
+    });
 
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
       expect(consoleErrorSpy).toHaveBeenCalledWith("User not authenticated.");
     });
-
     consoleErrorSpy.mockRestore(); 
   });
 
@@ -183,7 +197,7 @@ describe("Add Payment Screen (PaymentMethod)", () => {
     global.fetch = jest.fn().mockImplementation((url, options) => {
       if (options && options.method === 'POST') {
         return Promise.resolve({
-          ok: false, // Simulates an API failure
+          ok: false, // Simulate API failure
           json: async () => ({ error: "Failed to add payment method" }),
         });
       }
@@ -193,7 +207,6 @@ describe("Add Payment Screen (PaymentMethod)", () => {
       });
     });
     
-
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
     const { getByPlaceholderText, getByTestId } = render(<PaymentMethod />);
     const cardNumberInput = getByPlaceholderText("Card Number");
@@ -257,17 +270,16 @@ describe("Add Payment Screen (PaymentMethod)", () => {
 
     await waitFor(() => {
       expect(toastSpy).toHaveBeenCalledWith({
-              type: "success",
-              text1: "Success",
-              text2: "Your payment method has been added.",
-              position: "top",
-              topOffset: Platform.OS === "web" ? 20 : 70,
-              visibilityTime: 4000,
-              autoHide: true,
-            });
+        type: "success",
+        text1: "Success",
+        text2: "Your payment method has been added.",
+        position: "top",
+        topOffset: Platform.OS === "web" ? 20 : 70,
+        visibilityTime: 4000,
+        autoHide: true,
+      });
     });
     expect(mockedRouter.replace).toHaveBeenCalledWith("/payment-method");
     toastSpy.mockRestore();
-    
   });
 });

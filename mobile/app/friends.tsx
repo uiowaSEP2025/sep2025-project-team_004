@@ -350,4 +350,3 @@ const styles = StyleSheet.create({
   },
   
 });
-
