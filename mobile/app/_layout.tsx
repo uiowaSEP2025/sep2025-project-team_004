@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack, useRouter } from "expo-router";
@@ -11,8 +11,6 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import * as Linking from "expo-linking";
 
 import { CartProvider } from "./context/CartContext";  
-import { PaymentProvider } from "./context/PaymentContext";
-
 // Prevent splash screen from auto-hiding before asset loading is complete
 SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
@@ -76,7 +74,6 @@ export default function RootLayout() {
   }
 
   return (
-    <PaymentProvider>
       <CartProvider>
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
           <Stack screenOptions={{ headerShown: false }}>
@@ -91,6 +88,5 @@ export default function RootLayout() {
       <StatusBar style="auto" />
         </ThemeProvider>
       </CartProvider>
-    </PaymentProvider>
   );
 }

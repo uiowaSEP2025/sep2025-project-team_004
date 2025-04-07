@@ -1,6 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
-const API_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/friends`;
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
+
+const API_URL = `${API_BASE_URL}/api/friends`;
 
 
 export const sendFriendRequest = async (username: string) => {
@@ -11,7 +17,7 @@ export const sendFriendRequest = async (username: string) => {
     }
 
     // Search user by username
-    const userResponse = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/search/?username=${username}`, {
+    const userResponse = await fetch(`${API_BASE_URL}/api/users/search/?username=${username}`, {
       method: "GET",
       headers: {
         "Authorization": `Token ${authToken}`,

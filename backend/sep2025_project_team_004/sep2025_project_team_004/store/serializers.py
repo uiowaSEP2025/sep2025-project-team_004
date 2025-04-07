@@ -1,5 +1,10 @@
 from rest_framework import serializers
+<<<<<<< HEAD
 from .models import Product, Order, OrderItem
+=======
+from .models import Product
+from .models import Review
+>>>>>>> origin/main
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,6 +16,7 @@ class ProductSerializer(serializers.ModelSerializer):
         if obj.image:
             return obj.image.url
         return None
+<<<<<<< HEAD
     
 class OrderItemSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(write_only=True)
@@ -43,3 +49,12 @@ class OrderSerializer(serializers.ModelSerializer):
         for item in items_data:
             OrderItem.objects.create(order=order, **item)
         return order
+=======
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'
+        read_only_fields = ('created_at',)
+>>>>>>> origin/main

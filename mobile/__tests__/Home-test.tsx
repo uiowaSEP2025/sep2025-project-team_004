@@ -6,17 +6,17 @@ import {
   act,
   cleanup,
 } from '@testing-library/react-native';
+import { Platform, ActivityIndicator } from 'react-native';
 import WelcomePage from '../app/(tabs)/home';
 import { NavigationContext } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PaymentProvider } from '@/app/context/PaymentContext';
-import { Platform } from 'react-native';
 
-// Mock AsyncStorage
+// Use the AsyncStorage mock provided by the package.
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
+// Mock react-native-reanimated if needed.
 jest.mock('react-native-reanimated', () => {
   const Reanimated = require('react-native-reanimated/mock');
   Reanimated.default.call = () => {};
@@ -29,17 +29,45 @@ describe('WelcomePage', () => {
 
   beforeEach(async () => {
     jest.useFakeTimers();
-    jest.replaceProperty(Platform, "OS", "web");
+    // Set Platform to web.
+    Platform.OS = 'web';
     jest.clearAllMocks();
-    // By default, return a dummy token so the auth check does nothing.
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [
-        { id: 1, last4: '1234', cardholder_name: 'John Doe', expiration_date: '12/24', card_type: 'visa', is_default: false },
-        { id: 2, last4: '5678', cardholder_name: 'Jane Doe', expiration_date: '11/25', card_type: 'mastercard', is_default: true },
-      ],
+    // Dummy fetch response implementation:
+    // - For the sensors fetch (used in fetchUserSensors), return an array with a default sensor.
+    // - For the sensor data fetch (used in fetchSensorData), return valid chart data.
+    global.fetch = jest.fn((url: string) => {
+      if (url.includes('/api/sensors/')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ([{ id: 'sensor1', is_default: true }]),
+        });
+      } else {
+        return Promise.resolve({
+          ok: true,
+          text: async () => JSON.stringify({
+            points: [
+              {
+                time: new Date().toISOString(),
+                temperature: "20",
+                pressure: "1013",
+                humidity: "50",
+              },
+            ],
+          }),
+          json: async () => ({
+            points: [
+              {
+                time: new Date().toISOString(),
+                temperature: "20",
+                pressure: "1013",
+                humidity: "50",
+              },
+            ],
+          }),
+        });
+      }
     });
-
+    // Simulate that authToken is present.
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) =>
       key === 'authToken' ? Promise.resolve('dummyToken') : Promise.resolve(null)
     );
@@ -47,6 +75,7 @@ describe('WelcomePage', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    cleanup();
   });
 
   const customNavigation = {
@@ -67,71 +96,34 @@ describe('WelcomePage', () => {
 
   const setup = () => {
     return render(
-      <PaymentProvider>
       <NavigationContext.Provider value={customNavigation as any}>
         <WelcomePage />
       </NavigationContext.Provider>
-      </PaymentProvider>
     );
   };
 
+  // Helper function to search the tree for an ActivityIndicator.
+  const findActivityIndicator = (node: any): boolean => {
+    if (!node) return false;
+    if (node.type === 'ActivityIndicator' || (node.type && node.type.displayName === 'ActivityIndicator')) {
+      return true;
+    }
+    if (node.children && Array.isArray(node.children)) {
+      return node.children.some(child => findActivityIndicator(child));
+    }
+    return false;
+  };
+
+  // Test 1: Renders correctly (toggle buttons exist)
   it('renders correctly', async () => {
     const { findByText } = setup();
-      expect(await findByText('Welcome!')).toBeTruthy();
-
+    expect(await findByText('Today')).toBeTruthy();
+    expect(await findByText('Past Week')).toBeTruthy();
+    expect(await findByText('Past 30 Days')).toBeTruthy();
   });
 
-  it('toggles menu visibility when profile icon is pressed', async () => {
-    const { getByText, queryByText } = setup();
-
-    // Initially, menu is not visible
-    expect(queryByText('Profile')).toBeNull();
-
-    // Show menu
-    const profileIcon = getByText('P');
-    await act(async () => {
-      fireEvent.press(profileIcon);
-    });
-    await waitFor(() => expect(getByText('Profile')).toBeTruthy(), { timeout: 7000 });
-    
-    await act(async () => {
-      fireEvent.press(profileIcon);
-    });
-    await waitFor(() => expect(queryByText('Profile')).toBeNull(), { timeout: 7000 });
-  }, 10000);
-
-  it('navigates to Edit Profile screen when Edit Profile option is pressed', async () => {
-    const { getByText } = setup();
-
-    const profileIcon = getByText('P');
-    fireEvent.press(profileIcon);
-
-    const editProfileOption = getByText('Edit Profile');
-    fireEvent.press(editProfileOption);
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('editProfile');
-    });
-  });
-
-  it('handles option selection and hides menu', async () => {
-    const { getByText, queryByText } = setup();
-
-    const profileIcon = getByText('P');
-    fireEvent.press(profileIcon);
-
-    const settingsOption = getByText('Settings');
-    fireEvent.press(settingsOption);
-
-    await waitFor(() => {
-      expect(queryByText('Settings')).toBeNull();
-    });
-  });
-
-  // ---- New tests for uncovered branches ----
-
+  // Test 2: Calls navigation.reset if auth token is missing on mount
   it('calls navigation.reset if auth token is missing on mount', async () => {
-    // Simulate missing auth token
     (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
     setup();
     await waitFor(() => {
@@ -139,60 +131,56 @@ describe('WelcomePage', () => {
     });
   });
 
-  it('shows logout modal when "Logout" is pressed and logs out when "Yes" is pressed', async () => {
-    const { getByText, queryByText } = setup();
-  
-    // Open the menu
-    fireEvent.press(getByText("P"));
-  
-    // Press "Logout"
-    await act(async () => {
-      fireEvent.press(getByText("Logout"));
-    });
-  
-    // Wait for modal visibility state update
-    await act(async () => {
-      await waitFor(() => {
-        expect(getByText("Are you sure you want to log out?")).toBeTruthy();
-      });
-    });  
-    // Press "Yes" button inside the modal
-    await act(async () => {
-      fireEvent.press(getByText("Yes"));
-    });
-  
-    // Ensure modal disappears after clicking "Yes"
-    await act(async () => {
-      await waitFor(() => {
-        expect(queryByText("Are you sure you want to log out?")).toBeNull();
-      });
-    });
-  
-  
-    //Ensure AsyncStorage tokens are removed
-    expect(AsyncStorage.removeItem).toHaveBeenCalledWith("authToken");
-    expect(AsyncStorage.removeItem).toHaveBeenCalledWith("userInfo");
-  
-    // Ensure navigation occurs
-    expect(mockNavigate).toHaveBeenCalledWith("index");
+  // Test 3: Shows activity indicator while loading
+  it('shows activity indicator while loading', async () => {
+    const { toJSON } = setup();
+    const tree = toJSON();
+    expect(findActivityIndicator(tree)).toBe(true);
   });
-  
 
-  it('hides logout modal when "Cancel" is pressed', async () => {
-    const { getByText, queryByText } = setup();
-    // Open menu
-    const profileIcon = getByText('P');
-    fireEvent.press(profileIcon);
-    // Press "Logout" option to display modal
-    const logoutOption = getByText('Logout');
-    fireEvent.press(logoutOption);
-    await waitFor(() => {
-      expect(getByText('Are you sure you want to log out?')).toBeTruthy();
+  // Test 4: Displays sensor charts when loading is false
+  it('displays sensor charts when loading is false', async () => {
+    const { findByText } = setup();
+    act(() => {
+      jest.advanceTimersByTime(150);
     });
-    // Press "Cancel" button
-    fireEvent.press(getByText('Cancel'));
-    await waitFor(() => {
-      expect(queryByText('Are you sure you want to log out?')).toBeNull();
+    expect(await findByText('Temperature (°C)')).toBeTruthy();
+  });
+
+  // Test 5: Changes selected range when toggle is pressed
+  it('changes selected range when toggle is pressed', async () => {
+    const { getByText } = setup();
+    const weekToggleText = getByText('Past Week');
+    act(() => {
+      fireEvent.press(weekToggleText);
     });
+    await waitFor(() => {
+      expect(weekToggleText.props.style).toEqual(
+        expect.arrayContaining([expect.objectContaining({ color: "#fff" })])
+      );
+    });
+  });
+
+  // Test 6: Handles error fetching sensor data (no chart displayed)
+  it('handles error fetching sensor data', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error("Fetch failed"));
+    const { queryByText } = setup();
+    act(() => {
+      jest.advanceTimersByTime(150);
+    });
+    await waitFor(() => {
+      expect(queryByText('Temperature (°C)')).toBeNull();
+    });
+  });
+
+  // Test 7: Displays all sensor chart titles when data is available
+  it('displays all sensor chart titles when data is available', async () => {
+    const { findByText } = setup();
+    act(() => {
+      jest.advanceTimersByTime(150);
+    });
+    expect(await findByText('Temperature (°C)')).toBeTruthy();
+    expect(await findByText('Pressure (hPa)')).toBeTruthy();
+    expect(await findByText('Humidity (%)')).toBeTruthy();
   });
 });
