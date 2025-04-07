@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -22,3 +24,17 @@ class Product(models.Model):
 
     class Meta:
         app_label = "store" 
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, related_name="new_reviews", on_delete=models.CASCADE)
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    comment = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Review for {self.product.name} - {self.rating} stars"
+
+    class Meta:
+        app_label = "store"

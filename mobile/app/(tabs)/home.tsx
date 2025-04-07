@@ -14,6 +14,12 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LineChart } from "react-native-chart-kit";
+import Constants from "expo-constants";
+
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const WelcomePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -41,11 +47,19 @@ const WelcomePage: React.FC = () => {
       const token = await AsyncStorage.getItem("authToken");
       if (!token) {
         navigation.reset({ index: 0, routes: [{ name: "index" }] });
+        return;
       }
+      const defaultSensorId = await fetchUserSensors(token);
+    if (!defaultSensorId) {
+      setLoading(false);
+      return;
+    }
+
+    await fetchSensorData(defaultSensorId);
     };
-    const fetchSensorData = async () => {
+    const fetchSensorData = async (sensorID: string) => {
       try {
-        const res = await fetch(SENSOR_URL!);
+        const res = await fetch(`${SENSOR_URL}${sensorID}`);
         const text = await res.text();
         if (text.trim().startsWith("{")) {
           const json = JSON.parse(text);
@@ -72,8 +86,34 @@ const WelcomePage: React.FC = () => {
         setLoading(false);
       }
     };    
+    const fetchUserSensors = async (token: string): Promise<string | null> => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/sensors/`, {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        });
+    
+        if (!res.ok) {
+          throw new Error(`Failed to fetch sensors: ${res.status}`);
+        }
+    
+        const sensors = await res.json();
+        await AsyncStorage.setItem("sensors", JSON.stringify(sensors));
+    
+        const defaultSensor = sensors.find((s: any) => s.is_default);
+        if (!defaultSensor) {
+          console.warn("No default sensor found");
+          return null;
+        }
+    
+        return defaultSensor.id;
+      } catch (error) {
+        console.error("Error fetching user sensors:", error);
+        return null;
+      }
+    };
     checkAuth();
-    fetchSensorData();
   }, []);
 
   useEffect(() => {
