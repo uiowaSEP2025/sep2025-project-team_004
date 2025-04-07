@@ -11,7 +11,6 @@ import {
   Animated,
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
-import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
@@ -45,7 +44,7 @@ const chats = [
 
 export default function SocialScreen() {
   const navigation = useNavigation();
-  const router = useRouter();
+  const { push } = require("expo-router").useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -62,7 +61,7 @@ export default function SocialScreen() {
         <Text style={styles.headerText}>Chat</Text>
         <TouchableOpacity
           style={styles.addFriendIconContainer}
-          onPress={() => router.push("../friends")}
+          onPress={() => push("../friends")}
         >
           <MaterialIcons name="person-add" size={28} color="#000" />
         </TouchableOpacity>

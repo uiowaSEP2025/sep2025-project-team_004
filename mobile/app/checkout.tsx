@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  TextInput,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
@@ -39,28 +40,53 @@ export default function CheckoutScreen() {
   const [loading, setLoading] = useState(false);
   const [cards, setCards] = useState<PaymentMethod[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zipCode, setZipCode] = useState('');
+
+  
 
   useEffect(() => {
-    const fetchCards = async () => {
+    const fetchCardsAndProfile = async () => {
       const authToken = await AsyncStorage.getItem("authToken");
       if (!authToken) return;
 
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
-        headers: {
-          Authorization: `Token ${authToken}`,
-          "Content-Type": "application/json",
-        },
-      });
+      try {
+        // Fetch cards
+        const cardRes = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
+          headers: {
+            Authorization: `Token ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (cardRes.ok) {
+          const cardData = await cardRes.json();
+          setCards(cardData);
+          const defaultOne = cardData.find((card: any) => card.is_default);
+          if (defaultOne) setSelectedCardId(defaultOne.id);
+        }
 
-      if (response.ok) {
-        const data = await response.json();
-        setCards(data);
-        const defaultOne = data.find((card: any) => card.is_default);
-        if (defaultOne) setSelectedCardId(defaultOne.id);
+        // Fetch profile for address
+        const profileRes = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/`, {
+          headers: {
+            Authorization: `Token ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          setShippingAddress([profile.address, profile.city, profile.state, profile.zip_code].filter(Boolean).join(', '));
+          setCity(profile.city);
+          setState(profile.state);
+          setZipCode(profile.zip_code);
+        }
+      } catch (err) {
+        console.error("Error loading cards or profile:", err);
       }
     };
 
-    fetchCards();
+    fetchCardsAndProfile();
   }, []);
 
   const handleCheckout = async () => {
@@ -75,9 +101,14 @@ export default function CheckoutScreen() {
           quantity: item.quantity,
         })),
         total_price: cart.reduce((total, item) => total + item.price * item.quantity, 0),
+        shipping_address: shippingAddress,
+        payment_method_id: selectedCardId,
+        city,
+        state,
+        zip_code: zipCode,
       };
 
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/orders/create/`, {
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/store/orders/create/`, {
         method: "POST",
         headers: {
           Authorization: `Token ${authToken}`,
@@ -141,11 +172,22 @@ export default function CheckoutScreen() {
           })}
         </View>
 
-        {/* Checkout Button */}
+        {/* Address Input */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Shipping Address</Text>
+          <TextInput
+            value={shippingAddress}
+            onChangeText={setShippingAddress}
+            placeholder="Enter your address"
+            style={styles.input}
+          />
+        </View>
+
+        {/* Submit Button */}
         <TouchableOpacity
           style={styles.submitButton}
           onPress={handleCheckout}
-          disabled={loading || !selectedCardId}
+          disabled={loading || !selectedCardId || !shippingAddress.trim()}
         >
           <Text style={styles.submitButtonText}>
             {loading ? "Processing..." : "SUBMIT ORDER"}
@@ -207,6 +249,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: "#303030",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
   },
   submitButton: {
     backgroundColor: "#232323",

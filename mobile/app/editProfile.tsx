@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ImageBackground, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
+  ImageBackground, Platform
+} from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
-import AddressAutocomplete from "../components/AddressAutocomplete";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
-
-
-
 
 const API_BASE_URL =
   Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
-
-
 const EditProfilePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { useToast, useAlert } = showMessage();
+
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -30,50 +27,38 @@ const EditProfilePage: React.FC = () => {
   const [zipCode, setZipCode] = useState('');
   const [loading, setLoading] = useState(false);
 
-
   const fetchUserProfile = async () => {
     try {
-        const token = await AsyncStorage.getItem("authToken");
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) {
+        Alert.alert("Error", "User is not authenticated.");
+        return;
+      }
 
-        if (!token) {
-            Alert.alert("Error", "User is not authenticated.");
-            return;
-        }
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+        },
+      });
 
-        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Token ${token}`, 
-            },
-        });
+      if (!response.ok) throw new Error("Failed to load user profile");
 
-        if (response.status === 403) {
-            console.error("403 Forbidden - Check Django permissions");
-            Alert.alert("Error", "You do not have permission to access this resource.");
-            return;
-        }
+      const userData = await response.json();
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch profile: ${response.statusText}`);
-        }
-
-        const userData = await response.json();
-
-        setUsername(userData.username);
-        setFirstName(userData.first_name);
-        setLastName(userData.last_name);
-        setPhone(userData.phone_number);
-        setAddress(userData.address);
-        setCity(userData.city);
-        setState(userData.state);
-        setZipCode(userData.zip_code);
-    } catch (error) {
-        console.error("Error fetching user profile:", error);
-        Alert.alert("Error", "An error occurred while loading user profile.");
+      setUsername(userData.username);
+      setFirstName(userData.first_name);
+      setLastName(userData.last_name);
+      setPhone(userData.phone_number || "");
+      setAddress(userData.address || "");
+      setCity(userData.city || "");
+      setState(userData.state || "");
+      setZipCode(userData.zip_code || "");
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+      Alert.alert("Error", "An error occurred while loading your profile.");
     }
-};
-
+  };
 
   useEffect(() => {
     fetchUserProfile();
@@ -81,53 +66,43 @@ const EditProfilePage: React.FC = () => {
 
   const updateUserProfile = async () => {
     try {
-        const token = await AsyncStorage.getItem("authToken");
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) {
+        Alert.alert("Error", "User is not authenticated.");
+        return;
+      }
 
-        if (!token) {
-            Alert.alert("Error", "User is not authenticated.");
-            return;
-        }
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/update/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${token}`,
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone_number: phone,
+          address: address,
+          city: city,
+          state: state,
+          zip_code: zipCode,
+        }),
+      });
 
-        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/users/profile/update/`, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Token ${token}`,
-            },
-            body: JSON.stringify({
-                first_name: firstName,
-                last_name: lastName,
-                phone_number: phone,
-                address: address,
-                city: city,
-                state: state,
-                zip_code: zipCode,
-            }),
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Update failed:", errorData);
+        Alert.alert("Error", errorData.detail || "Failed to update profile.");
+        return;
+      }
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Update failed:", errorData);
-            Alert.alert("Error", errorData.detail || "Failed to update profile.");
-            return;
-        }
-
-        const updatedData = await response.json();
-        
-        useToast("Success", "Your profile has been updated.");
-        navigation.goBack();
-
-    } catch (error) {
-        console.error("Error updating profile:", error);
-        Alert.alert("Error", "Failed to update profile.");
+      useToast("Success", "Your profile has been updated.");
+      navigation.goBack();
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      Alert.alert("Error", "Failed to update profile.");
     }
-};
-
-function getComponent(components: any[], type: string) {
-  const component = components.find(c => c.types.includes(type));
-  return component?.long_name || '';
-}
-
+  };
 
   return (
     <KeyboardAwareScrollView
@@ -173,17 +148,12 @@ function getComponent(components: any[], type: string) {
         />
 
         <Text style={styles.label}>Address:</Text>
-        <AddressAutocomplete
+        <TextInput
+          style={styles.input}
           value={address}
-          onSelect={(selected, extras) => {
-            setAddress(selected);
-            if (extras) {
-              setCity(extras.city || "");
-              setState(extras.state || "");
-              setZipCode(extras.zip || "");
-            }
-          }}
-/>
+          onChangeText={setAddress}
+          placeholder="Street Address"
+        />
 
         <Text style={styles.label}>City:</Text>
         <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder="City" />
@@ -209,18 +179,15 @@ function getComponent(components: any[], type: string) {
       </TouchableOpacity>
     </KeyboardAwareScrollView>
   );
-
-
 };
 
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 20,
-    paddingTop: Platform.OS === "ios" ? 80 : 60, 
+    paddingTop: Platform.OS === "ios" ? 80 : 60,
     backgroundColor: '#fff',
   },
-
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -233,12 +200,12 @@ const styles = StyleSheet.create({
   headerIcon: {
     width: 30,
     height: 30,
-    position: "absolute", 
-    top: Platform.OS === "ios" ? 60 : 40,  
-    left: 20, 
-    zIndex: 10, 
+    position: "absolute",
+    top: Platform.OS === "ios" ? 60 : 40,
+    left: 20,
+    zIndex: 10,
   },
-  backIcon: { width: 20, height: 30, left: 3, },
+  backIcon: { width: 20, height: 30, left: 3 },
   label: {
     fontSize: 16,
     marginBottom: 5,
