@@ -65,7 +65,7 @@ CELERY_TASK_SOFT_TIME_LIMIT = 60
 CELERY_BEAT_SCHEDULE = {
     "refresh-all-sensors-every-20-mins": {
         "task": "scheduler_backend.celery.tasks.refresh_all_sensors",
-        "schedule": 1 * 60,
+        "schedule": 20 * 60,
     },
 }
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-send-task-events
