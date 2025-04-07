@@ -11,11 +11,13 @@ import showMessage from "../hooks/useAlert";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const EditProfilePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const { useToast, useAlert } = showMessage();
+  const { useToast } = showMessage();
 
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -58,6 +60,7 @@ const EditProfilePage: React.FC = () => {
       console.error("Error fetching user profile:", err);
       Alert.alert("Error", "An error occurred while loading your profile.");
     }
+  };
   };
 
   useEffect(() => {
@@ -103,6 +106,7 @@ const EditProfilePage: React.FC = () => {
       Alert.alert("Error", "Failed to update profile.");
     }
   };
+  };
 
   return (
     <KeyboardAwareScrollView
@@ -137,15 +141,17 @@ const EditProfilePage: React.FC = () => {
         <Text style={styles.label}>Last Name:</Text>
         <TextInput style={[styles.input, styles.readOnly]} value={lastName} editable={false} />
 
-        <Text style={styles.label}>Phone Number:</Text>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="Phone Number"
-          keyboardType="phone-pad"
-          maxLength={10}
-        />
+          <View style={styles.card}>
+            <Text style={styles.label}>Phone Number</Text>
+            <TextInput
+              style={styles.input}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="Phone Number"
+              keyboardType="phone-pad"
+              maxLength={10}
+            />
+          </View>
 
         <Text style={styles.label}>Address:</Text>
         <TextInput
@@ -182,6 +188,10 @@ const EditProfilePage: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   container: {
     flexGrow: 1,
     padding: 20,
@@ -208,29 +218,77 @@ const styles = StyleSheet.create({
   backIcon: { width: 20, height: 30, left: 3 },
   label: {
     fontSize: 16,
+    fontWeight: '700',
+    color: '#303030',
+  },
+  placeholder: {
+    width: 20,
+    height: 20,
+  },
+  formContainer: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 4,
+    marginBottom: 15,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    height: 64,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  readOnlyCard: {
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    elevation: 3,
+    backgroundColor: '#f5f5f5',
+  },
+  label: {
+    fontSize: 12,
+    color: '#808080',
     marginBottom: 5,
   },
+  lockedValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#808080',
+  },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#232323',
+    padding: 0,
   },
-  readOnly: {
-    backgroundColor: '#f0f0f0',
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  updateButton: {
-    backgroundColor: "#007AFF",
-    padding: 15,
-    borderRadius: 5,
-    alignItems: "center",
-    marginTop: 10,
+  halfCard: {
+    width: '48%',
   },
-  updateButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
+  loginButton: {
+    width: 285,
+    height: 50,
+    backgroundColor: '#232323',
+    borderRadius: 8,
+    marginTop: 40,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  loginButtonText: {
+    fontFamily: 'Nunito Sans',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 24.552,
+    color: '#ffffff',
+    textAlign: 'center',
   },
 });
 
