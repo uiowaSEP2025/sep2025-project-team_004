@@ -193,11 +193,9 @@ const fetchSensorData = async (sensorID: string) => {
   try {
     const res = await fetch(`${SENSOR_URL}${sensorID}`);
     const text = await res.text();
-    console.log(text)
     if (text.trim().startsWith("{")) {
       const json = JSON.parse(text);
       const points = json?.data?.points;
-      console.log("Parsed JSON:", json);
       if (Array.isArray(points)) {
         const sorted = points.sort((a, b) =>
           new Date(a.time).getTime() - new Date(b.time).getTime()
