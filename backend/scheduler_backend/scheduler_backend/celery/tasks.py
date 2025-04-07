@@ -26,7 +26,7 @@ def fetch_and_cache_sensor(sensor_id):
         if response.status_code == 200:
             data = response.json()
             cache_key = f"sensor:{sensor_id}"
-            cache.set(cache_key, json.dumps(data), CACHE_TIMEOUT)
+            cache.set(cache_key, data, CACHE_TIMEOUT)
             logger.info(f"{sensor_id} data cached successfully.")
             return f"{sensor_id} cached successfully"
         else:

@@ -43,6 +43,7 @@ CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_REDIS_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-extended
 CELERY_RESULT_EXTENDED = True
+CELERY_RESULT_EXPIRES = 3600
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-backend-always-retry
 # https://github.com/celery/celery/pull/6122
 CELERY_RESULT_BACKEND_ALWAYS_RETRY = True
@@ -64,7 +65,7 @@ CELERY_TASK_SOFT_TIME_LIMIT = 60
 CELERY_BEAT_SCHEDULE = {
     "refresh-all-sensors-every-20-mins": {
         "task": "scheduler_backend.celery.tasks.refresh_all_sensors",
-        "schedule": 20 * 60,
+        "schedule": 1 * 60,
     },
 }
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-send-task-events
@@ -85,6 +86,7 @@ CACHES = {
             # Mimicking memcache behavior.
             # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
             "IGNORE_EXCEPTIONS": True,
+            "SERIALIZER": "django_redis.serializers.pickle.PickleSerializer",
         },
     },
 }

@@ -21,13 +21,13 @@ def get_cached_sensor_data(sensor_id):
     
     if data is not None:
         # hit
-        return json.loads(data)
-    else:
-        # If data is missing in redis, download json from api, update the fresh data to redis
-        fresh_data = fetch_sensor_data(sensor_id)
-        if fresh_data:
-            cache.set(cache_key, json.dumps(fresh_data), timeout=CACHE_TIMEOUT)
-        return fresh_data
+        return data
+    # else:
+    #     # If data is missing in redis, download json from api, update the fresh data to redis
+    #     fresh_data = fetch_sensor_data(sensor_id)
+    #     if fresh_data:
+    #         cache.set(cache_key, fresh_data, timeout=CACHE_TIMEOUT)
+    #     return fresh_data
 
 
 
