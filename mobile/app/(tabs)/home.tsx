@@ -193,6 +193,7 @@ const fetchSensorData = async (sensorID: string) => {
   try {
     const res = await fetch(`${SENSOR_URL}${sensorID}`);
     const text = await res.text();
+    console.log(text)
     if (text.trim().startsWith("{")) {
       const json = JSON.parse(text);
       const points = json?.data?.points;
