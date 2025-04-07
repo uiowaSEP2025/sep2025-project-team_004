@@ -29,6 +29,7 @@ const WelcomePage: React.FC = () => {
   const [showMap, setShowMap] = useState(false);
   const [defaultRegion, setDefaultRegion] = useState<Region | null>(null);
   const [userSensors, setUserSensors] = useState<any[]>([]);
+  const [hasNoSensors, setHasNoSensors] = useState(false);
 
   const [selectedSensor, setSelectedSensor] = useState<any>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -176,12 +177,14 @@ const fetchUserSensors = async (token: string): Promise<string | null> => {
     const defaultSensor = sensors.find((s: any) => s.is_default);
     if (!defaultSensor) {
       console.warn("No default sensor found");
+      setHasNoSensors(true);
       return null;
     }
 
     return defaultSensor.id;
   } catch (error) {
     console.error("Error fetching user sensors:", error);
+    setHasNoSensors(true);
     return null;
   }
 };
@@ -239,6 +242,21 @@ const chartWidth = Dimensions.get("window").width - 32;
 
 
   console.log(userSensors);
+  if (hasNoSensors) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: "600", marginBottom: 12, textAlign: "center" }}>
+          You must buy a sensor before you can view any data!
+        </Text>
+        <Text style={{ fontSize: 16, color: "#ffffff", textAlign: "center" }}>
+          Please see our store to purchase your first sensor.
+        </Text>
+        <TouchableOpacity onPress={() => navigation.navigate("store")} style={{ marginTop: 20, backgroundColor: "#007AFF", padding: 10, borderRadius: 8 }}>
+          <Text style={{ color: "white", fontWeight: "600" }}>Go to Store</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   if (!selectedSensor) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
