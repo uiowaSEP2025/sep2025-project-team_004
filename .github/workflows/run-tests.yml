@@ -88,4 +88,4 @@ jobs:
       - name: Run Django Tests
         run: |
           source sep2025_project_team_004/venv/bin/activate
-          python -m sep2025_project_team_004/manage.py pytest
+          pytest
