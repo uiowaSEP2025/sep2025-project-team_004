@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -49,32 +49,11 @@ export default function CheckoutScreen() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const { cart, clearCart } = useContext(CartContext);
 
   useEffect(() => {
-    const loadCart = async () => {
-      try {
-        const cartData = await AsyncStorage.getItem('cart');
-        if (cartData) {
-          setCart(JSON.parse(cartData));
-        }
-      } catch (error) {
-        console.error('Error loading cart:', error);
-      }
-    };
-
-    loadCart();
     fetchCardsAndProfile();
   }, []);
-
-  const clearCart = async () => {
-    try {
-      await AsyncStorage.removeItem('cart');
-      setCart([]);
-    } catch (error) {
-      console.error('Error clearing cart:', error);
-    }
-  };
 
   const fetchCardsAndProfile = async () => {
     const authToken = await AsyncStorage.getItem("authToken");
@@ -143,8 +122,12 @@ export default function CheckoutScreen() {
       });
 
       if (!response.ok) throw new Error("Checkout failed.");
+      
+      // Clear the cart using the context and wait for it to complete
       await clearCart();
+      
       Toast.show({ type: "success", text1: "Order placed!" });
+      router.push("/store"); // Navigate to store page after successful checkout
     } catch (error: any) {
       Toast.show({ type: "error", text1: "Error", text2: error.message });
     } finally {
