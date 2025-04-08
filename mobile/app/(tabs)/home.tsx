@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -34,16 +34,11 @@ const WelcomePage: React.FC = () => {
   const [selectedSensor, setSelectedSensor] = useState<any>(null);
   const [showDropdown, setShowDropdown] = useState(false);
 
-
   const [sensorData, setSensorData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState<"today" | "week" | "month">("today");
-  const [tempData, setTempData] = useState<any>(null);
-  const [presData, setPresData] = useState<any>(null);
-  const [humData, setHumData] = useState<any>(null);
 
   const SENSOR_URL = process.env.EXPO_PUBLIC_SENSOR_DATA_URL;
-  // console.log(SENSOR_URL);
 
   type SensorDataPoint = {
     time: string;
@@ -100,64 +95,8 @@ const WelcomePage: React.FC = () => {
   
     initialize();
   }, []);
-  
 
-  useEffect(() => {
-    if (sensorData.length === 0) return;
-
-    setLoading(true);
-
-    const timeout = setTimeout(() => {
-
-    const now = new Date();
-    let cutoff = new Date(0);
-    if (selectedRange === "today") {
-      cutoff = new Date(now.setHours(0, 0, 0, 0));
-    } else if (selectedRange === "week") {
-      cutoff = new Date(now.setDate(now.getDate() - 7));
-    } else {
-      cutoff = new Date(now.setDate(now.getDate() - 30));
-    }
-
-    const makeChartData = (key: string) => {
-      const values: number[] = [];
-      const labels: string[] = [];
-
-      sensorData.forEach((d) => {
-        const time = new Date(d.time);
-        if (time >= cutoff) {
-          const val = parseFloat(d[key]);
-          if (!isNaN(val) && isFinite(val)) {
-            values.push(val);
-            labels.push(
-              time.toLocaleString("en-US", {
-                ...(selectedRange === "today"
-                  ? { hour: "2-digit", minute: "2-digit", hour12: false }
-                  : { month: "short", day: "numeric" }),
-                timeZone: "UTC",
-              })
-            );
-          }
-        }
-      });
-
-      const step = Math.ceil(labels.length / 6);
-      const finalLabels = labels.map((label, i) => (i % step === 0 ? label : ""));
-
-      return {
-        labels: finalLabels,
-        datasets: [{ data: values }],
-      };
-    };
-
-    setTempData(makeChartData("temperature"));
-    setPresData(makeChartData("pressure"));
-    setHumData(makeChartData("humidity"));
-    setLoading(false);
-  }, 50);
-
-  return () => clearTimeout(timeout);
-}, [sensorData, selectedRange]);
+const isChartDataReady = sensorData.length > 0;
 
 const fetchUserSensors = async (token: string): Promise<string | null> => {
   try {
@@ -213,6 +152,53 @@ const fetchSensorData = async (sensorID: string) => {
     setLoading(false);
   }
 };
+
+const makeChartData = (key: keyof SensorDataPoint, cutoff: Date) => {
+
+  const values: number[] = [];
+  const labels: string[] = [];
+
+  sensorData.forEach((d) => {
+    const time = new Date(d.time);
+    if (time >= cutoff) {
+      const val = parseFloat(d[key]);
+      if (!isNaN(val) && isFinite(val)) {
+        values.push(val);
+        labels.push(
+          time.toLocaleString("en-US", {
+            ...(selectedRange === "today"
+              ? { hour: "2-digit", minute: "2-digit", hour12: false }
+              : { month: "short", day: "numeric" }),
+            timeZone: "UTC",
+          })
+        );
+      }
+    }
+  });
+
+  const step = Math.ceil(labels.length / 6);
+  const finalLabels = labels.map((label, i) => (i % step === 0 ? label : ""));
+
+  return {
+    labels: finalLabels,
+    datasets: [{ data: values }],
+  };
+};
+
+const cutoff = useMemo(() => {
+  const now = new Date();
+  if (selectedRange === "today") {
+    return new Date(now.setHours(0, 0, 0, 0));
+  } else if (selectedRange === "week") {
+    return new Date(now.setDate(now.getDate() - 7));
+  } else {
+    return new Date(now.setDate(now.getDate() - 30));
+  }
+}, [selectedRange]);
+
+const tempData = useMemo(() => makeChartData("temperature", cutoff), [sensorData, selectedRange]);
+const presData = useMemo(() => makeChartData("pressure", cutoff), [sensorData, selectedRange]);
+const humData = useMemo(() => makeChartData("humidity", cutoff), [sensorData, selectedRange]);
 
 
 const chartWidth = Dimensions.get("window").width - 32;
@@ -294,6 +280,7 @@ const chartWidth = Dimensions.get("window").width - 32;
           style={styles.dropdownItem}
           onPress={async () => {
             if (sensor.id !== selectedSensor?.id) {
+              setSelectedRange("today");
               setSensorData([]);
               setSelectedSensor(sensor);
               await fetchSensorData(sensor.id);
@@ -379,7 +366,7 @@ const chartWidth = Dimensions.get("window").width - 32;
   </MapView>
   ) : (
     <ScrollView contentContainerStyle={styles.scrollContent}>
-      {loading ? (
+      {!isChartDataReady ? (
         <ActivityIndicator size="large" color="#007bff" />
       ) : (
         <>
@@ -404,58 +391,20 @@ const chartWidth = Dimensions.get("window").width - 32;
   );
 };
 
-
-const tempChartConfig = {
+const getChartConfig = (color: string) => ({
   backgroundGradientFrom: "#ffffff",
   backgroundGradientTo: "#ffffff",
   decimalPlaces: 1,
-  color: () => `rgb(32, 190, 58)`,
+  color: () => color,
   labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
   strokeWidth: 2.5,
-  propsForDots: {
-    r: "0", 
-    strokeWidth: "0",
-  },
-  propsForBackgroundLines: {
-    stroke: "#e3e3e3", 
-    strokeDasharray: "", 
-  },
-};
+  propsForDots: { r: "0", strokeWidth: "0" },
+  propsForBackgroundLines: { stroke: "#e3e3e3", strokeDasharray: "" },
+});
 
-const presChartConfig = {
-  backgroundGradientFrom: "#ffffff",
-  backgroundGradientTo: "#ffffff",
-  decimalPlaces: 1,
-  color: () => `rgb(152, 13, 199)`,
-  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  strokeWidth: 2.5,
-  propsForDots: {
-    r: "0", 
-    strokeWidth: "0",
-  },
-  propsForBackgroundLines: {
-    stroke: "#e3e3e3", 
-    strokeDasharray: "",
-  },
-};
-
-const humChartConfig = {
-  backgroundGradientFrom: "#ffffff",
-  backgroundGradientTo: "#ffffff",
-  decimalPlaces: 1,
-  color: () => `rgb(37, 147, 238)`,
-  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  strokeWidth: 2.5,
-  propsForDots: {
-    r: "0", 
-    strokeWidth: "0",
-  },
-  propsForBackgroundLines: {
-    stroke: "#e3e3e3", 
-    strokeDasharray: "",
-  },
-};
-
+const tempChartConfig = getChartConfig("rgb(32, 190, 58)");
+const presChartConfig = getChartConfig("rgb(152, 13, 199)");
+const humChartConfig = getChartConfig("rgb(37, 147, 238)");
 
 const styles = StyleSheet.create({
   container: {
