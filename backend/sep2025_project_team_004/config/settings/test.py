@@ -109,7 +109,7 @@ MEDIA_URL = f"https://{aws_s3_domain}/media/"
 DJANGO_ADMIN_FORCE_ALLAUTH = env.bool("DJANGO_ADMIN_FORCE_ALLAUTH", default=False)
 
 
-REDIS_URL = env("DJANGO_REDIS_URL")
+REDIS_URL = env("REDIS_URL")
 
 REDIS_SSL = REDIS_URL.startswith("rediss://")
 CACHES = {

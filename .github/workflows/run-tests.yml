@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DJANGO_ENV: test
+      DJANGO_SETTINGS_MODULE: config.settings.test
       POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
       POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
       POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
@@ -49,6 +50,8 @@ jobs:
       CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
       EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
       EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
 
 
     services:
@@ -87,4 +90,4 @@ jobs:
       - name: Run Django Tests
         run: |
           source sep2025_project_team_004/venv/bin/activate
-          python sep2025_project_team_004/manage.py test
+          pytest
