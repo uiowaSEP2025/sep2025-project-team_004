@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,12 @@ interface PaymentMethod {
   is_default: boolean;
 }
 
+interface CartItem {
+  id: number;
+  quantity: number;
+  price: number;
+}
+
 const API_BASE_URL =
   Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
 
@@ -31,12 +37,11 @@ const cardLogos: { [key: string]: any } = {
   discover: require('@/assets/images/card-logo/discover.png'),
   mastercard: require('@/assets/images/card-logo/mastercard.png'),
   visa: require('@/assets/images/card-logo/visa.png'),
-  default: require('@/assets/images/card-logo/default-card.png'),
+  default: require('@/assets/images/card-brand.png'),
 };
 
 export default function CheckoutScreen() {
   const router = useRouter();
-  const { cart, clearCart } = useContext(CartContext);
   const [loading, setLoading] = useState(false);
   const [cards, setCards] = useState<PaymentMethod[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
@@ -44,50 +49,70 @@ export default function CheckoutScreen() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
-
-  
+  const [cart, setCart] = useState<CartItem[]>([]);
 
   useEffect(() => {
-    const fetchCardsAndProfile = async () => {
-      const authToken = await AsyncStorage.getItem("authToken");
-      if (!authToken) return;
-
+    const loadCart = async () => {
       try {
-        // Fetch cards
-        const cardRes = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
-          headers: {
-            Authorization: `Token ${authToken}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (cardRes.ok) {
-          const cardData = await cardRes.json();
-          setCards(cardData);
-          const defaultOne = cardData.find((card: any) => card.is_default);
-          if (defaultOne) setSelectedCardId(defaultOne.id);
+        const cartData = await AsyncStorage.getItem('cart');
+        if (cartData) {
+          setCart(JSON.parse(cartData));
         }
-
-        // Fetch profile for address
-        const profileRes = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/`, {
-          headers: {
-            Authorization: `Token ${authToken}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (profileRes.ok) {
-          const profile = await profileRes.json();
-          setShippingAddress([profile.address, profile.city, profile.state, profile.zip_code].filter(Boolean).join(', '));
-          setCity(profile.city);
-          setState(profile.state);
-          setZipCode(profile.zip_code);
-        }
-      } catch (err) {
-        console.error("Error loading cards or profile:", err);
+      } catch (error) {
+        console.error('Error loading cart:', error);
       }
     };
 
+    loadCart();
     fetchCardsAndProfile();
   }, []);
+
+  const clearCart = async () => {
+    try {
+      await AsyncStorage.removeItem('cart');
+      setCart([]);
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+    }
+  };
+
+  const fetchCardsAndProfile = async () => {
+    const authToken = await AsyncStorage.getItem("authToken");
+    if (!authToken) return;
+
+    try {
+      // Fetch cards
+      const cardRes = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
+        headers: {
+          Authorization: `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (cardRes.ok) {
+        const cardData = await cardRes.json();
+        setCards(cardData);
+        const defaultOne = cardData.find((card: any) => card.is_default);
+        if (defaultOne) setSelectedCardId(defaultOne.id);
+      }
+
+      // Fetch profile for address
+      const profileRes = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/`, {
+        headers: {
+          Authorization: `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (profileRes.ok) {
+        const profile = await profileRes.json();
+        setShippingAddress([profile.address, profile.city, profile.state, profile.zip_code].filter(Boolean).join(', '));
+        setCity(profile.city);
+        setState(profile.state);
+        setZipCode(profile.zip_code);
+      }
+    } catch (err) {
+      console.error("Error loading cards or profile:", err);
+    }
+  };
 
   const handleCheckout = async () => {
     setLoading(true);
@@ -118,7 +143,7 @@ export default function CheckoutScreen() {
       });
 
       if (!response.ok) throw new Error("Checkout failed.");
-      clearCart();
+      await clearCart();
       Toast.show({ type: "success", text1: "Order placed!" });
     } catch (error: any) {
       Toast.show({ type: "error", text1: "Error", text2: error.message });

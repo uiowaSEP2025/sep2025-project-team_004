@@ -1,6 +1,6 @@
 // app/payment-method.tsx
 
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,6 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
-import { usePayment } from "./context/PaymentContext";
 import { useRouter } from "expo-router";
 
 const API_BASE_URL =
@@ -28,12 +27,10 @@ export default function PaymentMethod() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const {useToast, useAlert} = showMessage();
   const router = useRouter();
-  const { addCard } = usePayment();
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [expiry, setExpiry] = useState('');
   const [defaultCard, setDefaultCard] = useState(null);
-
 
   useEffect(() => {
     const fetchDefaultCard = async () => {
@@ -66,6 +63,7 @@ export default function PaymentMethod() {
 
     fetchDefaultCard();
   }, []);
+
   // Get card type
   const getCardType = (number: string) => {
     const sanitized = number.replace(/\s/g, '');
@@ -78,6 +76,7 @@ export default function PaymentMethod() {
     }
     return '';
   };
+
   //logo mapping
   const cardLogos: { [key: string]: any } = {
     amex: require('@/assets/images/card-logo/amex.png'),
@@ -86,8 +85,7 @@ export default function PaymentMethod() {
     visa: require('@/assets/images/card-logo/visa.png'),
   };
 
-
-  // Process the card number, start with “*”
+  // Process the card number, start with "*"
   const totalDigits = 16;
   const sanitizedCardNumber = cardNumber.replace(/\s/g, '');
   const maskedNumber =
@@ -105,6 +103,7 @@ export default function PaymentMethod() {
   
     setCardNumber(formatted);
   };
+
   // Expiry Date Input：Only allow digits, 2 digits , then "/"，then 2 digits 
   const handleExpiryChange = (text: string) => {
     const digits = text.replace(/\D/g, ''); //only keep digits
@@ -130,11 +129,30 @@ export default function PaymentMethod() {
     };
 
     try {
-      await addCard(newCard);
+      const authToken = await AsyncStorage.getItem("authToken");
+      if (!authToken) {
+        useAlert("Error", "You must be logged in to add a payment method");
+        return;
+      }
+
+      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newCard),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add payment method");
+      }
+
       useToast("Success", "Your payment method has been added.");
       router.replace("/payment-method");
     } catch (error) {
       console.error("Error adding payment method:", error);
+      useAlert("Error", "Failed to add payment method. Please try again.");
     }
   };
 
