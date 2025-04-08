@@ -1,4 +1,4 @@
-// app/payment-method.tsx
+// app/add-payment.tsx
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -19,51 +19,22 @@ import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
 import showMessage from "../hooks/useAlert";
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 export default function PaymentMethod() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const {useToast, useAlert} = showMessage();
+  const { useToast } = showMessage();
   const router = useRouter();
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [expiry, setExpiry] = useState('');
-  const [defaultCard, setDefaultCard] = useState(null);
-
-  useEffect(() => {
-    const fetchDefaultCard = async () => {
-      try {
-        const authToken = await AsyncStorage.getItem("authToken");
-        if (!authToken) return;
-
-        const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
-          method: "GET",
-          headers: {
-            Authorization: `Token ${authToken}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          console.error("Failed to fetch payment methods");
-          return;
-        }
-
-        const data = await response.json();
-        const defaultOne = data.find((card: any) => card.is_default);
-        if (defaultOne) {
-          setDefaultCard(defaultOne);
-        }
-      } catch (error) {
-        console.error("Error fetching default payment method:", error);
-      }
-    };
-
-    fetchDefaultCard();
-  }, []);
-
+    const [cards, setCards] = useState<any[]>([]);
+  
   // Get card type
   const getCardType = (number: string) => {
     const sanitized = number.replace(/\s/g, '');
@@ -128,31 +99,47 @@ export default function PaymentMethod() {
       card_type: detectedCardType,
     };
 
+    const addCard = async (newCard: any) => {
+      try {
+        const authToken = await AsyncStorage.getItem("authToken");
+        if (!authToken) {
+          console.error("User not authenticated.");
+          return;
+        }
+  
+        setCards((prevCards) => [...prevCards, newCard]);
+  
+        const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Token ${authToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newCard),
+        });
+  
+        if (!response.ok) throw new Error("Failed to add payment method.");
+  
+        const addedCard = await response.json();
+
+        const stored = await SecureStore.getItemAsync("paymentInfo");
+        const existing = stored ? JSON.parse(stored) : [];
+        const updated = [...existing, addedCard];
+
+        await SecureStore.setItemAsync("paymentInfo", JSON.stringify(updated));
+  
+      } catch (error) {
+        console.error("Error adding payment method:", error);
+        Alert.alert("Error", "There was an error adding your card.");
+      }
+    };
+
     try {
-      const authToken = await AsyncStorage.getItem("authToken");
-      if (!authToken) {
-        useAlert("Error", "You must be logged in to add a payment method");
-        return;
-      }
-
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Token ${authToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newCard),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add payment method");
-      }
-
+      await addCard(newCard);
       useToast("Success", "Your payment method has been added.");
       router.replace("/payment-method");
     } catch (error) {
       console.error("Error adding payment method:", error);
-      useAlert("Error", "Failed to add payment method. Please try again.");
     }
   };
 

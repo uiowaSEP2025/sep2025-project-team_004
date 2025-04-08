@@ -1,6 +1,6 @@
 from rest_framework import generics
-from .models import Product
-from .serializers import ProductSerializer, OrderSerializer
+from .models import Product, Review
+from .serializers import ProductSerializer, OrderSerializer, ReviewSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,6 +10,7 @@ class ProductListView(generics.ListAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = []
+
 class CreateOrderView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -19,3 +20,8 @@ class CreateOrderView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ReviewCreateAPIView(generics.CreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = []

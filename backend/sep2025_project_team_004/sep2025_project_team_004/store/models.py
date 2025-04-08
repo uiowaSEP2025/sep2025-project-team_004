@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 from django.contrib.auth import get_user_model
 
 class Product(models.Model):
@@ -28,18 +30,23 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
-    
 
     def __str__(self):
-        return self.name
-    
-    
-    
-    def image_url(self):
-        """Returns full image URL if stored on S3."""
-        if self.image:
-            return self.image.url  # Returns full URL if using S3 storage
-        return "mobile/assets/images/react-logo.png"
+        return f"{self.quantity}x {self.product.name} in Order {self.order.id}"
 
     class Meta:
-        app_label = "store" 
+        app_label = "store"
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, related_name="new_reviews", on_delete=models.CASCADE)
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    comment = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Review for {self.product.name} - {self.rating} stars"
+
+    class Meta:
+        app_label = "store"

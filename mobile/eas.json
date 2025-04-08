@@ -8,7 +8,9 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://d1ay4ew8u8imzj.cloudfront.net"
+        "EXPO_PUBLIC_DEV_FLAG": "true" ,
+        "EXPO_PUBLIC_BACKEND_URL": "this_should_never_be_used" ,
+        "EXPO_PUBLIC_SENSOR_DATA_URL": "https://esmc.uiowa.edu/esmc_services/data_base/querySensorInDB_working_reverse.php?sensorID=usda-air-w06"
       }
     },
     "preview": {
@@ -17,7 +19,9 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://d1ay4ew8u8imzj.cloudfront.net"
+        "EXPO_PUBLIC_DEV_FLAG": "false" ,
+        "EXPO_PUBLIC_BACKEND_URL": "https://dx6di13ye1mpk.cloudfront.net" ,
+        "EXPO_PUBLIC_SENSOR_DATA_URL": "https://esmc.uiowa.edu/esmc_services/data_base/querySensorInDB_working_reverse.php?sensorID=usda-air-w06"
       }
     }
   },
