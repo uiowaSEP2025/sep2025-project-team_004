@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DJANGO_ENV: test
+      DJANGO_SETTINGS_MODULE: config.settings.test
       POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
       POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
       POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
