@@ -102,7 +102,12 @@ jobs:
           source venv/bin/activate
           pip install -r requirements.txt
 
-      - name: Apply Migrations
+      - name: Fake store migration that causes issues
+        run: |
+          source venv/bin/activate
+          python manage.py migrate store 0002_product_created_at_review --fake
+
+      - name: Apply Remaining Migrations
         run: |
           source venv/bin/activate
           python manage.py migrate
