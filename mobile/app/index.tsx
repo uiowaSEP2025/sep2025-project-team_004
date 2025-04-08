@@ -20,7 +20,6 @@ const API_BASE_URL =
     ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
     : process.env.EXPO_PUBLIC_BACKEND_URL;
 
-
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState("");
@@ -35,8 +34,6 @@ export default function HomeScreen() {
     }
     setLoading(true);
     try {
-      const fullUrl = `${API_BASE_URL}/api/users/api-token-auth/`;
-      console.log("API URL:", fullUrl);
       const response = await fetch(`${API_BASE_URL}/api/users/api-token-auth/`, {
         method: "POST",
         headers: {
@@ -49,7 +46,6 @@ export default function HomeScreen() {
       });
 
       const data = await response.json();
-      console.log("API Response:", data);
       if (response.ok && data.token) {
         await AsyncStorage.setItem("authToken", data.token); 
         
@@ -66,13 +62,12 @@ export default function HomeScreen() {
             routes: [{ name: "(tabs)", params: { screen: "home" } }],
           });
         } else {
-          console.error("Failed to fetch user details:", userData);
+          setError("Failed to fetch user details. Please try again.");
         }
       } else {
         setError("Invalid credentials. Please try again.");
       }
     } catch (err) {
-      console.error("Login error:", err);
       setError("Something went wrong. Please try again later.");
     }
     setLoading(false);

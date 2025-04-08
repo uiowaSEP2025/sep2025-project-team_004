@@ -20,7 +20,13 @@ interface CartContextType {
 }
 
 // Create Context
-export const CartContext = createContext<CartContextType | undefined>(undefined);
+export const CartContext = createContext<CartContextType>({
+  cart: [],
+  addToCart: () => {},
+  removeFromCart: () => {},
+  updateCartQuantity: () => {},
+  clearCart: () => {},
+});
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);

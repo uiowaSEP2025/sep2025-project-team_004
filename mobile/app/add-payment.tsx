@@ -1,6 +1,6 @@
 // app/add-payment.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -47,6 +47,7 @@ export default function PaymentMethod() {
     }
     return '';
   };
+
   //logo mapping
   const cardLogos: { [key: string]: any } = {
     amex: require('@/assets/images/card-logo/amex.png'),
@@ -55,8 +56,7 @@ export default function PaymentMethod() {
     visa: require('@/assets/images/card-logo/visa.png'),
   };
 
-
-  // Process the card number, start with “*”
+  // Process the card number, start with "*"
   const totalDigits = 16;
   const sanitizedCardNumber = cardNumber.replace(/\s/g, '');
   const maskedNumber =
@@ -74,6 +74,7 @@ export default function PaymentMethod() {
   
     setCardNumber(formatted);
   };
+
   // Expiry Date Input：Only allow digits, 2 digits , then "/"，then 2 digits 
   const handleExpiryChange = (text: string) => {
     const digits = text.replace(/\D/g, ''); //only keep digits
