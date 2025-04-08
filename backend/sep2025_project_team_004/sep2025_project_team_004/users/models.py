@@ -34,6 +34,14 @@ class User(AbstractUser):
     
     friends = models.ManyToManyField("self", symmetrical=False, blank=True, related_name="friend_requests")
 
+    default_sensor = models.ForeignKey(
+        "sensors.Sensor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="default_for_users"
+    )
+
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
