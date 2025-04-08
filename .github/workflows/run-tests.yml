@@ -54,7 +54,7 @@ jobs:
       DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_S3_REGION_NAME: ${{ secrets.AWS_S3_REGION_NAME }}
-      AWS_SECRET_ACCESS_KEY: $ {{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_STORAGE_BUCKET_NAME: ${{ secrets.AWS_STORAGE_BUCKET_NAME }}
       DEBUG: false
       DJANGO_ALLOWED_HOSTS: ${{ secrets.DJANGO_ALLOWED_HOSTS }}
@@ -84,7 +84,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: backend
+        working-directory: backend/sep2025_project_team_004
 
     steps:
       - name: Checkout Repository
@@ -98,14 +98,15 @@ jobs:
 
       - name: Create virtual environment
         run: |
-          python -m venv sep2025_project_team_004/venv
-          source sep2025_project_team_004/venv/bin/activate
-          pip install -r sep2025_project_team_004/requirements.txt
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+
       - name: Apply Migrations
         run: |
-          source sep2025_project_team_004/venv/bin/activate
-          python sep2025_project_team_004/manage.py migrate
+          source venv/bin/activate
+          python manage.py migrate
       - name: Run Django Tests
         run: |
-          source sep2025_project_team_004/venv/bin/activate
-          pytest
+          source venv/bin/activate
+          python -m pytest --ds=config.settings.test
