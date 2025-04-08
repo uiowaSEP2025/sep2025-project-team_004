@@ -181,7 +181,7 @@ const WelcomePage: React.FC = () => {
   if (!selectedSensor) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator testID="ActivityIndicator" size="large" color="#007AFF" />
       </View>
     );
   }

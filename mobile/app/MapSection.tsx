@@ -17,10 +17,11 @@ interface Props {
 
 const MapSection: React.FC<Props> = ({ sensors, defaultRegion }) => {
   return (
-    <MapView style={StyleSheet.absoluteFillObject} initialRegion={defaultRegion}>
+    <MapView testID="map-view" style={StyleSheet.absoluteFillObject} initialRegion={defaultRegion}>
       {sensors.map((sensor) => (
         <Marker
           key={sensor.id}
+          testID="map-marker"
           coordinate={{ latitude: sensor.latitude, longitude: sensor.longitude }}
           title={sensor.nickname || sensor.id}
           description={`Type: ${sensor.sensor_type}`}
