@@ -21,6 +21,7 @@ export default function RootLayout() {
     NunitoSans: require("../assets/fonts/NunitoSans-VariableFont_YTLC,opsz,wdth,wght.ttf"),
     NunitoSansBold: require("../assets/fonts/NunitoSans_7pt-Bold.ttf"),
     MerriweatherBold: require("../assets/fonts/Merriweather-Bold.ttf"),
+    InterMedium: require("../assets/fonts/Inter_18pt-Medium.ttf"),
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
