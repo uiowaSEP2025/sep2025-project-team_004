@@ -111,7 +111,7 @@ jobs:
       - name: Apply Migrations
         run: |
           source venv/bin/activate
-          python manage.py migrate --fake store 0002_product_created_at_review
+          python manage.py migrate store 0002_product_created_at_review --fake
           python manage.py migrate --noinput
           python manage.py showmigrations
 
