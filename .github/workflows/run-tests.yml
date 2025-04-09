@@ -131,11 +131,6 @@ jobs:
         run: |
           source venv/bin/activate
           python manage.py migrate store 0002_product_created_at_review --fake
-
-      - name: Finish Remaining Migrations
-        run: |
-          source venv/bin/activate
-          python manage.py migrate --noinput
           python manage.py showmigrations
 
       - name: Run Django Tests
