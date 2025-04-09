@@ -49,6 +49,8 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD") 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 REDIS_URL = env("REDIS_URL", default=None)
+SMARTY_AUTH_ID = env("SMARTY_AUTH_ID")
+SMARTY_AUTH_TOKEN = env("SMARTY_AUTH_TOKEN")
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
