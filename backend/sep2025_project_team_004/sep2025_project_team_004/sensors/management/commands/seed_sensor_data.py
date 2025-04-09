@@ -1,5 +1,6 @@
 # To run this, use:
 # python manage.py seed_sensor_data
+# update this file later to manually input values
 
 # sensors/management/commands/seed_sensor_data.py
 
@@ -58,6 +59,7 @@ class Command(BaseCommand):
                     'address': address,
                     'latitude': sensor.latitude,
                     'longitude': sensor.longitude,
+                    'sensor_type': "[WiFi] Air Sensor",
                     # registered_at autofill
                 }
             )

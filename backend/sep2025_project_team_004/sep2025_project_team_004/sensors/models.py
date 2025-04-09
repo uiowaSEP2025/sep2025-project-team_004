@@ -35,6 +35,7 @@ class Fav_Sensor(models.Model):
 
 class Belongs(models.Model):
     sensor = models.OneToOneField(Sensor, on_delete=models.CASCADE, primary_key=True)
+    sensor_type = models.CharField(max_length=20, null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     address = models.CharField(max_length=100)
     registered_at = models.DateTimeField(auto_now_add=True)
