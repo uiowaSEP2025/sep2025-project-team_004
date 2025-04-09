@@ -108,17 +108,13 @@ jobs:
             echo "Waiting for postgres..."; sleep 1
           done
 
-      - name: Migrate All except store
+      - name: Run All Non-Store Migrations
         run: |
           source venv/bin/activate
-          python manage.py migrate --exclude store
-
-      - name: Migrate Store Up To 0001
-        run: |
-          source venv/bin/activate
+          python manage.py migrate --noinput
           python manage.py migrate store 0001 --noinput
-      
-      - name: Fake Store 0002
+
+      - name: Fake store.0002_product_created_at_review
         run: |
           source venv/bin/activate
           python manage.py migrate store 0002_product_created_at_review --fake
