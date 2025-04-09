@@ -30,7 +30,9 @@ interface CartItem {
 }
 
 const API_BASE_URL =
-  Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const cardLogos: { [key: string]: any } = {
   amex: require('@/assets/images/card-logo/amex.png'),
@@ -61,7 +63,7 @@ export default function CheckoutScreen() {
 
     try {
       // Fetch cards
-      const cardRes = await fetch(`http://${API_BASE_URL}:8000/api/payment/payment-methods/`, {
+      const cardRes = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
         headers: {
           Authorization: `Token ${authToken}`,
           "Content-Type": "application/json",
@@ -75,7 +77,7 @@ export default function CheckoutScreen() {
       }
 
       // Fetch profile for address
-      const profileRes = await fetch(`http://${API_BASE_URL}:8000/api/users/profile/`, {
+      const profileRes = await fetch(`${API_BASE_URL}/api/users/profile/`, {
         headers: {
           Authorization: `Token ${authToken}`,
           "Content-Type": "application/json",
@@ -112,7 +114,7 @@ export default function CheckoutScreen() {
         zip_code: zipCode,
       };
 
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/store/orders/create/`, {
+      const response = await fetch(`${API_BASE_URL}/api/store/orders/create/`, {
         method: "POST",
         headers: {
           Authorization: `Token ${authToken}`,
