@@ -7,6 +7,47 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
+import stripe
+from django.conf import settings
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+class CreateStripePaymentMethodView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            card = request.data.get("card")  # dict with number, exp_month, exp_year, cvc
+            billing_details = request.data.get("billing_details")  # name, address, etc.
+
+            # 1. Create the payment method with Stripe
+            payment_method = stripe.PaymentMethod.create(
+                type="card",
+                card=card,
+                billing_details=billing_details
+            )
+
+            # 2. Save to your DB
+            user = request.user
+            method = PaymentMethod.objects.create(
+                user=user,
+                stripe_payment_method_id=payment_method.id,
+                card_type=payment_method.card["brand"],
+                last4=payment_method.card["last4"],
+                expiration_date=f"{payment_method.card['exp_month']:02d}/{str(payment_method.card['exp_year'])[-2:]}",
+                cardholder_name=billing_details.get("name"),
+                billing_address=billing_details.get("address", "")
+            )
+
+            return Response({
+                "success": True,
+                "id": method.id,
+                "stripe_id": payment_method.id
+            })
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
 class PaymentMethodListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 

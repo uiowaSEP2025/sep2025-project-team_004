@@ -10,9 +10,8 @@ class PaymentMethod(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="payment_methods")
-    payment_type = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default=CARD)
+    stripe_payment_method_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     card_type = models.CharField(max_length=10, blank=True, null=True)
-    card_number = models.CharField(max_length=16, unique=True, blank=True, null=True)
     last4 = models.CharField(max_length=4, blank=True, null=True)
     expiration_date = models.CharField(max_length=5, blank=True, null=True)  # MM/YY format
     cardholder_name = models.CharField(max_length=255, blank=True, null=True)
@@ -21,4 +20,4 @@ class PaymentMethod(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.payment_type} - ****{self.card_number[-4:] if self.card_number else 'N/A'}"
+        return f"{self.card_type} ****{self.last4}"

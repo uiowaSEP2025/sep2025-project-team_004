@@ -1,178 +1,169 @@
 // app/add-payment.tsx
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   Image,
   ImageBackground,
   SafeAreaView,
-  ScrollView,
   TextInput,
   StyleSheet,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../types";
-import Constants from "expo-constants";
-import showMessage from "../hooks/useAlert";
-import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../types';
+import Constants from 'expo-constants';
+import showMessage from '../hooks/useAlert';
+import { useRouter } from 'expo-router';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+const originalConsoleError = console.error;
+
+console.error = (...args) => {
+  if (
+    typeof args[0] === 'string' &&
+    args[0].includes('VirtualizedLists should never be nested inside plain ScrollViews')
+  ) {
+    return;
+  }
+  originalConsoleError(...args);
+};
 
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
-    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+  process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
+    ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost'}:8000`
     : process.env.EXPO_PUBLIC_BACKEND_URL;
+
+const cardLogos: { [key: string]: any } = {
+  amex: require('@/assets/images/card-logo/amex.png'),
+  discover: require('@/assets/images/card-logo/discover.png'),
+  mastercard: require('@/assets/images/card-logo/mastercard.png'),
+  visa: require('@/assets/images/card-logo/visa.png'),
+};
 
 export default function PaymentMethod() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { useToast } = showMessage();
   const router = useRouter();
+
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [expiry, setExpiry] = useState('');
-    const [cards, setCards] = useState<any[]>([]);
-  
-  // Get card type
+  const [cvc, setCvc] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+
+  const [addressInput, setAddressInput] = useState('');
+  const addressRef = useRef<any>(null);
+
+  const sanitizedCardNumber = cardNumber.replace(/\s/g, '');
+  const totalDigits = 16;
+  const maskedNumber = sanitizedCardNumber + '*'.repeat(Math.max(totalDigits - sanitizedCardNumber.length, 0));
+  const formattedCardNumber = maskedNumber.match(/.{1,4}/g)?.join(' ') || '';
+
   const getCardType = (number: string) => {
     const sanitized = number.replace(/\s/g, '');
-    if (sanitized.length === 16) {
-      // Choose：mastercard、discover、amex、visa-default // maybe find a new png to show unknown
-      if (/^5[1-5]/.test(sanitized)) return 'mastercard';
-      if (/^6(?:011|5)/.test(sanitized)) return 'discover';
-      if (/^3[47]/.test(sanitized)) return 'amex';
-      if (/^4/.test(sanitized)) return 'visa';
-    }
+    if (/^5[1-5]/.test(sanitized)) return 'mastercard';
+    if (/^6(?:011|5)/.test(sanitized)) return 'discover';
+    if (/^3[47]/.test(sanitized)) return 'amex';
+    if (/^4/.test(sanitized)) return 'visa';
     return '';
   };
 
-  //logo mapping
-  const cardLogos: { [key: string]: any } = {
-    amex: require('@/assets/images/card-logo/amex.png'),
-    discover: require('@/assets/images/card-logo/discover.png'),
-    mastercard: require('@/assets/images/card-logo/mastercard.png'),
-    visa: require('@/assets/images/card-logo/visa.png'),
-  };
-
-  // Process the card number, start with "*"
-  const totalDigits = 16;
-  const sanitizedCardNumber = cardNumber.replace(/\s/g, '');
-  const maskedNumber =
-    sanitizedCardNumber +
-    '*'.repeat(Math.max(totalDigits - sanitizedCardNumber.length, 0));
-  const formattedCardNumber =
-    maskedNumber.match(/.{1,4}/g)?.join(' ') || '';
-
   const handleCardNumberChange = (text: string) => {
-    // LIMIT 16 digits, dig only
     const digits = text.replace(/\D/g, '').slice(0, 16);
-  
-    // add space every 4 digits
     const formatted = digits.match(/.{1,4}/g)?.join(' ') || '';
-  
     setCardNumber(formatted);
   };
 
-  // Expiry Date Input：Only allow digits, 2 digits , then "/"，then 2 digits 
   const handleExpiryChange = (text: string) => {
-    const digits = text.replace(/\D/g, ''); //only keep digits
+    const digits = text.replace(/\D/g, '');
     let formatted = digits;
-    if (digits.length > 2) {
-      formatted = digits.slice(0, 2) + '/' + digits.slice(2, 4);
-    }
-    if (formatted.length > 5) {
-      formatted = formatted.slice(0, 5);
-    }
+    if (digits.length > 2) formatted = digits.slice(0, 2) + '/' + digits.slice(2, 4);
+    if (formatted.length > 5) formatted = formatted.slice(0, 5);
     setExpiry(formatted);
   };
 
   const detectedCardType = getCardType(sanitizedCardNumber);
-  
+
   const handleAddCard = async () => {
-    const newCard = {
-      card_number: cardNumber.replace(/\D/g, ""),
-      last4: cardNumber.slice(-4),
-      expiration_date: expiry,
-      cardholder_name: cardHolder,
-      card_type: detectedCardType,
-    };
+    const [exp_month, exp_year] = expiry.split('/');
+    const email = await AsyncStorage.getItem('userEmail');
 
-    const addCard = async (newCard: any) => {
-      try {
-        const authToken = await AsyncStorage.getItem("authToken");
-        if (!authToken) {
-          console.error("User not authenticated.");
-          return;
-        }
-  
-        setCards((prevCards) => [...prevCards, newCard]);
-  
-        const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Token ${authToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(newCard),
-        });
-  
-        if (!response.ok) throw new Error("Failed to add payment method.");
-  
-        const addedCard = await response.json();
-
-        const stored = await SecureStore.getItemAsync("paymentInfo");
-        const existing = stored ? JSON.parse(stored) : [];
-        const updated = [...existing, addedCard];
-
-        await SecureStore.setItemAsync("paymentInfo", JSON.stringify(updated));
-  
-      } catch (error) {
-        console.error("Error adding payment method:", error);
-        Alert.alert("Error", "There was an error adding your card.");
-      }
+    const payload = {
+      card: {
+        number: sanitizedCardNumber,
+        exp_month,
+        exp_year: `20${exp_year}`,
+        cvc,
+      },
+      billing_details: {
+        name: cardHolder,
+        email,
+        address: {
+          line1: address,
+          city,
+          state,
+          postal_code: postalCode,
+          country: 'US',
+        },
+      },
     };
 
     try {
-      await addCard(newCard);
-      useToast("Success", "Your payment method has been added.");
-      router.replace("/payment-method");
-    } catch (error) {
-      console.error("Error adding payment method:", error);
+      const token = await AsyncStorage.getItem('authToken');
+      const res = await fetch(`${API_BASE_URL}/api/payment/create-stripe-payment-method/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error('Failed to add payment method');
+      useToast('Success', 'Your payment method has been added');
+      router.replace('/payment-method');
+    } catch (err) {
+      Alert.alert('Error', 'There was an error adding your card.');
+      console.error(err);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic">
+      <KeyboardAwareScrollView
+        enableOnAndroid
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ flexGrow: 1 }}
+        extraScrollHeight={120}
+      >
         <View style={styles.screen}>
           {/* Header */}
           <View style={styles.header}>
-          <TouchableOpacity testID="back-button" onPress={() => navigation.goBack()}>
-            <ImageBackground
-              style={styles.backIcon}
-              source={require('@/assets/images/back-arrow.png')}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              Add payment method
-            </Text>
-            <TouchableOpacity testID="done-button" onPress={handleAddCard}>
-              <Text style={styles.addText} numberOfLines={1}>
-                Done
-              </Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <ImageBackground
+                style={styles.backIcon}
+                source={require('@/assets/images/back-arrow.png')}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Add payment method</Text>
+            <TouchableOpacity onPress={handleAddCard}>
+              <Text style={styles.addText}>Done</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Card info display */}
+  
+          {/* Card Display */}
           <View style={styles.cardContainer}>
             <View style={styles.card}>
-              {/* card number */}
               <View style={styles.cardNumberContainer}>
                 <Text style={styles.masked}>{formattedCardNumber}</Text>
-                {/* If there is a card type, display logo */}
                 {detectedCardType ? (
                   <Image
                     style={styles.cardLogo}
@@ -181,7 +172,6 @@ export default function PaymentMethod() {
                   />
                 ) : null}
               </View>
-              {/* more info display at bot 2 col: CARD HOLDER EXP DATE */}
               <View style={styles.cardDetails}>
                 <View style={styles.detailsColumn}>
                   <Text style={styles.label}>CARD HOLDER</Text>
@@ -194,187 +184,123 @@ export default function PaymentMethod() {
               </View>
             </View>
           </View>
-
-          {/* Input Area */}
+  
+          {/* Form */}
           <View style={styles.formContainer}>
-          <TextInput
-            testID="card-number-input"
-            placeholder="Card Number"
-            placeholderTextColor="#999"
-            style={styles.input}
-            keyboardType="numeric"
-            value={cardNumber}
-            onChangeText={handleCardNumberChange}
-          />
             <TextInput
-              testID="card-holder-input"
+              placeholder="Card Number"
+              style={styles.input}
+              value={cardNumber}
+              onChangeText={handleCardNumberChange}
+              keyboardType="numeric"
+            />
+            <TextInput
               placeholder="Card Holder Name"
-              placeholderTextColor="#999"
               style={styles.input}
               value={cardHolder}
               onChangeText={setCardHolder}
             />
             <View style={styles.row}>
               <TextInput
-                testID="expiry-input"
                 placeholder="Expiry Date"
                 placeholderTextColor="#999"
                 style={[styles.input, styles.inputHalf]}
-                keyboardType="numeric"
                 value={expiry}
                 onChangeText={handleExpiryChange}
+                keyboardType="numeric"
               />
               <TextInput
                 placeholder="CVV"
                 placeholderTextColor="#999"
                 style={[styles.input, styles.inputHalf]}
+                value={cvc}
+                onChangeText={setCvc}
                 keyboardType="numeric"
               />
             </View>
+  
+            {/* Google Places */}
+            <GooglePlacesAutocomplete
+              ref={addressRef}
+              placeholder="Enter billing address"
+              fetchDetails
+              onPress={(data, details = null) => {
+                if (details) {
+                  const getComponent = (type: string) =>
+                    details.address_components.find(c => c.types.includes(type as any))?.long_name || '';
+                  const fullAddress = `${getComponent('street_number')} ${getComponent('route')}`.trim();
+                  setAddress(fullAddress);
+                  setAddressInput(fullAddress);
+                  setCity(getComponent('locality') || getComponent('sublocality') || getComponent('postal_town'));
+                  setState(getComponent('administrative_area_level_1'));
+                  setPostalCode(getComponent('postal_code'));
+  
+                  setTimeout(() => {
+                    addressRef.current?.setAddressText(fullAddress);
+                  }, 100);
+                }
+              }}
+              query={{
+                key: process.env.EXPO_PUBLIC_GOOGLE_API_KEY,
+                language: 'en',
+                components: 'country:us',
+              }}
+              textInputProps={{
+                value: addressInput,
+                onChangeText: (text) => setAddressInput(text),
+                placeholderTextColor: '#999',
+              }}
+              styles={{
+                container: {
+                  flex: 0,
+                  zIndex: 1000,
+                },
+                textInput: styles.input,
+                listView: {
+                  zIndex: 2000,
+                  backgroundColor: 'white',
+                  borderColor: '#ddd',
+                  borderWidth: 1,
+                  elevation: 5,
+                  maxHeight: 200,
+                },
+              }}
+            />
           </View>
-
-          {/* ADD NEW CARD */}
-          <TouchableOpacity testID="add-new-card-button" onPress={handleAddCard}>
-            <View style={styles.addCardContainer}>
+  
+          {/* Submit Button */}
+          <View style={styles.addCardContainer}>
+            <TouchableOpacity onPress={handleAddCard}>
               <Text style={styles.addCardText}>ADD NEW CARD</Text>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
+  
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  screen: {
-    width: 375,
-    height: 812,
-    position: 'relative',
-    overflow: 'hidden',
-    alignSelf: 'center',
-  },
-  // Header 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
-    marginTop: 12,
-  },
-  backIcon: {
-    width: 20,
-    height: 20,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontFamily: 'Merriweather',
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#303030',
-  },
-  addText: {
-    fontSize: 17,
-    color: '#007AFF',
-  },
-  // Card
-  cardContainer: {
-    width: 333,
-    height: 180,
-    marginTop: 22,
-    marginLeft: 21,
-    position: 'relative',
-  },
-  card: {
-    flex: 1,
-    backgroundColor: '#232323',
-    borderRadius: 8,
-    padding: 16,
-  },
-  cardNumberContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  masked: {
-    fontFamily: 'Nunito Sans',
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  cardLogo: {
-    position: 'absolute',
-    top: 20,
-    right: 0,
-    width: 80,
-    height: 80,
-  },
-  // Card button info - 2 col
-  cardDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
-  },
-  detailsColumn: {
-    flex: 1,
-  },
-  label: {
-    fontFamily: 'Nunito Sans',
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#ffffff',
-    opacity: 0.8,
-  },
-  value: {
-    fontFamily: 'Nunito Sans',
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginTop: 4,
-  },
-  // Filling area
-  formContainer: {
-    marginTop: 20,
-    paddingHorizontal: 16,
-  },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    fontFamily: 'Nunito Sans',
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  inputHalf: {
-    width: '48%',
-  },
-  // ADD NEW CARD button
-  addCardContainer: {
-    marginTop: 20,
-    marginHorizontal: 16,
-    height: 60,
-    backgroundColor: '#232323',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addCardText: {
-    fontFamily: 'Nunito Sans',
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  screen: { width: 375, height: 812, alignSelf: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: '#fff', marginTop: 12 },
+  backIcon: { width: 20, height: 20 },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '700', color: '#303030' },
+  addText: { fontSize: 17, color: '#007AFF' },
+  cardContainer: { width: 333, height: 180, marginTop: 22, marginLeft: 21 },
+  card: { flex: 1, backgroundColor: '#232323', borderRadius: 8, padding: 16 },
+  cardNumberContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  masked: { fontSize: 20, fontWeight: '600', color: '#fff' },
+  cardLogo: { position: 'absolute', top: 20, right: 0, width: 80, height: 80 },
+  cardDetails: { flexDirection: 'row', justifyContent: 'space-between', position: 'absolute', bottom: 16, left: 16, right: 16 },
+  detailsColumn: { flex: 1 },
+  label: { fontSize: 10, fontWeight: '600', color: '#fff', opacity: 0.8 },
+  value: { fontSize: 14, fontWeight: '600', color: '#fff', marginTop: 4 },
+  formContainer: { marginTop: 20, paddingHorizontal: 16 },
+  input: { height: 44, borderWidth: 1, borderColor: '#ddd', borderRadius: 4, paddingHorizontal: 12, marginBottom: 12 },
+  row: { flexDirection: 'row', justifyContent: 'space-between' },
+  inputHalf: { width: '48%' },
+  addCardContainer: { marginTop: 30, marginHorizontal: 16, height: 60, backgroundColor: '#232323', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  addCardText: { fontSize: 16, fontWeight: '600', color: '#fff' },
 });
