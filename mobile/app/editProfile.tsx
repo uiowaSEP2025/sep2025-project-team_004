@@ -63,50 +63,82 @@ const EditProfilePage: React.FC = () => {
   }, []);
 
   const updateUserProfile = async () => {
+    setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('authToken');
+      const token = await AsyncStorage.getItem("authToken");
       if (!token) {
-        Alert.alert('Error', 'User is not authenticated.');
+        Alert.alert("Error", "User is not authenticated.");
         return;
       }
-      const response = await fetch(
-        `${API_BASE_URL}/api/users/profile/update/`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Token ${token}`,
-          },
-          body: JSON.stringify({
-            first_name: firstName,
-            last_name: lastName,
-            phone_number: phone,
-            address: address,
-            city: city,
-            state: state,
-            zip_code: zipCode,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Update failed:', errorData);
-        Alert.alert('Error', errorData.detail || 'Failed to update profile.');
+  
+      // Step 1: Validate the address
+      const validationRes = await fetch(`${API_BASE_URL}/api/users/validate-address/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          address: address,
+          city: city,
+          state: state,
+          zip_code: zipCode,
+        }),
+      });
+  
+      const validationData = await validationRes.json();
+  
+      if (!validationRes.ok || !validationData.valid) {
+        Alert.alert("Invalid Address", validationData.message || "Please double-check your address.");
         return;
       }
-      const updatedUser = await response.json();
+  
+      // Step 2: Set the standardized version
+      setAddress(validationData.standardized.address);
+      setCity(validationData.standardized.city);
+      setState(validationData.standardized.state);
+      setZipCode(validationData.standardized.zip_code);
+  
+      // Step 3: Proceed to update profile
+      const updateRes = await fetch(`${API_BASE_URL}/api/users/profile/update/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone_number: phone,
+          address: validationData.standardized.address,
+          city: validationData.standardized.city,
+          state: validationData.standardized.state,
+          zip_code: validationData.standardized.zip_code,
+        }),
+      });
+  
+      if (!updateRes.ok) {
+        const errorData = await updateRes.json();
+        console.error("Update failed:", errorData);
+        Alert.alert("Error", errorData.detail || "Failed to update profile.");
+        return;
+      }
+  
+      const updatedUser = await updateRes.json();
       await AsyncStorage.setItem("userInfo", JSON.stringify(updatedUser));
-      useToast('Success', 'Your profile has been updated.');
+      useToast("Success", "Your profile has been updated.");
+  
       if (navigation.canGoBack()) {
         navigation.goBack();
       } else {
-        navigation.navigate('home');
+        navigation.navigate("home");
       }
-      
+  
     } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile.');
+      console.error("Error updating profile:", error);
+      Alert.alert("Error", "Failed to update profile.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -204,7 +236,7 @@ const EditProfilePage: React.FC = () => {
 
         <TouchableOpacity onPress={updateUserProfile} disabled={loading} style={styles.loginButton}>
           <Text style={styles.loginButtonText}>
-            {loading ? 'Updating...' : 'Update Profile'}
+            {loading ? 'Validating Address...' : 'Update Profile'}
           </Text>
         </TouchableOpacity>
       </View>

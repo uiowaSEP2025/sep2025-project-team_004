@@ -18,6 +18,8 @@ import environ
 import smtplib
 from email.mime.text import MIMEText
 import os
+import requests
+from rest_framework.decorators import api_view, permission_classes
 
 env = environ.Env()
 
@@ -186,3 +188,40 @@ class SearchUsersView(APIView):
         serializer = UserSerializer(users, many=True)
 
         return Response(serializer.data, status=200)
+    
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def ValidateAddressView(request):
+    address = request.data
+
+    SMARTY_AUTH_ID = os.getenv("SMARTY_AUTH_ID")
+    SMARTY_AUTH_TOKEN = os.getenv("SMARTY_AUTH_TOKEN")
+
+    params = {
+        "street": address.get("address"),
+        "city": address.get("city"),
+        "state": address.get("state"),
+        "zipcode": address.get("zip_code"),
+        "auth-id": SMARTY_AUTH_ID,
+        "auth-token": SMARTY_AUTH_TOKEN,
+    }
+
+    try:
+        res = requests.get("https://us-street.api.smartystreets.com/street-address", params=params)
+        data = res.json()
+
+        if res.status_code == 200 and data:
+            validated = data[0]
+            return Response({
+                "valid": True,
+                "standardized": {
+                    "address": validated.get("delivery_line_1"),
+                    "city": validated["components"].get("city_name"),
+                    "state": validated["components"].get("state_abbreviation"),
+                    "zip_code": validated["components"].get("zipcode"),
+                }
+            })
+        return Response({"valid": False, "message": "Address not found or invalid."}, status=400)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)

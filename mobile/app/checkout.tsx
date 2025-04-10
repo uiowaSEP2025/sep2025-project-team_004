@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -15,18 +15,14 @@ import { useRouter } from "expo-router";
 import { CartContext } from "./context/CartContext";
 import Toast from "react-native-toast-message";
 import { MaterialIcons } from "@expo/vector-icons";
+import { GooglePlacesAutocomplete, PlaceType, GooglePlacesAutocompleteRef } from "react-native-google-places-autocomplete";
+
 
 interface PaymentMethod {
   id: number;
   card_type: string;
   last4: string;
   is_default: boolean;
-}
-
-interface CartItem {
-  id: number;
-  quantity: number;
-  price: number;
 }
 
 const API_BASE_URL =
@@ -52,17 +48,19 @@ export default function CheckoutScreen() {
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
   const { cart, clearCart } = useContext(CartContext);
+  const googleRef = useRef<GooglePlacesAutocompleteRef>(null);
+
 
   useEffect(() => {
-    fetchCardsAndProfile();
+    fetchCardsAndAddress();
   }, []);
 
-  const fetchCardsAndProfile = async () => {
+  const fetchCardsAndAddress = async () => {
     const authToken = await AsyncStorage.getItem("authToken");
     if (!authToken) return;
 
     try {
-      // Fetch cards
+      // Get cards
       const cardRes = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
         headers: {
           Authorization: `Token ${authToken}`,
@@ -76,22 +74,27 @@ export default function CheckoutScreen() {
         if (defaultOne) setSelectedCardId(defaultOne.id);
       }
 
-      // Fetch profile for address
-      const profileRes = await fetch(`${API_BASE_URL}/api/users/profile/`, {
-        headers: {
-          Authorization: `Token ${authToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-      if (profileRes.ok) {
-        const profile = await profileRes.json();
-        setShippingAddress([profile.address, profile.city, profile.state, profile.zip_code].filter(Boolean).join(', '));
-        setCity(profile.city);
-        setState(profile.state);
-        setZipCode(profile.zip_code);
+      // Get user info from AsyncStorage
+      const storedUser = await AsyncStorage.getItem("userInfo");
+      if (storedUser) {
+        const profile = JSON.parse(storedUser);
+        const fullAddress = [profile.address, profile.city, profile.state, profile.zip_code]
+          .filter(Boolean)
+          .join(', ');
+
+        setShippingAddress(fullAddress);
+        setCity(profile.city || '');
+        setState(profile.state || '');
+        setZipCode(profile.zip_code || '');
+
+        setTimeout(() => {
+          if (googleRef.current) {
+            googleRef.current.setAddressText(fullAddress);
+          }
+        }, 100);
       }
     } catch (err) {
-      console.error("Error loading cards or profile:", err);
+      console.error("Error loading cards or address:", err);
     }
   };
 
@@ -101,17 +104,50 @@ export default function CheckoutScreen() {
       const authToken = await AsyncStorage.getItem("authToken");
       if (!authToken) throw new Error("You must be logged in.");
 
+      // Validate address with Smarty
+      const validationRes = await fetch(`${API_BASE_URL}/api/users/validate-address/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          address: shippingAddress,
+          city,
+          state,
+          zip_code: zipCode,
+        }),
+      });
+
+      const validationData = await validationRes.json();
+      if (!validationRes.ok || !validationData.valid) {
+        Toast.show({
+          type: "error",
+          text1: "Invalid Address",
+          text2: validationData.message || "Check your address.",
+        });
+        return;
+      }
+
+      // Use standardized address
+      const std = validationData.standardized;
+      setShippingAddress(std.address);
+      setCity(std.city);
+      setState(std.state);
+      setZipCode(std.zip_code);
+
+      // Place the order
       const orderData = {
         items: cart.map((item) => ({
           product_id: item.id,
           quantity: item.quantity,
         })),
         total_price: cart.reduce((total, item) => total + item.price * item.quantity, 0),
-        shipping_address: shippingAddress,
+        shipping_address: std.address,
+        city: std.city,
+        state: std.state,
+        zip_code: std.zip_code,
         payment_method_id: selectedCardId,
-        city,
-        state,
-        zip_code: zipCode,
       };
 
       const response = await fetch(`${API_BASE_URL}/api/store/orders/create/`, {
@@ -124,12 +160,10 @@ export default function CheckoutScreen() {
       });
 
       if (!response.ok) throw new Error("Checkout failed.");
-      
-      // Clear the cart using the context and wait for it to complete
+
       await clearCart();
-      
       Toast.show({ type: "success", text1: "Order placed!" });
-      router.push("/store"); // Navigate to store page after successful checkout
+      router.push("/store");
     } catch (error: any) {
       Toast.show({ type: "error", text1: "Error", text2: error.message });
     } finally {
@@ -139,7 +173,7 @@ export default function CheckoutScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic">
+      <View>
         {/* Header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -174,26 +208,58 @@ export default function CheckoutScreen() {
               >
                 <Image source={logoSource} style={styles.cardLogo} resizeMode="contain" />
                 <Text style={styles.cardLabel}>{label}</Text>
-                {isSelected && (
-                  <MaterialIcons name="check-circle" size={20} color="#007AFF" />
-                )}
+                {isSelected && <MaterialIcons name="check-circle" size={20} color="#007AFF" />}
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Address Input */}
+        {/* Shipping Address Autocomplete */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Shipping Address</Text>
-          <TextInput
-            value={shippingAddress}
-            onChangeText={setShippingAddress}
-            placeholder="Enter your address"
-            style={styles.input}
+          <GooglePlacesAutocomplete
+            ref={googleRef}
+            placeholder="Enter your shipping address"
+            fetchDetails
+            onPress={(data, details = null) => {
+              if (details) {
+                const components = details.address_components;
+
+                const getComponent = (type: string) =>
+                  components.find((c) => c.types.includes(type as PlaceType))?.long_name || '';
+
+                const streetNumber = getComponent("street_number");
+                const route = getComponent("route");
+                const cityVal = getComponent("locality") || getComponent("sublocality") || getComponent("postal_town");
+                const stateVal = getComponent("administrative_area_level_1");
+                const zipVal = getComponent("postal_code");
+
+                const fullAddress = `${streetNumber} ${route}`.trim();
+
+                setShippingAddress(fullAddress);
+                setCity(cityVal);
+                setState(stateVal);
+                setZipCode(zipVal);
+              }
+            }}
+            query={{
+              key: process.env.EXPO_PUBLIC_GOOGLE_API_KEY,
+              language: "en",
+              components: "country:us",
+            }}
+            styles={{
+              textInput: styles.input,
+              container: { flex: 0, marginBottom: 10 },
+            }}
+            textInputProps={{
+              onChangeText: (text) => {
+                setShippingAddress(text);
+              },
+            }}
           />
         </View>
 
-        {/* Submit Button */}
+        {/* Submit */}
         <TouchableOpacity
           style={styles.submitButton}
           onPress={handleCheckout}
@@ -203,7 +269,7 @@ export default function CheckoutScreen() {
             {loading ? "Processing..." : "SUBMIT ORDER"}
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -265,7 +331,6 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 5,
     padding: 10,
-    marginBottom: 10,
   },
   submitButton: {
     backgroundColor: "#232323",

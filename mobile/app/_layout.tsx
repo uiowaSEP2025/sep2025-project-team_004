@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import * as Linking from "expo-linking";
+import 'react-native-get-random-values';
 
 import { CartProvider } from "./context/CartContext";  
 // Prevent splash screen from auto-hiding before asset loading is complete
