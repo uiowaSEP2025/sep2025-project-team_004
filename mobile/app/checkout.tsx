@@ -251,6 +251,11 @@ export default function CheckoutScreen() {
               textInput: styles.input,
               container: { flex: 0, marginBottom: 10 },
             }}
+            textInputProps={{
+              onChangeText: (text) => {
+                setShippingAddress(text);
+              },
+            }}
           />
         </View>
 
