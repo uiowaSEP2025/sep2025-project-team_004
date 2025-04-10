@@ -19,6 +19,11 @@ class CreateCheckoutSessionView(APIView):
         try:
             user = request.user
 
+            # Get backend url from body, it will then be used for build checkout session
+            return_url = request.data.get("return_url")
+            # if not return_url:
+            #     return_url = getattr(settings, "BASE_URL", "https://check.this.out")
+
             if not user.stripe_customer_id:
                 customer = stripe.Customer.create(email=user.email)
                 user.stripe_customer_id = customer.id
@@ -28,8 +33,10 @@ class CreateCheckoutSessionView(APIView):
                 payment_method_types=['card'],
                 mode='setup',  # we're only saving the card
                 customer=user.stripe_customer_id,
-                success_url = 'myapp://payment-success?session_id={CHECKOUT_SESSION_ID}',
-                cancel_url = 'myapp://payment-cancel'
+                #success_url = 'myapp://payment-success?session_id={CHECKOUT_SESSION_ID}',
+                #cancel_url = 'myapp://payment-cancel'
+                success_url=f"{return_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{return_url}/payment-cancel",
             )
             return Response({'checkout_url': checkout_session.url})
         except Exception as e:
