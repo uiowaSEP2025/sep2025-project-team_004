@@ -12,6 +12,104 @@ from django.conf import settings
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+class CreateCheckoutSessionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            user = request.user
+
+            if not user.stripe_customer_id:
+                customer = stripe.Customer.create(email=user.email)
+                user.stripe_customer_id = customer.id
+                user.save()
+
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                mode='setup',  # we're only saving the card
+                customer=user.stripe_customer_id,
+                success_url = 'myapp://payment-success?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url = 'myapp://payment-cancel'
+            )
+            return Response({'checkout_url': checkout_session.url})
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+        
+class ListStripePaymentMethodsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        if not user.stripe_customer_id:
+            return Response({"error": "Stripe customer ID not found"}, status=400)
+
+        try:
+            # Get all saved cards
+            payment_methods = stripe.PaymentMethod.list(
+                customer=user.stripe_customer_id,
+                type="card"
+            )
+
+            # Get default payment method
+            customer = stripe.Customer.retrieve(user.stripe_customer_id)
+            default_id = customer.get("invoice_settings", {}).get("default_payment_method")
+
+            cards = []
+            for method in payment_methods.data:
+                card = method.card
+                cards.append({
+                    "id": method.id,
+                    "brand": card.brand,
+                    "last4": card.last4,
+                    "exp_month": card.exp_month,
+                    "exp_year": card.exp_year,
+                    "cardholder_name": method['billing_details']['name'],
+                    "is_default": method.id == default_id,
+                })
+
+            return Response(cards)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+        
+
+class DeleteStripePaymentMethodView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, stripe_id):
+        user = request.user
+
+        if not user.stripe_customer_id:
+            return Response({"error": "Stripe customer ID not found"}, status=400)
+
+        try:
+            # Detach the card from the customer
+            stripe.PaymentMethod.detach(stripe_id)
+            return Response({"message": "Card deleted from Stripe"}, status=200)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+        
+
+class SetStripeDefaultPaymentMethodView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, stripe_id):
+        user = request.user
+
+        if not user.stripe_customer_id:
+            return Response({"error": "Stripe customer ID not found"}, status=400)
+
+        try:
+            # Update the default payment method in Stripe
+            stripe.Customer.modify(
+                user.stripe_customer_id,
+                invoice_settings={"default_payment_method": stripe_id}
+            )
+            return Response({"message": "Default Stripe card updated"}, status=200)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
 class CreateStripePaymentMethodView(APIView):
     permission_classes = [IsAuthenticated]
 
