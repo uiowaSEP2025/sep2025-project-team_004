@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useRef } from "react";
+import React, { useEffect, useState, useContext, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,13 +16,17 @@ import { CartContext } from "./context/CartContext";
 import Toast from "react-native-toast-message";
 import { MaterialIcons } from "@expo/vector-icons";
 import { GooglePlacesAutocomplete, PlaceType, GooglePlacesAutocompleteRef } from "react-native-google-places-autocomplete";
+import { useFocusEffect } from "@react-navigation/native";
 
 
 interface PaymentMethod {
-  id: number;
-  card_type: string;
+  id: string; // Stripe uses string IDs like "pm_xxx"
+  brand: string;
   last4: string;
   is_default: boolean;
+  cardholder_name: string;
+  exp_month: number;
+  exp_year: number;
 }
 
 const API_BASE_URL =
@@ -42,7 +46,7 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [cards, setCards] = useState<PaymentMethod[]>([]);
-  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [shippingAddress, setShippingAddress] = useState("");
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -51,50 +55,52 @@ export default function CheckoutScreen() {
   const googleRef = useRef<GooglePlacesAutocompleteRef>(null);
 
 
-  useEffect(() => {
-    fetchCardsAndAddress();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchCardsAndAddress();
+    }, [])
+  );
+  
 
   const fetchCardsAndAddress = async () => {
     const authToken = await AsyncStorage.getItem("authToken");
     if (!authToken) return;
-
+  
     try {
-      // Get cards
-      const cardRes = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
+      // Get Stripe cards
+      const cardRes = await fetch(`${API_BASE_URL}/api/payment/stripe-methods/`, {
         headers: {
           Authorization: `Token ${authToken}`,
           "Content-Type": "application/json",
         },
       });
+  
       if (cardRes.ok) {
         const cardData = await cardRes.json();
         setCards(cardData);
         const defaultOne = cardData.find((card: any) => card.is_default);
         if (defaultOne) setSelectedCardId(defaultOne.id);
       }
-
-      // Get user info from AsyncStorage
+  
+      // Get user info (unchanged)
       const storedUser = await AsyncStorage.getItem("userInfo");
       if (storedUser) {
         const profile = JSON.parse(storedUser);
         const fullAddress = [profile.address, profile.city, profile.state, profile.zip_code]
           .filter(Boolean)
           .join(', ');
-
+  
         setShippingAddress(fullAddress);
         setCity(profile.city || '');
         setState(profile.state || '');
         setZipCode(profile.zip_code || '');
-
+  
         setTimeout(() => {
-          if (googleRef.current) {
-            googleRef.current.setAddressText(fullAddress);
-          }
+          googleRef.current?.setAddressText(fullAddress);
         }, 100);
       }
     } catch (err) {
-      console.error("Error loading cards or address:", err);
+      console.error("Error loading Stripe cards or address:", err);
     }
   };
 
@@ -194,11 +200,9 @@ export default function CheckoutScreen() {
 
           {cards.map((card) => {
             const isSelected = selectedCardId === card.id;
-            const type = card.card_type?.toLowerCase();
-            const logoSource = cardLogos[type] || cardLogos.default;
-            const label = type
-              ? `${type.toUpperCase()} ending in ${card.last4}`
-              : `Card ending in ${card.last4}`;
+            const brand = card.brand?.toLowerCase();
+            const logoSource = cardLogos[brand] || cardLogos.default;
+            const label = `${card.brand.toUpperCase()} ending in ${card.last4} * ${card.exp_month}/${card.exp_year}`;
 
             return (
               <TouchableOpacity

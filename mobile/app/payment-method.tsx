@@ -15,7 +15,6 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
-import * as SecureStore from 'expo-secure-store';
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
@@ -46,14 +45,20 @@ export default function PaymentMethod() {
   const loadCards = async () => {
     try {
       const authToken = await AsyncStorage.getItem("authToken");
-      if (!authToken) {
-        console.error("User not authenticated.");
-        return;
-      }
-      const data = await SecureStore.getItemAsync("paymentInfo");
-      setCards(data ? JSON.parse(data) : []);
-    } catch (error) {
-      console.error("Error loading payment methods:", error);
+      if (!authToken) return;
+  
+      const res = await fetch(`${API_BASE_URL}/api/payment/stripe-methods/`, {
+        headers: {
+          Authorization: `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+  
+      const data = await res.json();
+      if (Array.isArray(data)) setCards(data);
+      else console.error("Unexpected response:", data);
+    } catch (err) {
+      console.error("Error loading Stripe cards:", err);
     }
   };
 
@@ -63,41 +68,18 @@ export default function PaymentMethod() {
     }, [])
   );
 
-  const deletePaymentMethod = async (cardId: number) => {
-    try {
-      const authToken = await AsyncStorage.getItem("authToken");
-      if (!authToken) {
-        console.error("User not authenticated.");
-        return;
-      }
-        
-      setCards((prevCards) => prevCards.filter((card) => card.id !== cardId));
-
-      const response = await fetch(`${API_BASE_URL}/api/payment/delete/${cardId}/`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Token ${authToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to delete payment method.");
-
-      const stored = await SecureStore.getItemAsync("paymentInfo");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const updated = parsed.filter((card: any) => card.id !== cardId);
-        await SecureStore.setItemAsync("paymentInfo", JSON.stringify(updated));
-      }
-
-      
-    } catch (error) {
-      console.error("Error deleting payment method:", error);
-    }
-    loadCards();  
+  const deletePaymentMethod = async (stripeId: string) => {
+    const authToken = await AsyncStorage.getItem("authToken");
+    await fetch(`${API_BASE_URL}/api/payment/stripe/delete/${stripeId}/`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Token ${authToken}`,
+      },
+    });
+    loadCards();
   };
 
-  const handleDeleteCard = async (cardId: number) => {
+  const handleDeleteCard = async (cardId: string) => {
     if (Platform.OS === "web") {
       await deletePaymentMethod(cardId);
     } else {
@@ -113,46 +95,15 @@ export default function PaymentMethod() {
             }
   };
 
-  const setDefaultPayment = async (cardId: number) => {
-    try {
-      const authToken = await AsyncStorage.getItem("authToken");
-      if (!authToken) {
-        console.error("User not authenticated.");
-        return;
-      }
-
-      setCards((prevCards) =>
-        prevCards.map((card) => ({
-          ...card,
-          is_default: card.id === cardId,
-        }))
-      );
-
-      const response = await fetch(`${API_BASE_URL}/api/payment/set-default/${cardId}/`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Token ${authToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to set default payment method.");
-
-      const stored = await SecureStore.getItemAsync("paymentInfo");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const updated = parsed.map((card: any) => ({
-          ...card,
-          is_default: card.id === cardId,
-        }));
-        await SecureStore.setItemAsync("paymentInfo", JSON.stringify(updated));
-      }
-
-      
-    } catch (error) {
-      console.error("Error setting default payment method:", error);
-    }
-    loadCards(); 
+  const setDefaultPayment = async (stripeId: string) => {
+    const authToken = await AsyncStorage.getItem("authToken");
+    await fetch(`${API_BASE_URL}/api/payment/stripe/set-default/${stripeId}/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Token ${authToken}`,
+      },
+    });
+    loadCards();
   };
   // Only display up to 10 cards
   const renderedCards = cards.slice(0, 10);
@@ -180,11 +131,11 @@ export default function PaymentMethod() {
                 </Text>
                 {/* card background setting */}
                 <View style={styles.cardBackground} />
-                <Image style={styles.decoration1} source={getCardLogo(card.card_type || "visa")} resizeMode="contain" />
+                <Image style={styles.decoration1} source={getCardLogo(card.brand || "visa")} resizeMode="contain" />
                 <Text style={styles.labelCardHolder} numberOfLines={1}>Card Holder Name</Text>
                 <Text style={styles.labelExpiry} numberOfLines={1}>Expiry Date</Text>
                 <Text style={styles.valueCardHolder} numberOfLines={1}>{card.cardholder_name}</Text>
-                <Text style={styles.valueExpiry} numberOfLines={1}>{card.expiration_date}</Text>
+                <Text style={styles.valueExpiry} numberOfLines={1}>{card.exp_month}/{card.exp_year}</Text>
               </View>
 
               <View style={styles.defaultContainer}>

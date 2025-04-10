@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
+    "deepLinks": ["myapp://"],
     "platforms": [
       "ios",
       "android",
@@ -43,7 +44,14 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.septeam4.IowaSensors"
+        }
+      ],
+      "expo-dev-client"
     ],
     "experiments": {
       "typedRoutes": true
