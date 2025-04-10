@@ -31,7 +31,6 @@ const AddCardWebview = () => {
       });
 
       const data = await response.json();
-      console.log('Checkout URL:', data);
       if (data.checkout_url) {
         setCheckoutUrl(data.checkout_url);
       }
