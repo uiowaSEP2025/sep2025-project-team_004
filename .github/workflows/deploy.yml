@@ -2,17 +2,16 @@ name: Deploy to TestFlight
 
 on:
   push:
-    branches: [TestFlight]
+    branches: [TestFlight] 
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: production
+    environment: production  
 
     defaults:
       run:
         working-directory: mobile 
-
 
     steps:
       - name: Checkout repo
@@ -23,13 +22,12 @@ jobs:
         with:
           node-version: 18
           eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: List current directory contents
+        run: ls -la
 
       - name: Install EAS CLI
         run: npm install -g eas-cli
-
-      # - name: Login to Expo
-      #   run: eas login --token ${{ secrets.EXPO_TOKEN }}
 
       - name: Set env vars from secrets
         run: |
@@ -48,4 +46,3 @@ jobs:
         run: eas submit --platform ios --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
