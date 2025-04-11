@@ -35,7 +35,7 @@ export const unstable_settings = {
 
 export default function Profile() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [user, setUser] = useState({ first_name: "", last_name: "", email: "" });
+  const [user, setUser] = useState({ first_name: "", last_name: "", email: "", role: "" });
   const [modalVisible, setModalVisible] = useState(false);
   const [defaultCard, setDefaultCard] = useState<any>(null);
 
@@ -54,6 +54,7 @@ export default function Profile() {
     useCallback(() => {
       const fetchUserInfo = async () => {
         const storedUserInfo = await AsyncStorage.getItem("userInfo");
+        console.log(storedUserInfo)
         if (storedUserInfo) {
           setUser(JSON.parse(storedUserInfo));
         }
@@ -109,6 +110,8 @@ export default function Profile() {
       console.error("Error logging out:", error);
     }
   };
+
+  console.log(user.role)
 
   return (
     <SafeAreaView style={styles.container}>
@@ -243,6 +246,26 @@ export default function Profile() {
             />
           </View>
         </TouchableOpacity>
+        {user.role?.toLowerCase()=== "admin" && (
+        <TouchableOpacity
+          style={styles.infoItem}
+          onPress={() => navigation.navigate("admin-orders")}
+        >
+          <View style={styles.infoRow}>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoTitle}>Admin Orders</Text>
+              <Text style={styles.infoSubtitle}>
+                Manage all customer orders
+              </Text>
+            </View>
+           <Image
+             style={styles.arrowIcon}
+             source={require('@/assets/images/forward-arrow.png')}
+             resizeMode="contain"
+           />
+         </View>
+       </TouchableOpacity>
+      )}
       </ScrollView>
 
       {/* Logout Confirmation Modal */}

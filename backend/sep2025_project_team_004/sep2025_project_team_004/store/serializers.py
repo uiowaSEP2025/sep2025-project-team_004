@@ -32,8 +32,8 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            "id", "payment_method_id", "shipping_address", "city", "state", "zip_code",
-            "total_price", "items", "created_at"
+            "id", "stripe_payment_method_id", "shipping_address", "city", "state", "zip_code",
+            "total_price", "items", "created_at", "status", "tracking_number"
         ]
 
     def create(self, validated_data):
