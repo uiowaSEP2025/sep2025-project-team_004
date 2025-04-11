@@ -54,7 +54,6 @@ export default function Profile() {
     useCallback(() => {
       const fetchUserInfo = async () => {
         const storedUserInfo = await AsyncStorage.getItem("userInfo");
-        console.log(storedUserInfo)
         if (storedUserInfo) {
           setUser(JSON.parse(storedUserInfo));
         }
@@ -110,8 +109,6 @@ export default function Profile() {
       console.error("Error logging out:", error);
     }
   };
-
-  console.log(user.role)
 
   return (
     <SafeAreaView style={styles.container}>

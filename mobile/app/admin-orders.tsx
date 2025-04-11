@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
   TextInput,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -22,6 +23,29 @@ const API_BASE_URL =
 
 export default function AdminOrders() {
   type OrderStatus = 'Out for Delivery' | 'Processing' | 'Canceled';
+
+  type OrderDetail = {
+    id: number;
+    stripe_payment_method_id: string | null;
+    shipping_address: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    total_price: string;
+    status: string;
+    tracking_number: string | null;
+    created_at: string;
+    user: {
+      first_name: string;
+      last_name: string;
+      email: string;
+    };
+    items: {
+      product_name: string;
+      product_price: string;
+      quantity: number;
+    }[];
+  };
   const [selectedTab, setSelectedTab] = useState<OrderStatus>('Out for Delivery');
   const [ordersData, setOrdersData] = useState<{ [key in OrderStatus]: any[] }>({
     'Out for Delivery': [],
@@ -38,6 +62,8 @@ export default function AdminOrders() {
   const tabs: OrderStatus[] = ['Out for Delivery', 'Processing', 'Canceled'];
   const indicatorLeft = tabs.indexOf(selectedTab) * tabWidth + (tabWidth * 0.5);
 
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetail | null>(null);
+
   useFocusEffect(
     useCallback(() => {
       const fetchOrders = async () => {
@@ -51,7 +77,6 @@ export default function AdminOrders() {
         });
 
         const data = await res.json();
-
         const categorized: { [key in OrderStatus]: any[] } = {
           'Out for Delivery': [],
           Processing: [],
@@ -99,7 +124,6 @@ export default function AdminOrders() {
       setOrdersData(prev => {
         const updated = { ...prev };
       
-        // Ensure both keys are initialized
         if (!updated['Out for Delivery']) updated['Out for Delivery'] = [];
         if (!updated['Processing']) updated['Processing'] = [];
 
@@ -107,8 +131,6 @@ export default function AdminOrders() {
       
         updated['Out for Delivery'].push(cleanedOrder);
         updated['Processing'] = updated['Processing'].filter(o => o.id !== refreshedOrder.id);
-        console.log("Updated Orders Data:", updated);
-        console.log("Selected Tab:", selectedTab);
       
         return updated;
       });
@@ -162,21 +184,45 @@ export default function AdminOrders() {
                 </Text>
               </View>
               <View style={styles.orderCardFooter}>
-                <TouchableOpacity style={styles.detailButton}>
-                  <Text style={styles.detailButtonText}>Details</Text>
-                </TouchableOpacity>
-                {order.status === 'processing' && (
-                  <TouchableOpacity
-                    style={[styles.detailButton]}
-                    onPress={() => {
-                      setSelectedOrderId(order.id);
-                      setShowModal(true);
-                    }}
-                  >
-                    <Text style={styles.detailButtonText}>Complete</Text>
+                <TouchableOpacity style={styles.detailButton} onPress={() => setSelectedOrderDetails(order)}>
+                    <Text style={styles.detailButtonText}>Details</Text>
                   </TouchableOpacity>
-                )}
-              </View>
+
+                  {selectedTab === 'Processing' ? (
+                    <TouchableOpacity
+                      style={[styles.detailButton]}
+                      onPress={() => {
+                       setSelectedOrderId(order.id);
+                        setShowModal(true);
+                     }}
+                   >
+                      <Text style={styles.detailButtonText}>Complete</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
+                      <Text
+                        style={[
+                          styles.orderStatus,
+                          {
+                            color:
+                             order.status === 'out_for_delivery'
+                                ? '#27ae60'
+                                : order.status === 'processing'
+                               ? '#F79E1B'
+                                : '#EB001B',
+                         },
+                       ]}
+                     >
+                       {selectedTab}
+                     </Text>
+                     {order.tracking_number && (
+                       <Text style={styles.trackingNumber}>
+                         Tracking No. {order.tracking_number}
+                       </Text>
+                     )}
+                   </View>
+                  )}
+                </View>
             </View>
           ))}
         </View>
@@ -201,6 +247,62 @@ export default function AdminOrders() {
           </View>
         </View>
       )}
+      {selectedOrderDetails && (
+        <Modal
+            transparent
+            animationType="slide"
+         visible={!!selectedOrderDetails}
+         onRequestClose={() => setSelectedOrderDetails(null)}
+         >
+            <View style={styles.modalOverlay}>
+             <View style={styles.detailsModalBox}>
+              <Text style={styles.modalTitle}>Order #{selectedOrderDetails.id}</Text>
+
+              <Text style={styles.modalText}>
+               <Text style={styles.modalLabel}>Customer: </Text>
+               {selectedOrderDetails.user.first_name} {selectedOrderDetails.user.last_name}
+             </Text>
+
+             <Text style={styles.modalText}>
+               <Text style={styles.modalLabel}>Email: </Text>
+               {selectedOrderDetails.user.email}
+             </Text>
+
+             <Text style={styles.modalText}>
+               <Text style={styles.modalLabel}>Shipping Address:{"\n"}</Text>
+               {selectedOrderDetails.shipping_address}{"\n"}
+               {selectedOrderDetails.city}, {selectedOrderDetails.state} {selectedOrderDetails.zip_code}
+             </Text>
+
+             <Text style={styles.modalText}>
+               <Text style={styles.modalLabel}>Products:</Text>
+              </Text>
+              {selectedOrderDetails.items.map((item, idx) => (
+                <Text key={idx} style={styles.modalText}>
+                  - {item.quantity}x {item.product_name} @ ${item.product_price}
+                </Text>
+              ))}
+
+             <Text style={styles.modalText}>
+               <Text style={styles.modalLabel}>Total: </Text>${Number(selectedOrderDetails.total_price).toFixed(2)}
+              </Text>
+
+              <Text style={styles.modalText}>
+                <Text style={styles.modalLabel}>Status: </Text>{selectedOrderDetails.status}
+               </Text>
+
+             <Text style={styles.modalText}>
+                <Text style={styles.modalLabel}>Order Date: </Text>
+                {new Date(selectedOrderDetails.created_at).toLocaleDateString()}
+               </Text>
+
+             <TouchableOpacity onPress={() => setSelectedOrderDetails(null)} style={styles.modalButton}>
+               <Text style={styles.modalButtonText}>Close</Text>
+             </TouchableOpacity>
+            </View>
+         </View>
+         </Modal>
+        )}
     </SafeAreaView>
   );
 }
@@ -438,5 +540,31 @@ const styles = StyleSheet.create({
         color: '#007AFF',
         fontSize: 16,
       },
-      
+      detailsModalBox: {
+        backgroundColor: '#fff',
+        padding: 20,
+        borderRadius: 12,
+        width: '85%',
+        alignSelf: 'center',
+        marginTop: '30%',
+        elevation: 10,
+      },      
+      modalText: {
+        fontSize: 14,
+        marginVertical: 4,
+        fontFamily: 'Nunito Sans',
+        color: '#232323',
+      },
+      modalLabel: {
+        fontWeight: '700',
+        color: '#303030',
+      },
+      trackingNumber: {
+        fontFamily: 'Nunito Sans',
+        fontSize: 14,
+        fontWeight: '600',
+        marginTop: 4,
+        color: '#232323',
+        marginLeft: 8,
+      },
 });

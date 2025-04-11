@@ -15,10 +15,13 @@ class ProductSerializer(serializers.ModelSerializer):
     
 class OrderItemSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(write_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_price = serializers.DecimalField(source="product.price", read_only=True, max_digits=10, decimal_places=2)
     
+
     class Meta:
         model = OrderItem
-        fields = ["product_id", "quantity"]
+        fields = ["product_id", "product_name", "product_price", "quantity"]
 
     def create(self, validated_data):
         product_id = validated_data.pop("product_id")
@@ -28,13 +31,21 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
+    user = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             "id", "stripe_payment_method_id", "shipping_address", "city", "state", "zip_code",
-            "total_price", "items", "created_at", "status", "tracking_number"
+            "total_price", "items", "created_at", "status", "tracking_number", "user"
         ]
+
+    def get_user(self, obj):
+        return {
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+            "email": obj.user.email
+        }
 
     def create(self, validated_data):
         request = self.context.get('request')
