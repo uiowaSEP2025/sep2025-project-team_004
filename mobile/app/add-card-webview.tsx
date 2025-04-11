@@ -25,10 +25,12 @@ const AddCardWebview = () => {
           Authorization: `Token ${token}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          return_url: API_BASE_URL
+        })
       });
 
       const data = await response.json();
-      console.log('Checkout URL:', data);
       if (data.checkout_url) {
         setCheckoutUrl(data.checkout_url);
       }
