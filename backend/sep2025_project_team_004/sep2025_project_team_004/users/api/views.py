@@ -173,6 +173,7 @@ class UserDetailView(APIView):
             "phone_number": user.phone_number,
             "state": user.state,
             "city": user.city,
+            "role": user.role,
                
         })
         

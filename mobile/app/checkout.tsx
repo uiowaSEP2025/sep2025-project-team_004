@@ -153,7 +153,7 @@ export default function CheckoutScreen() {
         city: std.city,
         state: std.state,
         zip_code: std.zip_code,
-        payment_method_id: selectedCardId,
+        stripe_payment_method_id: selectedCardId,
       };
 
       const response = await fetch(`${API_BASE_URL}/api/store/orders/create/`, {

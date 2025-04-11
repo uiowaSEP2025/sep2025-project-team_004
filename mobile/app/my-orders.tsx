@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,32 +10,66 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
+    ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost'}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 export default function Order() {
-  type OrderStatus = 'Delivered' | 'Processing' | 'Canceled';
-  const [selectedTab, setSelectedTab] = useState<OrderStatus>('Delivered');
+  type OrderStatus = 'Out for Delivery' | 'Processing' | 'Canceled';
+  const [selectedTab, setSelectedTab] = useState<OrderStatus>('Out for Delivery');
 
-  const tabs: OrderStatus[] = ['Delivered', 'Processing', 'Canceled'];
+  const tabs: OrderStatus[] = ['Out for Delivery', 'Processing', 'Canceled'];
   const router = useRouter();
 
-  const ordersData = {
-    Delivered: [
-      { id: '1', orderNo: 'Order No238562312', orderDate: '21/03/2024', quantity: '03', totalAmount: '$150', status: 'Delivered' },
-      { id: '2', orderNo: 'Order No2385623232', orderDate: '11/03/2022', quantity: '03', totalAmount: '$150', status: 'Delivered' },
-      { id: '3', orderNo: 'Order No2322312', orderDate: '02/13/2021', quantity: '03', totalAmount: '$150', status: 'Delivered' },
-    ],
-    Processing: [
-      { id: '4', orderNo: 'Order No238562312', orderDate: '21/03/2024', quantity: '03', totalAmount: '$150', status: 'Processing' },
-      { id: '5', orderNo: 'Order No2385623232', orderDate: '11/03/2022', quantity: '03', totalAmount: '$150', status: 'Processing' },
-    ],
-    Canceled: [
-      { id: '6', orderNo: 'Order No2322312', orderDate: '02/13/2021', quantity: '03', totalAmount: '$150', status: 'Canceled' },
-    ],
-  };
+  const [ordersData, setOrdersData] = useState<{ [key in OrderStatus]: any[] }>({
+    'Out for Delivery': [],
+    Processing: [],
+    Canceled: [],
+  });
+  useFocusEffect(
+    useCallback(() => {
+      const fetchOrders = async () => {
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) return;
+  
+        const res = await fetch(`${API_BASE_URL}/api/store/orders/my/`, {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        });
+  
+        const data = await res.json();
+  
+        const categorized: { [key in OrderStatus]: any[] } = {
+          'Out for Delivery': [],
+          Processing: [],
+          Canceled: [],
+        };
+  
+        for (const order of data) {
+          const status = order.status === 'out_for_delivery'
+            ? 'Out for Delivery'
+            : order.status === 'cancelled'
+            ? 'Canceled'
+            : 'Processing';
+          categorized[status].push(order);
+        }
+  
+        setOrdersData(categorized);
+      };
+  
+      fetchOrders();
+    }, [])
+  );
 
   const tabContainerWidth = Dimensions.get('window').width;
   const tabWidth = tabContainerWidth / tabs.length;
-  const indicatorLeft = tabs.indexOf(selectedTab) * tabWidth + (tabWidth * 0.33);
+  const indicatorLeft = tabs.indexOf(selectedTab) * tabWidth + (tabWidth * 0.5);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -49,7 +83,7 @@ export default function Order() {
                       />
                     </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            My order
+            My orders
           </Text>
           <ImageBackground
             style={styles.searchIcon}
@@ -72,54 +106,54 @@ export default function Order() {
 
       <ScrollView style={styles.scrollContainer} contentInsetAdjustmentBehavior="automatic">
         <View style={styles.contentContainer}>
-          {ordersData[selectedTab].map(order => (
-            <View key={order.id} style={styles.orderCard}>
-              <View style={styles.orderCardHeader}>
-                <Text style={styles.orderNo} numberOfLines={1}>
-                  {order.orderNo}
-                </Text>
-                <Text style={styles.orderDate} numberOfLines={1}>
-                  {order.orderDate}
-                </Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.orderCardDetail}>
-                <Text style={styles.totalAmount}>
-                  <Text style={styles.detailLabel}>Quantity:</Text>
-                  <Text style={styles.detailValue}> {order.quantity}</Text>
-                </Text>
-                <Text style={styles.orderTotal}>
-                  <Text style={styles.detailLabel}>Total Amount: </Text>
-                  <Text style={styles.totalAmount}>{order.totalAmount}</Text>
-                </Text>
-              </View>
-              <View style={styles.orderCardFooter}>
-                <View style={styles.detailButton}>
-                  <Text style={styles.detailButtonText} numberOfLines={1}>
-                    Detail
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    styles.orderStatus,
-                    {
-                      color:
-                        order.status === 'Delivered'
-                          ? '#27ae60'
-                          : order.status === 'Processing'
-                          ? '#F79E1B'
-                          : order.status === 'Canceled'
-                          ? '#EB001B'
-                          : '#27ae60',
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {order.status}
-                </Text>
-              </View>
+        {ordersData[selectedTab].map(order => (
+              <View key={order.id} style={styles.orderCard}>
+         <View style={styles.orderCardHeader}>
+           <Text style={styles.orderNo}>{`Order #${order.id}`}</Text>
+           <Text style={styles.orderDate}>
+             {new Date(order.created_at).toLocaleDateString()}
+           </Text>
+         </View>
+         <View style={styles.divider} />
+         <View style={styles.orderCardDetail}>
+           <Text style={styles.totalAmount}>
+             <Text style={styles.detailLabel}>Quantity:</Text>
+             <Text style={styles.detailValue}> {order.items.length}</Text>
+           </Text>
+           <Text style={styles.orderTotal}>
+             <Text style={styles.detailLabel}>Total Amount: </Text>
+             <Text style={styles.totalAmount}>${Number(order.total_price).toFixed(2)}</Text>
+           </Text>
+         </View>
+         <View style={styles.orderCardFooter}>
+           <View style={styles.detailButton}>
+             <Text style={styles.detailButtonText}>Details</Text>
+           </View>
+           <View style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
+           <Text
+             style={[
+               styles.orderStatus,
+               {
+                 color:
+                   order.status === 'out_for_delivery'
+                     ? '#27ae60'
+                     : order.status === 'processing'
+                     ? '#F79E1B'
+                     : '#EB001B',
+                 },
+              ]}
+             >
+                {selectedTab}
+              </Text>
+              {selectedTab === 'Out for Delivery' && order.tracking_number && (
+              <Text style={styles.trackingNumber}>
+               Tracking No. {order.tracking_number}
+              </Text>
+            )}
             </View>
-          ))}
+            </View>
+         </View>
+        ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -297,6 +331,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#232323',
     borderRadius: 4,
     justifyContent: 'center',
+    marginRight: 10,
   },
   detailButtonText: {
     fontFamily: 'Nunito Sans',
@@ -313,5 +348,13 @@ const styles = StyleSheet.create({
     lineHeight: 21.824,
     color: '#27ae60',
     textAlign: 'right',
+  },
+  trackingNumber: {
+    fontFamily: 'Nunito Sans',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 4,
+    color: '#232323',
+    marginLeft: 8,
   },
 });
