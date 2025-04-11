@@ -20,12 +20,17 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_DEV_FLAG": "false" ,
-        "EXPO_PUBLIC_BACKEND_URL": "https://d2tedebo3dq0kj.cloudfront.net" ,
-        "EXPO_PUBLIC_SENSOR_DATA_URL": "https://d2tedebo3dq0kj.cloudfront.net/api/sensor_data/"
+        "EXPO_PUBLIC_BACKEND_URL": "" ,
+        "EXPO_PUBLIC_SENSOR_DATA_URL": "" ,
+        "EXPO_PUBLIC_GOOGLE_API_KEY": ""
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "${EXPO_APPLE_ID}"
+      }
+    }
   }
 }
