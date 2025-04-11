@@ -9,6 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
 
+    defaults:
+      run:
+        working-directory: mobile 
+
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
