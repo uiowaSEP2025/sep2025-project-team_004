@@ -29,7 +29,7 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "${EXPO_APPLE_ID}"
+        "appleId": "sep.team04@gmail.com"
       }
     }
   }
