@@ -18,18 +18,21 @@
     },
     "production": {
       "autoIncrement": true,
+      "environment": "production",
       "env": {
         "EXPO_PUBLIC_DEV_FLAG": "false" ,
         "EXPO_PUBLIC_BACKEND_URL": "${EXPO_PUBLIC_BACKEND_URL}",
         "EXPO_PUBLIC_SENSOR_DATA_URL": "${EXPO_PUBLIC_SENSOR_DATA_URL}",
-        "EXPO_PUBLIC_GOOGLE_API_KEY": "${EXPO_PUBLIC_GOOGLE_API_KEY}"
+        "EXPO_PUBLIC_GOOGLE_API_KEY": "${EXPO_PUBLIC_GOOGLE_API_KEY}",
+        "EXPO_PUBLIC_ASC": "${EXPO_PUBLIC_ASC}"
       }
+      
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "${EXPO_PUBLIC_ASC}"
+        "ascAppId": "6743309326"
       }
 
     }
