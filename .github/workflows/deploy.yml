@@ -66,6 +66,7 @@ jobs:
       - name: Replace ascAppId in eas.json
         run: sed -i "s/\"ascAppId\": \"\${EXPO_PUBLIC_ASC}\"/\"ascAppId\": \"${{ secrets.EXPO_PUBLIC_ASC }}\"/" eas.json
 
+
       - name: Submit to TestFlight
         run:  eas submit --platform ios --profile production --non-interactive --latest
 
