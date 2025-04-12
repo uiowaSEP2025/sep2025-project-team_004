@@ -18,14 +18,8 @@
     },
     "production": {
       "autoIncrement": true,
-      "environment": "production",
-      "env": {
-        "EXPO_PUBLIC_DEV_FLAG": "false" ,
-        "EXPO_PUBLIC_BACKEND_URL": "${EXPO_PUBLIC_BACKEND_URL}",
-        "EXPO_PUBLIC_SENSOR_DATA_URL": "${EXPO_PUBLIC_SENSOR_DATA_URL}",
-        "EXPO_PUBLIC_GOOGLE_API_KEY": "${EXPO_PUBLIC_GOOGLE_API_KEY}",
-        "EXPO_PUBLIC_ASC": "${EXPO_PUBLIC_ASC}"
-      }
+      "environment": "production"
+
       
     }
   },
