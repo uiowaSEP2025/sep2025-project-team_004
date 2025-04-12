@@ -44,11 +44,19 @@ jobs:
           echo "EXPO_PUBLIC_GOOGLE_API_KEY=${{ secrets.EXPO_PUBLIC_GOOGLE_API_KEY }}" >> $GITHUB_ENV
           echo "EXPO_APPLE_ID=${{ secrets.EXPO_APPLE_ID }}" >> $GITHUB_ENV
 
-      - name: Build iOS App (for TestFlight)
-        run: eas build --platform ios --profile production --non-interactive
+      - name: Check if EXPO_APPLE_ID is "sep.team04@gmail.com"
+        run: |
+          if [ "${{ secrets.EXPO_APPLE_ID }}" = "sep.team04@gmail.com" ]; then
+            echo "Key matches!"
+          else
+            echo "Key is not sep.team04@gmail.com."
+          fi
 
-      - name: Submit to TestFlight
-        run: eas submit --platform ios --profile production --non-interactive --latest
+      # - name: Build iOS App (for TestFlight)
+      #   run: eas build --platform ios --profile production --non-interactive
+
+      # - name: Submit to TestFlight
+      #   run: eas submit --platform ios --profile production --non-interactive --latest
 
 
 
