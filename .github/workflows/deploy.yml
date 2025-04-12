@@ -53,7 +53,7 @@ jobs:
       #   run: eas build --platform ios --profile production --non-interactive
 
       - name: Submit to TestFlight
-        run: eas submit --platform ios --profile production --non-interactive
+        run: eas submit --platform ios --profile production --non-interactive --latest
 
 
 
