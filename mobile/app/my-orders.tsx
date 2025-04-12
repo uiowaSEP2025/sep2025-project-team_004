@@ -117,8 +117,6 @@ export default function Order() {
          <View style={styles.divider} />
          <View style={styles.orderCardDetail}>
            <Text style={styles.totalAmount}>
-             <Text style={styles.detailLabel}>Quantity:</Text>
-             <Text style={styles.detailValue}> {order.items.length}</Text>
            </Text>
            <Text style={styles.orderTotal}>
              <Text style={styles.detailLabel}>Total Amount: </Text>
