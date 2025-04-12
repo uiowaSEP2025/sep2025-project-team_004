@@ -29,7 +29,7 @@
   "submit": {
     "production": {
       "ios": {
-        "EXPO_PUBLIC_ASC": "${EXPO_PUBLIC_ASC}"
+        "ascAppId": "${EXPO_PUBLIC_ASC}"
       }
 
     }

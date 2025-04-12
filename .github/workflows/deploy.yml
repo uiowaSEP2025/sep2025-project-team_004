@@ -45,6 +45,17 @@ jobs:
           echo "EXPO_APPLE_ID=${{ secrets.EXPO_APPLE_ID }}" >> $GITHUB_ENV
           echo "EXPO_PUBLIC_ASC=${{ secrets.EXPO_PUBLIC_ASC }}" >> $GITHUB_ENV
 
+      - name: Check EXPO_PUBLIC_ASC value
+        run: |
+          if [ "$EXPO_PUBLIC_ASC" = "6743309326" ]; then
+            echo "✅ EXPO_PUBLIC_ASC matches expected value."
+          else
+            echo "❌ EXPO_PUBLIC_ASC does NOT match expected value."
+            echo "Actual value: $EXPO_PUBLIC_ASC"
+          fi
+
+
+
 
 
       # - name: Build iOS App (for TestFlight)
@@ -53,9 +64,7 @@ jobs:
 
 
       - name: Submit to TestFlight
-        env:
-          EXPO_PUBLIC_ASC: ${{ secrets.EXPO_PUBLIC_ASC }}
-        run: eas submit --platform ios --profile production --non-interactive --latest
+        run:  EXPO_PUBLIC_ASC=${{ secrets.EXPO_PUBLIC_ASC }} eas submit --platform ios --profile production --non-interactive --latest
 
 
 
