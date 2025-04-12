@@ -52,7 +52,22 @@ jobs:
       # - name: Build iOS App (for TestFlight)
       #   run: eas build --platform ios --profile production --non-interactive
 
-      - name: Submit to TestFlight
-        run: eas submit --platform ios --profile production --non-interactive
+      # - name: Submit to TestFlight
+      #   run: eas submit --platform ios --profile production --non-interactive
+      #   env:
+      #     EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
+
+      - name: Test ENV injection (instead of submit)
+        run: |
+          echo "This is a dry-run test step"
+          echo "EXPO_APPLE_ID = $EXPO_APPLE_ID"
         env:
           EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
+
+      - name: Test ENV injection with safe var
+        run: |
+          echo "MY_DEBUG_VAR = $MY_DEBUG_VAR"
+        env:
+          MY_DEBUG_VAR: "hello-i-am-safe"
+
+
