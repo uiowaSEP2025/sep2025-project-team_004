@@ -29,7 +29,7 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6743309326" 
+        "ascAppId": "${EXPO_PUBLIC_ASC}"
       }
 
     }

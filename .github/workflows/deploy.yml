@@ -43,22 +43,13 @@ jobs:
           echo "EXPO_PUBLIC_SENSOR_DATA_URL=${{ secrets.EXPO_PUBLIC_SENSOR_DATA_URL }}" >> $GITHUB_ENV
           echo "EXPO_PUBLIC_GOOGLE_API_KEY=${{ secrets.EXPO_PUBLIC_GOOGLE_API_KEY }}" >> $GITHUB_ENV
           echo "EXPO_APPLE_ID=${{ secrets.EXPO_APPLE_ID }}" >> $GITHUB_ENV
+          echo "EXPO_PUBLIC_ASC=${{ secrets.EXPO_PUBLIC_ASC }}" >> $GITHUB_ENV
 
-      - name: Check if EXPO_PUBLIC_BACKEND_URL is "httptnet"
-        run: |
-          if [ "${{ secrets.EXPO_PUBLIC_BACKEND_URL }}" = "https://d2dq0kjloudfroet" ]; then
-            echo "Key matches!"
-          else
-            echo "Key is not https://d2tedeboet."
-          fi
 
-      - name: Build iOS App (for TestFlight)
-        run: |
-          eas build --platform ios --profile production --non-interactive \
-            --env EXPO_PUBLIC_DEV_FLAG=${{ secrets.EXPO_PUBLIC_DEV_FLAG }} \
-            --env EXPO_PUBLIC_SENSOR_DATA_URL=${{ secrets.EXPO_PUBLIC_SENSOR_DATA_URL }} \
-            --env EXPO_PUBLIC_BACKEND_URL=${{ secrets.EXPO_PUBLIC_BACKEND_URL }} \
-            --env EXPO_PUBLIC_GOOGLE_API_KEY=${{ secrets.EXPO_PUBLIC_GOOGLE_API_KEY }}
+
+      # - name: Build iOS App (for TestFlight)
+      #   run: |
+      #     eas build --platform ios --profile production --non-interactive 
 
 
       - name: Submit to TestFlight
