@@ -64,7 +64,8 @@ jobs:
 
 
       - name: Submit to TestFlight
-        run:  EXPO_PUBLIC_ASC=239823123 eas submit
+        run:  EXPO_PUBLIC_ASC=239823123 eas submit --platform ios --profile production --non-interactive --latest
+
 
 
 
