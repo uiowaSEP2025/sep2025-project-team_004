@@ -28,9 +28,7 @@
   },
   "submit": {
     "production": {
-      "ios": {
-        "appleId": "sep.team04@gmail.com"
-      }
+
     }
   }
 }
