@@ -44,12 +44,12 @@ jobs:
           echo "EXPO_PUBLIC_GOOGLE_API_KEY=${{ secrets.EXPO_PUBLIC_GOOGLE_API_KEY }}" >> $GITHUB_ENV
           echo "EXPO_APPLE_ID=${{ secrets.EXPO_APPLE_ID }}" >> $GITHUB_ENV
 
-      - name: Check if EXPO_PUBLIC_BACKEND_URL is "https://d2tedebo3dq0kj.cloudfront.net"
+      - name: Check if EXPO_PUBLIC_BACKEND_URL is "httptnet"
         run: |
-          if [ "${{ secrets.EXPO_PUBLIC_BACKEND_URL }}" = "https://d2tedebo3dq0kj.cloudfront.net" ]; then
+          if [ "${{ secrets.EXPO_PUBLIC_BACKEND_URL }}" = "https://d2dq0kjloudfroet" ]; then
             echo "Key matches!"
           else
-            echo "Key is not https://d2tedebo3dq0kj.cloudfront.net."
+            echo "Key is not https://d2tedeboet."
           fi
 
       # - name: Build iOS App (for TestFlight)
