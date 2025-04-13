@@ -52,3 +52,5 @@ class Review(models.Model):
 
     class Meta:
         app_label = "store"
+
+

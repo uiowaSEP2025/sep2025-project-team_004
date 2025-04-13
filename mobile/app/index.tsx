@@ -15,10 +15,13 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
 
-const API_BASE_URL =
+const rawApiBaseUrl =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
     ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
     : process.env.EXPO_PUBLIC_BACKEND_URL;
+
+const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, "");
+
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
