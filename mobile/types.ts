@@ -16,5 +16,6 @@ export type RootStackParamList = {
   "my-orders": undefined;
   "settings": undefined;
   "my-reviews": undefined;
+  "admin-orders": undefined;
   // Add other routes as needed
 };

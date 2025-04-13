@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,142 +16,66 @@ import {
 import Constants from 'expo-constants';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
+    ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost'}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 export default function Order() {
-  // Order Status type definition
-  type OrderStatus = 'Delivered' | 'Processing' | 'Canceled';
-  
-  // State for selected tab
-  const [selectedTab, setSelectedTab] = useState<OrderStatus>('Delivered');
-  const tabs: OrderStatus[] = ['Delivered', 'Processing', 'Canceled'];
+  type OrderStatus = 'Out for Delivery' | 'Processing' | 'Canceled';
+  const [selectedTab, setSelectedTab] = useState<OrderStatus>('Out for Delivery');
+
+  const tabs: OrderStatus[] = ['Out for Delivery', 'Processing', 'Canceled'];
   const router = useRouter();
 
-  // Replace dummy order data with state that will hold fetched orders grouped by status.
-  const [ordersData, setOrdersData] = useState({
-    Delivered: [] as any[],
-    Processing: [] as any[],
-    Canceled: [] as any[],
+  const [ordersData, setOrdersData] = useState<{ [key in OrderStatus]: any[] }>({
+    'Out for Delivery': [],
+    Processing: [],
+    Canceled: [],
   });
-  const [loading, setLoading] = useState(true);
-
-  // Review Modal related states
-  const [reviewModalVisible, setReviewModalVisible] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [reviewText, setReviewText] = useState('');
-  const [selectedReviewOrder, setSelectedReviewOrder] = useState<any>(null);
-
-  // Use Expo Constants to build API base URL.
-  const API_BASE_URL =
-    Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost";
-
-  // Fetch orders when the component mounts.
-  useEffect(() => {
-    async function fetchOrders() {
-      try {
-        // For example, fetching orders for the current logged-in user
-        const response = await fetch(`http://${API_BASE_URL}:8000/api/store/orders/my/`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        
-        // Group orders by status
-        const groupedOrders = {
-          Delivered: [] as any[],
-          Processing: [] as any[],
-          Canceled: [] as any[],
-        };
-        data.forEach((order: any) => {
-          if (order.status === 'Delivered') {
-            groupedOrders.Delivered.push(order);
-          } else if (order.status === 'Processing') {
-            groupedOrders.Processing.push(order);
-          } else if (order.status === 'Canceled') {
-            groupedOrders.Canceled.push(order);
-          }
+  useFocusEffect(
+    useCallback(() => {
+      const fetchOrders = async () => {
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) return;
+  
+        const res = await fetch(`${API_BASE_URL}/api/store/orders/my/`, {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
         });
-        
-        setOrdersData(groupedOrders);
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-        Alert.alert('Error', 'Failed to fetch orders.');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchOrders();
-  }, [API_BASE_URL]);
+  
+        const data = await res.json();
+  
+        const categorized: { [key in OrderStatus]: any[] } = {
+          'Out for Delivery': [],
+          Processing: [],
+          Canceled: [],
+        };
+  
+        for (const order of data) {
+          const status = order.status === 'out_for_delivery'
+            ? 'Out for Delivery'
+            : order.status === 'cancelled'
+            ? 'Canceled'
+            : 'Processing';
+          categorized[status].push(order);
+        }
+  
+        setOrdersData(categorized);
+      };
+  
+      fetchOrders();
+    }, [])
+  );
 
-  // Calculate tab widths and indicator position.
   const tabContainerWidth = Dimensions.get('window').width;
   const tabWidth = tabContainerWidth / tabs.length;
-  const indicatorLeft = tabs.indexOf(selectedTab) * tabWidth + (tabWidth * 0.33);
-
-  // ----------------- Review Functionality ----------------- //
-  const handleReview = (order: any) => {
-    setSelectedReviewOrder(order);
-    setRating(0);
-    setReviewText('');
-    setReviewModalVisible(true);
-  };
-
-  const renderStarRating = () => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      stars.push(
-        <TouchableOpacity key={i} onPress={() => setRating(i)}>
-          <MaterialIcons
-            name={i <= rating ? 'star' : 'star-border'}
-            size={32}
-            color="gold"
-          />
-        </TouchableOpacity>
-      );
-    }
-    return <View style={styles.starContainer}>{stars}</View>;
-  };
-
-  const submitReview = async () => {
-    if (!selectedReviewOrder) return;
-    if (rating < 1 || rating > 5) {
-      Alert.alert("Please select a rating between 1 and 5.");
-      return;
-    }
-
-    const reviewData = {
-      product: selectedReviewOrder.id,
-      rating,
-      comment: reviewText,
-    };
-
-    console.log("Submitting review payload:", reviewData);
-
-    try {
-      const response = await fetch(`http://${API_BASE_URL}:8000/api/store/reviews/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(reviewData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Failed to submit review", response.statusText, errorData);
-        Alert.alert("Error", "Failed to submit review. Please try again later.");
-        return;
-      }
-
-      console.log("Review submitted successfully.");
-      Alert.alert("Success", "Your review has been submitted.");
-      setReviewModalVisible(false);
-      router.push("/orders");
-    } catch (error) {
-      console.error("Error submitting review:", error);
-      Alert.alert("Error", "An error occurred while submitting your review.");
-    }
-  };
-  // ----------------- End Review Functionality ----------------- //
+  const indicatorLeft = tabs.indexOf(selectedTab) * tabWidth + (tabWidth * 0.5);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -165,7 +89,7 @@ export default function Order() {
             />
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            My order
+            My orders
           </Text>
           <ImageBackground
             style={styles.searchIcon}
@@ -188,102 +112,54 @@ export default function Order() {
         <View style={[styles.tabIndicator, { marginLeft: indicatorLeft }]} />
       </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#232323" style={{ marginTop: 20 }} />
-      ) : (
-        <ScrollView style={styles.scrollContainer} contentInsetAdjustmentBehavior="automatic">
-          <View style={styles.contentContainer}>
-            {ordersData[selectedTab].length > 0 ? (
-              ordersData[selectedTab].map(order => (
-                <View key={order.id} style={styles.orderCard}>
-                  <View style={styles.orderCardHeader}>
-                    <Text style={styles.orderNo} numberOfLines={1}>
-                      {order.orderNo}
-                    </Text>
-                    <Text style={styles.orderDate} numberOfLines={1}>
-                      {order.orderDate}
-                    </Text>
-                  </View>
-                  <View style={styles.divider} />
-                  <View style={styles.orderCardDetail}>
-                    <Text style={styles.totalAmount}>
-                      <Text style={styles.detailLabel}>Quantity:</Text>
-                      <Text style={styles.detailValue}> {order.quantity}</Text>
-                    </Text>
-                    <Text style={styles.orderTotal}>
-                      <Text style={styles.detailLabel}>Total Amount: </Text>
-                      <Text style={styles.totalAmount}>{order.totalAmount}</Text>
-                    </Text>
-                  </View>
-                  <View style={styles.orderCardFooter}>
-                    <View style={styles.buttonGroup}>
-                      <TouchableOpacity style={styles.detailButton}>
-                        <Text style={styles.detailButtonText} numberOfLines={1}>
-                          Detail
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.reviewButton} onPress={() => handleReview(order)}>
-                        <Text style={styles.detailButtonText} numberOfLines={1}>
-                          Review
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                    <Text
-                      style={[
-                        styles.orderStatus,
-                        {
-                          color:
-                            order.status === 'Delivered'
-                              ? '#27ae60'
-                              : order.status === 'Processing'
-                              ? '#F79E1B'
-                              : order.status === 'Canceled'
-                              ? '#EB001B'
-                              : '#27ae60',
-                        },
-                      ]}
-                      numberOfLines={1}>
-                      {order.status}
-                    </Text>
-                  </View>
-                </View>
-              ))
-            ) : (
-              <Text style={{ textAlign: 'center', marginTop: 20 }}>
-                No orders found in this category.
+      <ScrollView style={styles.scrollContainer} contentInsetAdjustmentBehavior="automatic">
+        <View style={styles.contentContainer}>
+        {ordersData[selectedTab].map(order => (
+              <View key={order.id} style={styles.orderCard}>
+         <View style={styles.orderCardHeader}>
+           <Text style={styles.orderNo}>{`Order #${order.id}`}</Text>
+           <Text style={styles.orderDate}>
+             {new Date(order.created_at).toLocaleDateString()}
+           </Text>
+         </View>
+         <View style={styles.divider} />
+         <View style={styles.orderCardDetail}>
+           <Text style={styles.totalAmount}>
+           </Text>
+           <Text style={styles.orderTotal}>
+             <Text style={styles.detailLabel}>Total Amount: </Text>
+             <Text style={styles.totalAmount}>${Number(order.total_price).toFixed(2)}</Text>
+           </Text>
+         </View>
+         <View style={styles.orderCardFooter}>
+           <View style={styles.detailButton}>
+             <Text style={styles.detailButtonText}>Details</Text>
+           </View>
+           <View style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
+           <Text
+             style={[
+               styles.orderStatus,
+               {
+                 color:
+                   order.status === 'out_for_delivery'
+                     ? '#27ae60'
+                     : order.status === 'processing'
+                     ? '#F79E1B'
+                     : '#EB001B',
+                 },
+              ]}
+             >
+                {selectedTab}
+              </Text>
+              {selectedTab === 'Out for Delivery' && order.tracking_number && (
+              <Text style={styles.trackingNumber}>
+               Tracking No. {order.tracking_number}
               </Text>
             )}
-          </View>
-        </ScrollView>
-      )}
-
-      {/* Review Modal */}
-      <Modal
-        visible={reviewModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setReviewModalVisible(false)}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Review Product</Text>
-            {renderStarRating()}
-            <TextInput
-              style={styles.textInput}
-              placeholder="Write your review (max 255 characters)"
-              maxLength={255}
-              multiline
-              value={reviewText}
-              onChangeText={setReviewText}
-            />
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.submitButton} onPress={submitReview}>
-                <Text style={styles.buttonText}>Submit Review</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setReviewModalVisible(false)}>
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
             </View>
-          </View>
+            </View>
+         </View>
+        ))}
         </View>
       </Modal>
     </SafeAreaView>
@@ -465,16 +341,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#232323',
     borderRadius: 4,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  reviewButton: {
-    width: 100,
-    height: 36,
-    backgroundColor: '#232323',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
+    marginRight: 10,
   },
   detailButtonText: {
     fontFamily: 'Nunito Sans',
@@ -491,63 +358,12 @@ const styles = StyleSheet.create({
     lineHeight: 21.824,
     textAlign: 'right',
   },
-  // ----------------- Review Modal Styles ----------------- //
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    width: '90%',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  starContainer: {
-    flexDirection: 'row',
-    marginBottom: 15,
-  },
-  textInput: {
-    width: '100%',
-    height: 100,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
-    textAlignVertical: 'top',
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  submitButton: {
-    backgroundColor: 'green',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  cancelButton: {
-    backgroundColor: 'gray',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    flex: 1,
-    marginLeft: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
+  trackingNumber: {
+    fontFamily: 'Nunito Sans',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 4,
+    color: '#232323',
+    marginLeft: 8,
   },
 });
