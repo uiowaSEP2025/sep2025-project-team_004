@@ -236,7 +236,7 @@ export default function Profile() {
           style={styles.infoItem}
   
             /* TODO:  My Reviews page */
-          onPress={() => navigation.navigate("orders")}
+          onPress={() => navigation.navigate("my-reviews")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>

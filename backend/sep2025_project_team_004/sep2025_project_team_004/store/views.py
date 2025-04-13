@@ -25,3 +25,11 @@ class ReviewCreateAPIView(generics.CreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = []
+
+class MyOrdersListView(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Use the current logged-in user
+        return Order.objects.filter(user=self.request.user)
