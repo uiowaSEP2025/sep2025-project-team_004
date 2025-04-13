@@ -1,6 +1,6 @@
 from django.urls import path
 from django.contrib.auth.views import LoginView, LogoutView
-from .views import RegisterView, ProfileUpdateView, UserProfileView, UserDetailView, SearchUsersView, RequestPasswordResetView, ResetPasswordView
+from .views import RegisterView, ProfileUpdateView, UserProfileView, UserDetailView, SearchUsersView, RequestPasswordResetView, ResetPasswordView, ValidateAddressView
 from rest_framework.authtoken.views import obtain_auth_token
 
 
@@ -17,6 +17,5 @@ urlpatterns = [
     path('search/', SearchUsersView.as_view(), name='search_users'),
     path("auth/request-password-reset/", RequestPasswordResetView.as_view(), name="request-password-reset"),
     path("auth/reset-password/", ResetPasswordView.as_view(), name="reset-password"),
-
-
+    path("validate-address/", ValidateAddressView, name="validate-address"),
 ]

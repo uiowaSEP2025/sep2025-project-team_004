@@ -1,37 +1,64 @@
 import React from "react";
-import { View, Text, Dimensions, StyleSheet } from "react-native";
-import { LineChart } from "react-native-chart-kit";
+import { View, Text, StyleSheet } from "react-native";
+import {
+  CartesianChart,
+  Line,
+  useChartPressState,
+} from "victory-native";
+import { Circle, useFont } from "@shopify/react-native-skia";
+import inter from "../assets/fonts/Inter_18pt-Medium.ttf";
 
-const chartWidth = Dimensions.get("window").width - 32;
-
-interface SensorChartProps {
+// Use system font — no import needed!
+const SensorChart = ({
+  title,
+  data,
+  color,
+}: {
   title: string;
-  data: any;
-  config: any;
-}
+  data: { x: string | number; y: number }[];
+  color: string;
+}) => {
+  const font = useFont(inter, 12);
 
-const SensorChart: React.FC<SensorChartProps> = ({ title, data, config }) => (
-  <View style={styles.card}>
-    <Text style={styles.chartTitle}>{title}</Text>
-    <LineChart
-      data={data}
-      width={chartWidth}
-      height={220}
-      chartConfig={config}
-      withInnerLines
-      withOuterLines
-      withVerticalLines={false}
-      fromZero={false}
-      withHorizontalLabels
-      withVerticalLabels
-      yLabelsOffset={8}
-      xLabelsOffset={-4}
-      horizontalLabelRotation={0}
-      style={{ transform: [{ translateX: -12 }] }}
-      withShadow={false}
-    />
-  </View>
-);
+  const { state, isActive } = useChartPressState<{
+    x: string | number;
+    y: Record<"y", number>;
+  }>({ x: 0, y: { y: 0 } });
+
+  if (!font) return null;
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.chartTitle}>{title}</Text>
+      <View style={{ height: 220 }}>
+        <CartesianChart
+          data={data}
+          xKey="x"
+          yKeys={["y"]}
+          axisOptions={{
+            font,
+            tickCount: 5,
+          }}
+          chartPressState={state}
+        >
+          {({ points }) => (
+            <>
+              <Line points={points.y} color={color} strokeWidth={2.5} />
+              {isActive && (
+                <Circle
+                  cx={state.x.position}
+                  cy={state.y.y.position}
+                  r={6}
+                  color={color}
+                />
+              )}
+            </>
+          )}
+        </CartesianChart>
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
@@ -48,6 +75,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 8,
+    textAlign: "center",
   },
 });
 

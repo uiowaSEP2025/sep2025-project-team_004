@@ -19,7 +19,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types"; 
 import Constants from "expo-constants";
-import * as SecureStore from 'expo-secure-store';
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
@@ -61,52 +60,28 @@ export default function Profile() {
       };
 
       const fetchDefaultCard = async () => {
-        if (await SecureStore.getItemAsync("paymentInfo") === null) {
-          try {
-            const authToken = await AsyncStorage.getItem("authToken");
-            if (!authToken) {
-              return;
-            }
-          
-            const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
-              method: "GET",
-              headers: {
-                "Authorization": `Token ${authToken}`,
-                "Content-Type": "application/json",
-              },
-            });
-  
-            if (!response.ok) {
-              throw new Error("Failed to fetch payment methods.");
-            }
-  
-            const data = await response.json();
-            await SecureStore.setItemAsync('paymentInfo', JSON.stringify(data));
-            const defaultCard = data.find((card: any) => card.is_default);
-          
-            setDefaultCard(defaultCard || null);
-          } catch (error) {
-            console.error("Error fetching default payment method:", error);
-          }
-      }
-      else {
-        const getDefaultCard = async () => {
-          const stored = await SecureStore.getItemAsync('paymentInfo');
-          if (stored) {
-            try {
-              const cards = JSON.parse(stored);
-              const defaultCardStorage = cards.find((card: any) => card.is_default);
-              return defaultCardStorage;
-            } catch (err) {
-              console.error('Failed to parse stored payment info:', err);
-            }
-          }
-          return null;
-        };
-        const defaultCard = await getDefaultCard();
-        setDefaultCard(defaultCard || null);
-      }
-    };
+        try {
+          const authToken = await AsyncStorage.getItem("authToken");
+          if (!authToken) return;
+      
+          const response = await fetch(`${API_BASE_URL}/api/payment/stripe-methods/`, {
+            method: "GET",
+            headers: {
+              "Authorization": `Token ${authToken}`,
+              "Content-Type": "application/json",
+            },
+          });
+      
+          if (!response.ok) throw new Error("Failed to fetch Stripe cards");
+      
+          const data = await response.json();
+          const defaultCard = data.find((card: any) => card.is_default);
+      
+          setDefaultCard(defaultCard || null);
+        } catch (error) {
+          console.error("Error fetching default Stripe card:", error);
+        }
+      };
 
       fetchUserInfo();
       fetchDefaultCard();
@@ -128,7 +103,6 @@ export default function Profile() {
   const confirmLogout = async () => {
     try {
       await AsyncStorage.clear();
-      await SecureStore.deleteItemAsync('paymentInfo'); 
       navigation.reset({ index: 0, routes: [{ name: "index" }] });
       setModalVisible(false);
     } catch (error) {
@@ -220,7 +194,7 @@ export default function Profile() {
               <Text style={styles.infoTitle}>Payment Information</Text>
               <Text style={styles.infoSubtitle}>
                 {defaultCard
-                  ? `${defaultCard.card_type} ending in ${defaultCard.last4}`
+                  ? `${defaultCard.brand} ending in ${defaultCard.last4}`
                   : "No default payment set"}
               </Text>
             </View>
@@ -253,7 +227,7 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => navigation.navigate("setting")}
+          onPress={() => navigation.navigate("settings")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>

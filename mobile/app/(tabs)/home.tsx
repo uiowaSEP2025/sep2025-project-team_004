@@ -19,6 +19,8 @@ import SensorChart from "../SensorChart";
 import MapSection from "../MapSection";
 import NoSensorFallbackView from "../NoSensorFallback";
 
+const chartCache: Record<string, any> = {};
+
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
     ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
@@ -127,6 +129,7 @@ const WelcomePage: React.FC = () => {
       } else {
         console.error("Response is not JSON:", text.slice(0, 300));
       }
+      Object.keys(chartCache).forEach((key) => delete chartCache[key]);
     } catch (error) {
       console.error("Error fetching sensor data:", error);
     } finally {
@@ -141,40 +144,46 @@ const WelcomePage: React.FC = () => {
     return new Date(now.setDate(now.getDate() - 30));
   }, [selectedRange]);
 
-  const makeChartData = (key: string, cutoff: Date) => {
-    const values: number[] = [];
-    const labels: string[] = [];
-
+  const makeChartData = (key: string, cutoff: Date): { x: string | number; y: number }[] => {
+    if (!selectedSensor?.id) return [];
+  
+    const cacheKey = `${selectedSensor.id}-${selectedRange}-${key}`;
+    if (chartCache[cacheKey]) {
+      return chartCache[cacheKey];
+    }
+  
+  
+    const result: { x: string | number; y: number }[] = [];
+  
     sensorData.forEach((d) => {
       const time = new Date(d.time);
       if (time >= cutoff) {
         const val = parseFloat(d[key]);
         if (!isNaN(val) && isFinite(val)) {
-          values.push(val);
-          labels.push(
-            time.toLocaleString("en-US", {
-              ...(selectedRange === "today"
-                ? { hour: "2-digit", minute: "2-digit", hour12: false }
-                : { month: "short", day: "numeric" }),
-              timeZone: "UTC",
-            })
-          );
+          const xLabel =
+            selectedRange === "today"
+              ? time.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })
+              : time.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  timeZone: "UTC",
+                });
+          result.push({ x: xLabel, y: val });
         }
       }
     });
-
-    const step = Math.ceil(labels.length / 6);
-    const finalLabels = labels.map((label, i) => (i % step === 0 ? label : ""));
-
-    return {
-      labels: finalLabels,
-      datasets: [{ data: values }],
-    };
+  
+    chartCache[cacheKey] = result;
+    return result;
   };
 
-  const tempData = useMemo(() => makeChartData("temperature", cutoff), [sensorData, selectedRange]);
-  const presData = useMemo(() => makeChartData("pressure", cutoff), [sensorData, selectedRange]);
-  const humData = useMemo(() => makeChartData("humidity", cutoff), [sensorData, selectedRange]);
+  const tempData = useMemo(() => makeChartData("temperature", cutoff), [sensorData, selectedRange, selectedSensor]);
+  const presData = useMemo(() => makeChartData("pressure", cutoff), [sensorData, selectedRange, selectedSensor]);
+  const humData = useMemo(() => makeChartData("humidity", cutoff), [sensorData, selectedRange, selectedSensor]);
 
   if (hasNoSensors) return <NoSensorFallbackView />;
 
@@ -197,7 +206,6 @@ const WelcomePage: React.FC = () => {
           onSelect={async (sensor) => {
             if (sensor.id !== selectedSensor.id) {
               setSelectedRange("today");
-              setSensorData([]);
               setSelectedSensor(sensor);
               await fetchSensorData(sensor.id);
             }
@@ -236,9 +244,9 @@ const WelcomePage: React.FC = () => {
               <ActivityIndicator size="large" color="#007bff" />
             ) : (
               <>
-                <SensorChart title="Temperature (°C)" data={tempData} config={tempChartConfig} />
-                <SensorChart title="Pressure (hPa)" data={presData} config={presChartConfig} />
-                <SensorChart title="Humidity (%)" data={humData} config={humChartConfig} />
+                <SensorChart title="Temperature (°C)" data={tempData} color="rgb(32, 190, 58)"/>
+                <SensorChart title="Pressure (hPa)" data={presData} color="rgb(152, 13, 199)"/>
+                <SensorChart title="Humidity (%)" data={humData} color="rgb(37, 147, 238)" />
               </>
             )}
           </ScrollView>

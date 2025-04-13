@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import * as Linking from "expo-linking";
+import 'react-native-get-random-values';
 
 import { CartProvider } from "./context/CartContext";  
 // Prevent splash screen from auto-hiding before asset loading is complete
@@ -21,6 +22,7 @@ export default function RootLayout() {
     NunitoSans: require("../assets/fonts/NunitoSans-VariableFont_YTLC,opsz,wdth,wght.ttf"),
     NunitoSansBold: require("../assets/fonts/NunitoSans_7pt-Bold.ttf"),
     MerriweatherBold: require("../assets/fonts/Merriweather-Bold.ttf"),
+    InterMedium: require("../assets/fonts/Inter_18pt-Medium.ttf"),
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
