@@ -49,6 +49,7 @@ class OrderItem(models.Model):
 
 class Review(models.Model):
     product = models.ForeignKey(Product, related_name="new_reviews", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name="reviews", on_delete=models.CASCADE)
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )
