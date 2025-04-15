@@ -11,12 +11,18 @@ import {
   Modal,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import Constants from 'expo-constants';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import showMessage from '../hooks/useAlert';
+
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
@@ -28,6 +34,9 @@ export default function Order() {
   const [selectedTab, setSelectedTab] = useState<OrderStatus>('Out for Delivery');
   const tabs: OrderStatus[] = ['Out for Delivery', 'Processing', 'Canceled'];
   const router = useRouter();
+  const [activeProductIndex, setActiveProductIndex] = useState(0);
+  const { useToast } = showMessage();
+
 
   const [ordersData, setOrdersData] = useState<{ [key in OrderStatus]: any[] }>({
     'Out for Delivery': [],
@@ -81,8 +90,8 @@ export default function Order() {
   const [selectedReviewOrder, setSelectedReviewOrder] = useState<any>(null);
 
   const handleReview = (order: any) => {
-    console.log("Handling review for order:", order);
     setSelectedReviewOrder(order);
+    setActiveProductIndex(0);
     setRating(0);
     setReviewText('');
     setReviewModalVisible(true);
@@ -105,75 +114,58 @@ export default function Order() {
   };
 
   const submitReview = async () => {
-    if (!selectedReviewOrder) return;
+    const token = await AsyncStorage.getItem("authToken");
+    const currentProduct = selectedReviewOrder?.items?.[activeProductIndex];
+  
+    if (!selectedReviewOrder || !currentProduct) return;
+  
     if (rating < 1 || rating > 5) {
       Alert.alert("Please select a rating between 1 and 5.");
       return;
     }
-
-    // Log the entire order for debugging.
-    console.log("Selected order for review:", selectedReviewOrder);
-
-    // Extract the product id from the first order item.
-    let productId: number | null = null;
-    if (selectedReviewOrder?.items && selectedReviewOrder.items.length > 0) {
-      console.log("Order items:", selectedReviewOrder.items);
-      productId = Number(selectedReviewOrder.items[0]?.product_id);
-    } else if (selectedReviewOrder?.product) {
-      productId = Number(selectedReviewOrder.product);
-    }
-    console.log("Extracted productId:", productId);
+  
+    const productId = Number(currentProduct.product_id);
+  
     if (!productId) {
       Alert.alert("Error", "Product information is missing for this order.");
       return;
     }
-
-    // Retrieve user info from AsyncStorage.
-    const storedUser = await AsyncStorage.getItem("userInfo");
-let username = null;
-if (storedUser) {
-  try {
-    const userInfo = JSON.parse(storedUser);
-    username = userInfo.username; // Use the username from the stored user info
-  } catch (error) {
-    console.error("Error parsing userInfo:", error);
-  }
-}
-if (!username) {
-  Alert.alert("Error", "User not found. Please log in again.");
-  return;
-}
-
-const reviewData = {
-  order_id: Number(selectedReviewOrder.id), // For display or business logic
-  product: productId, // Derived product id (ensure this is a primitive number)
-  rating,
-  comment: reviewText,
-  user: username, // Send the username instead of a numeric id
-};
-    console.log("Submitting review payload:", reviewData);
-
+  
+    const reviewData = {
+      order_id: Number(selectedReviewOrder.id),
+      product: productId,
+      rating,
+      comment: reviewText,
+    };
+    
     try {
       const response = await fetch(`${API_BASE_URL}/api/store/reviews/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
         body: JSON.stringify(reviewData),
       });
+  
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Failed to submit review", response.statusText, errorData);
         Alert.alert("Error", "Failed to submit review. Please try again later.");
         return;
       }
-      console.log("Review submitted successfully.");
-      Alert.alert("Success", "Your review has been submitted.");
+  
+      useToast("Success", "Your review has been submitted.");
       setReviewModalVisible(false);
-      router.push("/orders");
+  
     } catch (error) {
       console.error("Error submitting review:", error);
       Alert.alert("Error", "An error occurred while submitting your review.");
     }
   };
+
+  const currentProduct = selectedReviewOrder?.items?.[activeProductIndex];
+  const productName = currentProduct?.product_name;
   // -------------- End Review Functionality -------------- //
 
   return (
@@ -268,12 +260,38 @@ const reviewData = {
         transparent={true}
         onRequestClose={() => setReviewModalVisible(false)}>
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalContent}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+            >
             <Text style={styles.modalHeader}>Review Product</Text>
+            <View style={{ width: '100%', alignItems: 'center', marginBottom: 10 }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{productName}</Text>
+            {activeProductIndex > 0 && (
+              <TouchableOpacity
+               onPress={() => setActiveProductIndex(activeProductIndex - 1)}
+               style={{ position: 'absolute', left: 0 }}
+              >
+                <MaterialIcons name="arrow-back-ios" size={24} color="black" />
+             </TouchableOpacity>
+           )}
+
+           {selectedReviewOrder?.items && activeProductIndex < selectedReviewOrder.items.length - 1 && (
+             <TouchableOpacity
+               onPress={() => setActiveProductIndex(activeProductIndex + 1)}
+               style={{ position: 'absolute', right: 0 }}
+              >
+               <MaterialIcons name="arrow-forward-ios" size={24} color="black" />
+             </TouchableOpacity>
+           )}
+          </View>
             {renderStarRating()}
             <TextInput
               style={styles.textInput}
               placeholder="Write your review (max 255 characters)"
+              placeholderTextColor="#667"
               maxLength={255}
               multiline
               value={reviewText}
@@ -285,10 +303,11 @@ const reviewData = {
               </TouchableOpacity>
               <TouchableOpacity style={styles.cancelButton} onPress={() => setReviewModalVisible(false)}>
                 <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
+              </TouchableOpacity>         
             </View>
-          </View>
-        </View>
+          </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
+        </View>      
       </Modal>
     </SafeAreaView>
   );
@@ -506,15 +525,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'green',
     paddingVertical: 10,
     paddingHorizontal: 15,
-    borderRadius: 5,
+    borderRadius: 8,
     flex: 1,
     marginRight: 5,
   },
   cancelButton: {
     backgroundColor: 'gray',
-    paddingVertical: 10,
+    paddingVertical: 20,
     paddingHorizontal: 15,
-    borderRadius: 5,
+    borderRadius: 8,
     flex: 1,
     marginLeft: 5,
   },

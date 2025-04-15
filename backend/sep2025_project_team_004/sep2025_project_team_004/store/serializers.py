@@ -58,29 +58,12 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
 from .models import Review
 
-User = get_user_model()
 
 class ReviewSerializer(serializers.ModelSerializer):
-    # Declare the user field as a CharField (for input)
-    user = serializers.CharField()  
 
     class Meta:
         model = Review
-        fields = ['id', 'product', 'rating', 'comment', 'created_at', 'user']
+        fields = ['id', 'product', 'rating', 'comment', 'created_at']
         read_only_fields = ['id', 'created_at']
-
-    def create(self, validated_data):
-        # Pop the username from the validated data
-        username = validated_data.pop('user', None)
-        if not username:
-            raise serializers.ValidationError({"user": "Username is required."})
-        try:
-            # Look up the User instance based on the username
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise serializers.ValidationError({"user": "Invalid username."})
-        validated_data['user'] = user
-        return Review.objects.create(**validated_data)
