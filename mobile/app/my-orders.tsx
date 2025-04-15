@@ -31,11 +31,34 @@ const API_BASE_URL =
 
 export default function Order() {
   type OrderStatus = 'Out for Delivery' | 'Processing' | 'Canceled';
+  type OrderDetail = {
+    id: number;
+    stripe_payment_method_id: string | null;
+    shipping_address: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    total_price: string;
+    status: string;
+    tracking_number: string | null;
+    created_at: string;
+    user: {
+      first_name: string;
+      last_name: string;
+      email: string;
+    };
+    items: {
+      product_name: string;
+      product_price: string;
+      quantity: number;
+    }[];
+  };
   const [selectedTab, setSelectedTab] = useState<OrderStatus>('Out for Delivery');
   const tabs: OrderStatus[] = ['Out for Delivery', 'Processing', 'Canceled'];
   const router = useRouter();
   const [activeProductIndex, setActiveProductIndex] = useState(0);
   const { useToast } = showMessage();
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetail | null>(null);
 
 
   const [ordersData, setOrdersData] = useState<{ [key in OrderStatus]: any[] }>({
@@ -221,7 +244,7 @@ export default function Order() {
               </View>
               <View style={styles.orderCardFooter}>
                 <View style={styles.buttonColumn}>
-                  <TouchableOpacity style={styles.detailButton}>
+                <TouchableOpacity style={styles.detailButton} onPress={() => setSelectedOrderDetails(order)}>
                     <Text style={styles.detailButtonText}>Details</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.reviewButton} onPress={() => handleReview(order)}>
@@ -309,6 +332,53 @@ export default function Order() {
           </TouchableWithoutFeedback>
         </View>      
       </Modal>
+      {selectedOrderDetails && (
+  <Modal
+    transparent
+    animationType="slide"
+    visible={!!selectedOrderDetails}
+    onRequestClose={() => setSelectedOrderDetails(null)}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.detailsModalBox}>
+        <Text style={styles.modalTitle}>Order #{selectedOrderDetails.id}</Text>
+
+        <Text style={styles.modalText}>
+          <Text style={styles.modalLabel}>Shipping Address:{"\n"}</Text>
+          {selectedOrderDetails.shipping_address}{"\n"}
+          {selectedOrderDetails.city}, {selectedOrderDetails.state} {selectedOrderDetails.zip_code}
+        </Text>
+
+        <Text style={styles.modalText}>
+          <Text style={styles.modalLabel}>Products:</Text>
+        </Text>
+
+        {selectedOrderDetails.items.map((item, idx) => (
+          <Text key={idx} style={styles.modalText}>
+            - {item.quantity}x {item.product_name} @ ${item.product_price}
+          </Text>
+        ))}
+
+        <Text style={styles.modalText}>
+          <Text style={styles.modalLabel}>Total: </Text>${Number(selectedOrderDetails.total_price).toFixed(2)}
+        </Text>
+
+        <Text style={styles.modalText}>
+          <Text style={styles.modalLabel}>Status: </Text>{selectedOrderDetails.status}
+        </Text>
+
+        <Text style={styles.modalText}>
+          <Text style={styles.modalLabel}>Order Date: </Text>
+          {new Date(selectedOrderDetails.created_at).toLocaleDateString()}
+        </Text>
+
+        <TouchableOpacity onPress={() => setSelectedOrderDetails(null)} style={styles.modalButton}>
+          <Text style={styles.modalButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+)}
     </SafeAreaView>
   );
 }
@@ -538,4 +608,50 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   buttonText: { color: '#fff', fontWeight: 'bold', textAlign: 'center' },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailsModalBox: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 12,
+    width: '85%',
+    alignSelf: 'center',
+    marginTop: '30%',
+    elevation: 10,
+  },
+  modalText: {
+    fontSize: 14,
+    marginVertical: 4,
+    fontFamily: 'Nunito Sans',
+    color: '#232323',
+  },
+  modalLabel: {
+    fontWeight: '700',
+    color: '#303030',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalButton: {
+    backgroundColor: '#27ae60',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 15,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 });

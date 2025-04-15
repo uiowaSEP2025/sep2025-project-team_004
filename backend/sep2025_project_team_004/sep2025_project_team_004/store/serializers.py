@@ -14,7 +14,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     
 class OrderItemSerializer(serializers.ModelSerializer):
-    product_id = serializers.IntegerField
+    product_id = serializers.IntegerField()
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_price = serializers.DecimalField(source="product.price", read_only=True, max_digits=10, decimal_places=2)
     
