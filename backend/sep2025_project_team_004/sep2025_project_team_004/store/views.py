@@ -4,7 +4,8 @@ from .serializers import ProductSerializer, OrderSerializer, ReviewSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, ListAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from .models import Order
 
@@ -105,14 +106,17 @@ class UpdateOrderStatusView(APIView):
             return Response(OrderSerializer(order).data)
         except Order.DoesNotExist:
             return Response({"error": "Order not found"}, status=404)
+        
+class ReviewPagination(PageNumberPagination):
+    page_size = 5
 
-class MyReviewsView(APIView):
+class MyReviewsPaginatedView(ListAPIView):
+    serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = ReviewPagination
 
-    def get(self, request):
-        reviews = Review.objects.filter(user=request.user).select_related("product")
-        serializer = ReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        return Review.objects.filter(user=self.request.user).order_by('-created_at')
     
 class ReviewDetailView(APIView):
     permission_classes = [IsAuthenticated]
