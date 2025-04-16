@@ -62,8 +62,9 @@ from .models import Review
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
 
     class Meta:
         model = Review
-        fields = ['id', 'product', 'rating', 'comment', 'created_at']
+        fields = ['id', 'product', 'product_name', 'rating', 'comment', 'created_at']
         read_only_fields = ['id', 'created_at']

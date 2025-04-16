@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ProductListView, ReviewCreateAPIView, CheckoutAndCreateOrderView, AdminOrderListView, MyOrdersView, UpdateOrderStatusView
+from .views import ProductListView, ReviewCreateAPIView, CheckoutAndCreateOrderView, AdminOrderListView, MyOrdersView, UpdateOrderStatusView, MyReviewsView, ReviewDetailView, ReviewUpdateView
 
 app_name = "store" 
 
@@ -10,4 +10,7 @@ urlpatterns = [
     path("orders/admin/", AdminOrderListView.as_view(), name="orders-admin"),
     path("orders/my/", MyOrdersView.as_view(), name="my-orders"),
     path("orders/update/<int:order_id>/", UpdateOrderStatusView.as_view(), name="update-order"),
+    path('reviews/my/', MyReviewsView.as_view(), name='my-reviews'),
+    path('reviews/<int:pk>/', ReviewDetailView.as_view(), name='review-detail'),
+    path('reviews/<int:pk>/update/', ReviewUpdateView.as_view(), name='review-update'),
 ]

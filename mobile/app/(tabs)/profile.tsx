@@ -215,7 +215,7 @@ export default function Profile() {
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoTitle}>My Reviews</Text>
-              <Text style={styles.infoSubtitle}>Review for x items</Text>
+              <Text style={styles.infoSubtitle}>Handle your reviews</Text>
             </View>
             <Image
               style={styles.arrowIcon}
