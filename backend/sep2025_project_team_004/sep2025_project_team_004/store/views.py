@@ -71,16 +71,18 @@ class CheckoutAndCreateOrderView(APIView):
             traceback.print_exc()
             return Response({"error": str(e)}, status=500)
         
-class AdminOrderListView(APIView):
+class AdminOrderPagination(PageNumberPagination):
+    page_size = 5
+
+class AdminOrderListView(ListAPIView):
+    serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = AdminOrderPagination
 
-    def get(self, request):
-        if not request.user.role=="admin":
-            return Response({"error": "Unauthorized"}, status=403)
-
-        orders = Order.objects.all().select_related("user").prefetch_related("items")
-        serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        if self.request.user.role != "admin":
+            return Order.objects.none()
+        return Order.objects.all().select_related("user").prefetch_related("items").order_by('-created_at')
 
 
 class OrderPagination(PageNumberPagination):
