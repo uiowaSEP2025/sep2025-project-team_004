@@ -83,13 +83,16 @@ class AdminOrderListView(APIView):
         return Response(serializer.data)
 
 
-class MyOrdersView(APIView):
-    permission_classes = [IsAuthenticated]
+class OrderPagination(PageNumberPagination):
+    page_size = 5
 
-    def get(self, request):
-        orders = Order.objects.filter(user=request.user).prefetch_related("items")
-        serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data)
+class MyOrdersPaginatedView(ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = OrderPagination
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items").order_by('-created_at')
     
 class UpdateOrderStatusView(APIView):
     permission_classes = [IsAuthenticated]

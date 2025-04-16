@@ -66,40 +66,62 @@ export default function Order() {
     Processing: [],
     Canceled: [],
   });
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch orders when the component is focused
   useFocusEffect(
     useCallback(() => {
-      const fetchOrders = async () => {
-        const token = await AsyncStorage.getItem('authToken');
-        if (!token) return;
-        try {
-          const res = await fetch(`${API_BASE_URL}/api/store/orders/my/`, {
-            headers: { Authorization: `Token ${token}` },
-          });
-          const data = await res.json();
-          const categorized: { [key in OrderStatus]: any[] } = {
-            'Out for Delivery': [],
-            Processing: [],
-            Canceled: [],
-          };
-          for (const order of data) {
-            const status =
-              order.status === 'out_for_delivery'
-                ? 'Out for Delivery'
-                : order.status === 'cancelled'
-                ? 'Canceled'
-                : 'Processing';
-            categorized[status].push(order);
-          }
-          setOrdersData(categorized);
-        } catch (err) {
-          console.error("Error fetching orders:", err);
-        }
-      };
-      fetchOrders();
+      setPage(1);
+      fetchOrders(1);
     }, [])
   );
+
+  const fetchOrders = async (pageNum = 1) => {
+    const token = await AsyncStorage.getItem('authToken');
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/store/orders/my/?page=${pageNum}`, {
+        headers: { Authorization: `Token ${token}` },
+      });
+      const data = await res.json();
+      setLoading(false);
+  
+      const categorized: { [key in OrderStatus]: any[] } = {
+        'Out for Delivery': [],
+        Processing: [],
+        Canceled: [],
+      };
+  
+      const incomingOrders = data.results;
+  
+      for (const order of incomingOrders) {
+        const status =
+          order.status === 'out_for_delivery'
+            ? 'Out for Delivery'
+            : order.status === 'cancelled'
+            ? 'Canceled'
+            : 'Processing';
+        categorized[status].push(order);
+      }
+  
+      if (pageNum === 1) {
+        setOrdersData(categorized);
+      } else {
+        setOrdersData(prev => ({
+          'Out for Delivery': [...prev['Out for Delivery'], ...categorized['Out for Delivery']],
+          Processing: [...prev['Processing'], ...categorized['Processing']],
+          Canceled: [...prev['Canceled'], ...categorized['Canceled']],
+        }));
+      }
+  
+      setHasNext(!!data.next);
+    } catch (err) {
+      setLoading(false);
+      console.error("Error fetching orders:", err);
+    }
+  };
 
   // Calculate tab indicator position
   const tabContainerWidth = Dimensions.get('window').width;
@@ -224,7 +246,19 @@ export default function Order() {
         </View>
         <View style={[styles.tabIndicator, { marginLeft: indicatorLeft }]} />
       </View>
-      <ScrollView style={styles.scrollContainer} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView style={styles.scrollContainer} contentInsetAdjustmentBehavior="automatic"
+      onScroll={({ nativeEvent }) => {
+        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+        const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+      
+        if (isCloseToBottom && hasNext && !loading) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchOrders(nextPage);
+        }
+      }}
+      scrollEventThrottle={400}
+      >
         <View style={styles.contentContainer}>
           {ordersData[selectedTab].map(order => (
             <View key={order.id} style={styles.orderCard}>
@@ -275,6 +309,11 @@ export default function Order() {
               </View>
             </View>
           ))}
+          {loading && (
+      <View style={{ alignItems: 'center', marginVertical: 16 }}>
+        <Text style={{ color: '#888' }}>Loading more orders...</Text>
+      </View>
+    )}
         </View>
       </ScrollView>
       <Modal
