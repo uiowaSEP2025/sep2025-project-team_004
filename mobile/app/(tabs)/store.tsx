@@ -12,6 +12,7 @@ const API_BASE_URL =
 
 
 
+
 // Define the Product Type
 interface Product {
   id: number;

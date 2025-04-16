@@ -2,6 +2,7 @@ import React from "react";
 import { Image, StyleSheet, View } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 
+
 interface Sensor {
   id: string;
   nickname: string;

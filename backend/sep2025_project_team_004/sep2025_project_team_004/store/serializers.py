@@ -14,7 +14,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     
 class OrderItemSerializer(serializers.ModelSerializer):
-    product_id = serializers.IntegerField(write_only=True)
+    product_id = serializers.IntegerField()
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_price = serializers.DecimalField(source="product.price", read_only=True, max_digits=10, decimal_places=2)
     
@@ -56,8 +56,15 @@ class OrderSerializer(serializers.ModelSerializer):
             OrderItem.objects.create(order=order, **item)
         return order
 
+
+from rest_framework import serializers
+from .models import Review
+
+
 class ReviewSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+
     class Meta:
         model = Review
-        fields = ['id', 'product', 'rating', 'comment', 'created_at']
-        read_only_fields = ['created_at']
+        fields = ['id', 'product', 'product_name', 'rating', 'comment', 'created_at']
+        read_only_fields = ['id', 'created_at']

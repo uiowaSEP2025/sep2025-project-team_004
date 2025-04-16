@@ -208,14 +208,14 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => {
+  
             /* TODO:  My Reviews page */
-          }}
+          onPress={() => navigation.navigate("my-reviews")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoTitle}>My Reviews</Text>
-              <Text style={styles.infoSubtitle}>Review for x items</Text>
+              <Text style={styles.infoSubtitle}>Handle your reviews</Text>
             </View>
             <Image
               style={styles.arrowIcon}

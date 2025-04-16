@@ -4,6 +4,7 @@ from .serializers import ProductSerializer, OrderSerializer, ReviewSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework import status
 from .models import Order
 
@@ -29,7 +30,10 @@ class CreateOrderView(APIView):
 class ReviewCreateAPIView(generics.CreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class CheckoutAndCreateOrderView(APIView):
@@ -101,3 +105,30 @@ class UpdateOrderStatusView(APIView):
             return Response(OrderSerializer(order).data)
         except Order.DoesNotExist:
             return Response({"error": "Order not found"}, status=404)
+
+class MyReviewsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        reviews = Review.objects.filter(user=request.user).select_related("product")
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
+    
+class ReviewDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            review = Review.objects.get(id=pk, user=request.user)
+            review.delete()
+            return Response(status=204)
+        except Review.DoesNotExist:
+            return Response({"error": "Not found"}, status=404)
+        
+class ReviewUpdateView(RetrieveUpdateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
