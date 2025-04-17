@@ -4,7 +4,8 @@ from .serializers import ProductSerializer, OrderSerializer, ReviewSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, ListAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from .models import Order
 
@@ -70,25 +71,30 @@ class CheckoutAndCreateOrderView(APIView):
             traceback.print_exc()
             return Response({"error": str(e)}, status=500)
         
-class AdminOrderListView(APIView):
+class AdminOrderPagination(PageNumberPagination):
+    page_size = 5
+
+class AdminOrderListView(ListAPIView):
+    serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = AdminOrderPagination
 
-    def get(self, request):
-        if not request.user.role=="admin":
-            return Response({"error": "Unauthorized"}, status=403)
-
-        orders = Order.objects.all().select_related("user").prefetch_related("items")
-        serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        if self.request.user.role != "admin":
+            return Order.objects.none()
+        return Order.objects.all().select_related("user").prefetch_related("items").order_by('-created_at')
 
 
-class MyOrdersView(APIView):
+class OrderPagination(PageNumberPagination):
+    page_size = 5
+
+class MyOrdersPaginatedView(ListAPIView):
+    serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = OrderPagination
 
-    def get(self, request):
-        orders = Order.objects.filter(user=request.user).prefetch_related("items")
-        serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items").order_by('-created_at')
     
 class UpdateOrderStatusView(APIView):
     permission_classes = [IsAuthenticated]
@@ -105,14 +111,17 @@ class UpdateOrderStatusView(APIView):
             return Response(OrderSerializer(order).data)
         except Order.DoesNotExist:
             return Response({"error": "Order not found"}, status=404)
+        
+class ReviewPagination(PageNumberPagination):
+    page_size = 5
 
-class MyReviewsView(APIView):
+class MyReviewsPaginatedView(ListAPIView):
+    serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = ReviewPagination
 
-    def get(self, request):
-        reviews = Review.objects.filter(user=request.user).select_related("product")
-        serializer = ReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        return Review.objects.filter(user=self.request.user).order_by('-created_at')
     
 class ReviewDetailView(APIView):
     permission_classes = [IsAuthenticated]

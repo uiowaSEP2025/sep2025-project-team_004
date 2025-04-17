@@ -62,42 +62,62 @@ export default function AdminOrders() {
   const tabs: OrderStatus[] = ['Out for Delivery', 'Processing', 'Canceled'];
   const indicatorLeft = tabs.indexOf(selectedTab) * tabWidth + (tabWidth * 0.5);
 
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(true);
+  const [loading, setLoading] = useState(false);
+
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetail | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      const fetchOrders = async () => {
-        const token = await AsyncStorage.getItem('authToken');
-        if (!token) return;
-
-        const res = await fetch(`${API_BASE_URL}/api/store/orders/admin/`, {
-          headers: {
-            Authorization: `Token ${token}`,
-          },
-        });
-
-        const data = await res.json();
-        const categorized: { [key in OrderStatus]: any[] } = {
-          'Out for Delivery': [],
-          Processing: [],
-          Canceled: [],
-        };
-
-        for (const order of data) {
-          const status = order.status === 'out_for_delivery'
-            ? 'Out for Delivery'
-            : order.status === 'cancelled'
-            ? 'Canceled'
-            : 'Processing';
-          categorized[status].push(order);
-        }
-
-        setOrdersData(categorized);
-      };
-
-      fetchOrders();
+      setPage(1);
+      fetchOrders(1);
     }, [])
   );
+  
+  const fetchOrders = async (pageNum = 1) => {
+    const token = await AsyncStorage.getItem('authToken');
+    if (!token) return;
+  
+    setLoading(true);
+    const res = await fetch(`${API_BASE_URL}/api/store/orders/admin/?page=${pageNum}`, {
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+    });
+  
+    const data = await res.json();
+    setLoading(false);
+  
+    const newOrdersByStatus: Record<OrderStatus, OrderDetail[]> = {
+      'Out for Delivery': [],
+      Processing: [],
+      Canceled: [],
+    };
+  
+    for (const order of data.results || []) {
+      const status = (
+        order.status === 'out_for_delivery'
+          ? 'Out for Delivery'
+          : order.status === 'cancelled'
+          ? 'Canceled'
+          : 'Processing' ) as OrderStatus;
+      newOrdersByStatus[status].push(order);
+    }
+  
+    if (pageNum === 1) {
+      setOrdersData(newOrdersByStatus);
+    } else {
+      setOrdersData(prev => {
+        const updated = { ...prev };
+        for (const status of Object.keys(newOrdersByStatus) as OrderStatus[]) {
+          updated[status] = [...prev[status], ...newOrdersByStatus[status]];
+        }
+        return updated;
+      });
+    }
+    setHasNext(!!data.next);
+  };
 
   const handleCompleteOrder = async () => {
     if (!selectedOrderId) return;
@@ -164,7 +184,19 @@ export default function AdminOrders() {
         <View style={[styles.tabIndicator, { marginLeft: indicatorLeft }]} />
       </View>
 
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView style={styles.scrollContainer} 
+      onScroll={({ nativeEvent }) => {
+        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+        const isCloseToBottom =
+          layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+        if (isCloseToBottom && hasNext && !loading) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchOrders(nextPage);
+        }
+      }}
+      scrollEventThrottle={400}
+      >
         <View style={styles.contentContainer}>
           {(ordersData[selectedTab] || []).map(order => (
             <View key={order.id} style={styles.orderCard}>
@@ -223,6 +255,11 @@ export default function AdminOrders() {
                 </View>
             </View>
           ))}
+          {loading && (
+            <View style={{ alignItems: 'center', marginVertical: 16 }}>
+              <Text style={{ color: '#888' }}>Loading more orders...</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 

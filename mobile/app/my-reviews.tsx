@@ -32,19 +32,36 @@ export default function MyReviewsScreen() {
   const [editingReview, setEditingReview] = useState<any | null>(null);
   const [editRating, setEditRating] = useState(0);
   const [editComment, setEditComment] = useState(''); 
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { useToast } = showMessage();
 
   useEffect(() => {
-    const fetchReviews = async () => {
-      const token = await AsyncStorage.getItem('authToken');
-      const res = await fetch(`${API_BASE_URL}/api/store/reviews/my/`, {
-        headers: { Authorization: `Token ${token}` },
-      });
-      const data = await res.json();
-      setReviews(data);
-    };
-    fetchReviews();
+    fetchReviews(1);
   }, []);
+
+  const fetchReviews = async (pageNum = 1) => {
+    const token = await AsyncStorage.getItem('authToken');
+    setLoading(true);
+    const res = await fetch(`${API_BASE_URL}/api/store/reviews/my/?page=${pageNum}`, {
+      headers: { Authorization: `Token ${token}` },
+    });
+    const data = await res.json();
+    setLoading(false);
+  
+    if (pageNum === 1) {
+      setReviews(data.results);
+    } else {
+      setReviews((prev) => [...prev, ...data.results]);
+    }
+    if (data.next) {
+        setHasNext(true);
+        setPage(pageNum);
+      } else {
+        setHasNext(false);
+      }
+  };
 
   const renderStars = (rating: number, onChange?: (value: number) => void) => (
     <View style={{ flexDirection: 'row', marginVertical: 6 }}>
@@ -97,11 +114,24 @@ export default function MyReviewsScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}
+      onScroll={({ nativeEvent }) => {
+        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+        const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+      
+        if (isCloseToBottom && hasNext && !loading) {
+          fetchReviews(page + 1);
+        }
+      }}
+      scrollEventThrottle={400}
+      >
         {reviews.map((review) => (
           <View key={review.id} style={styles.card}>
             <Text style={styles.productName}>Product name: {review.product_name}</Text>
             {renderStars(review.rating)}
+            <Text style={styles.reviewDate}>
+                {new Date(review.created_at).toLocaleDateString()}
+            </Text>
             <Text style={styles.comment}>{review.comment}</Text>
             <View style={styles.buttonRow}>
               <TouchableOpacity style={styles.button}
@@ -124,6 +154,11 @@ export default function MyReviewsScreen() {
             <View style={styles.divider} />
           </View>
         ))}
+        {loading && (
+            <View style={{ alignItems: 'center', marginVertical: 16 }}>
+                <Text style={{ color: '#888' }}>Loading more reviews...</Text>
+            </View>
+            )}
       </ScrollView>
       {editModalVisible && editingReview && (
   <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -284,5 +319,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: 'center',
   },
-  
+  reviewDate: {
+    fontSize: 12,
+    color: '#667',
+    marginTop: 2,
+  },
 });
