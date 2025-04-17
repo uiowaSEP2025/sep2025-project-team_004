@@ -17,5 +17,6 @@ export type RootStackParamList = {
   "settings": undefined;
   "my-reviews": undefined;
   "admin-orders": undefined;
+  ChatDetail: { userId: number, username: string };
   // Add other routes as needed
 };

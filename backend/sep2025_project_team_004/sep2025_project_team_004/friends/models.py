@@ -43,3 +43,16 @@ class Friendship(models.Model):
 
     def __str__(self):
         return f"{self.user1} ↔ {self.user2}"
+    
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, related_name="sent_messages", on_delete=models.CASCADE)
+    recipient = models.ForeignKey(User, related_name="received_messages", on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"{self.sender.username} → {self.recipient.username}: {self.content[:30]}"

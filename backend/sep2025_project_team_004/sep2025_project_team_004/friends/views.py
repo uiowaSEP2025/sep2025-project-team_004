@@ -1,9 +1,9 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
-from .models import FriendRequest
-from .serializers import FriendRequestSerializer
+from .models import FriendRequest, Message
+from .serializers import FriendRequestSerializer, MessageSerializer
 
 User = get_user_model()
 
@@ -64,3 +64,17 @@ class FriendRequestViewSet(viewsets.ViewSet):
         """List all accepted friends."""
         friends = request.user.friends.all()
         return Response([{"id": user.id, "username": user.username} for user in friends])
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        sent = Message.objects.filter(sender=user)
+        received = Message.objects.filter(recipient=user)
+        return sent.union(received)
+
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user)

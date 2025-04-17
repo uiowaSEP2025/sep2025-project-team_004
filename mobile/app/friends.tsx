@@ -19,6 +19,8 @@ import {
   rejectFriendRequest,
 } from "@/app/api/friends";
 
+import { useRouter } from 'expo-router';
+
 const defaultPfp = require("@/assets/images/avatar-placeholder.png");
 
 // For friend requests
@@ -37,6 +39,7 @@ interface FriendUser {
 }
 
 export default function FriendRequestsScreen() {
+  const router = useRouter();
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("pending");
   const [searchTerm, setSearchTerm] = useState("");
@@ -207,6 +210,15 @@ export default function FriendRequestsScreen() {
             renderItem={({ item }) => (
               <View style={styles.friendItem}>
                 <Text style={styles.friendName}>{item.username}</Text>
+                <TouchableOpacity
+                  onPress={() => router.push({
+                    pathname: "/ChatDetail",
+                    params: { userId: item.id, username: item.username },
+                  })}
+                  style={{ backgroundColor: "#007AFF", padding: 8, borderRadius: 6 }}
+                >
+                  <Text style={{ color: "white" }}>Message</Text>
+               </TouchableOpacity>
               </View>
             )}
           />
