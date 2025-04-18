@@ -1,4 +1,3 @@
-
 from typing import ClassVar
 
 from django.contrib.auth.models import AbstractUser
@@ -35,6 +34,7 @@ class User(AbstractUser):
     address = CharField(_("Address"), blank=True, max_length=255)
     email = EmailField(_("email address"), unique=True)
     username = CharField(_("username"), unique=True, blank=False, null=False, max_length=255)
+    profile_picture = models.ImageField(_("Profile Picture"), upload_to="profile_pictures/", blank=True, null=True)
     
     friends = models.ManyToManyField("self", symmetrical=False, blank=True, related_name="friend_requests")
 

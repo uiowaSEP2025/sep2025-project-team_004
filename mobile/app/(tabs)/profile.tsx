@@ -35,7 +35,13 @@ export const unstable_settings = {
 
 export default function Profile() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [user, setUser] = useState({ first_name: "", last_name: "", email: "", role: "" });
+  const [user, setUser] = useState({ 
+    first_name: "", 
+    last_name: "", 
+    email: "", 
+    role: "",
+    profile_picture: null
+  });
   const [modalVisible, setModalVisible] = useState(false);
   const [defaultCard, setDefaultCard] = useState<any>(null);
 
@@ -136,7 +142,9 @@ export default function Profile() {
         >
           <Image
             style={styles.avatar}
-            source={require('@/assets/images/avatar-placeholder.png')}
+            source={user.profile_picture 
+              ? { uri: user.profile_picture } 
+              : require('@/assets/images/default-pfp.png')}
           />
           <View style={styles.userInfo}>
             <Text style={styles.username}>
