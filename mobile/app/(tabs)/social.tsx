@@ -30,6 +30,8 @@ export default function SocialScreen() {
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
 
   scrollY.addListener(({ value }) => {
@@ -45,6 +47,7 @@ export default function SocialScreen() {
 
       const currentUser = JSON.parse(userInfo);
       const currentUserId = currentUser.id;
+      setCurrentUserId(currentUserId);
 
       const res = await fetch(MESSAGES_URL, {
         headers: { Authorization: `Token ${token}` },
@@ -67,12 +70,12 @@ export default function SocialScreen() {
             userId: partnerId,
             username: partnerUsername,
             lastMessage: msg.content,
-            unread: 0, // Start from 0, we'll add later
+            unread: 0,
             timestamp: msg.timestamp,
           };
         }
       
-        // ✅ Count as unread only if:
+        // -  Count as unread only if:
         // - message was received (not sent)
         // - and message is not marked as read
         if (!isSentByMe && !msg.read) {
@@ -83,7 +86,7 @@ export default function SocialScreen() {
       const sortedChats = Object.values(chatMap).sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
-
+      setMessages(messages);
       setChats(sortedChats);
     } catch (err) {
       console.error("❌ Failed to load chats", err);
@@ -145,10 +148,22 @@ export default function SocialScreen() {
           <TouchableOpacity
             key={chat.userId}
             style={styles.chatItem}
-            onPress={() => router.push({
-              pathname: "/ChatDetail",
-              params: { userId: chat.userId, username: chat.username },
-            })}
+            onPress={() => {
+              const filteredMessages = messages.filter(
+                (msg: any) =>
+                  (msg.sender === chat.userId && msg.recipient === currentUserId) ||
+                  (msg.sender === currentUserId && msg.recipient === chat.userId)
+              );
+            
+              router.push({
+                pathname: "/ChatDetail",
+                params: {
+                  userId: chat.userId,
+                  username: chat.username,
+                  messages: JSON.stringify(filteredMessages),
+                },
+              });
+            }}
           >
             <Image
               source={require("../../assets/images/avatar-placeholder.png")}

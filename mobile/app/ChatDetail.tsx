@@ -9,68 +9,92 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  InteractionManager,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getMessages, sendMessage, markMessagesAsRead } from "./api/messages";
+import { getMessagesWithUser, sendMessage, markMessagesAsRead } from "./api/messages";
 import { useRouter } from "expo-router";
-
 
 export default function ChatDetail() {
   const router = useRouter();
   const route = useRoute();
-  const { userId, username } = route.params as { userId: number; username: string };
-  const [messages, setMessages] = useState<any[]>([]);
+  const { userId, username, messages: passedMessages } = route.params as {
+    userId: number;
+    username: string;
+    messages: string;
+  };
+  
+  const [messages, setMessages] = useState<any[]>(
+    JSON.parse(passedMessages)
+      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      .reverse()
+  );
   const [input, setInput] = useState("");
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [lastSentId, setLastSentId] = useState<string | number | null>(null);
+  const [sendingStatus, setSendingStatus] = useState<"sending" | "sent" | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadMessages = async (currentId: number, chattingWithId: number) => {
+  const loadMessages = async (chattingWithId: number) => {
     try {
-      const allMessages = await getMessages();
-  
-      const chat = allMessages.filter((msg: any) => {
-        const senderId = Number(msg.sender);
-        const recipientId = Number(msg.recipient);
-        const currentIdNum = Number(currentId);
-        const chattingWithNum = Number(chattingWithId);
-      
-        const match =
-          (senderId === chattingWithNum && recipientId === currentIdNum) ||
-          (senderId === currentIdNum && recipientId === chattingWithNum);
-      
-        return match;
-      });
-  
-      setMessages(chat.reverse());
+      const chat = await getMessagesWithUser(chattingWithId);
+      const sorted = chat.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      setMessages(sorted.reverse());
     } catch (err) {
       console.error("Failed to fetch messages:", err);
     }
   };
 
-
   const handleSend = async () => {
     if (!input.trim() || currentUserId === null) return;
-    await sendMessage(userId, input);
+  
+    const tempId = `temp-${Date.now()}`;
+    const newMessage = {
+      id: tempId,
+      sender: currentUserId,
+      recipient: userId,
+      content: input,
+      timestamp: new Date().toISOString(),
+    };
+  
+    setMessages((prev) => [newMessage, ...prev]);
+    setLastSentId(tempId);
+    setSendingStatus("sending");
     setInput("");
-    await loadMessages(currentUserId, userId);
+  
+    try {
+      const savedMessage = await sendMessage(userId, input);
+  
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tempId ? savedMessage : msg
+        )
+      );
+      setLastSentId(savedMessage.id);
+      setSendingStatus("sent");
+    } catch (err) {
+      console.error("Failed to send message:", err);
+      setSendingStatus(null);
+    }
   };
 
   useEffect(() => {
-    const init = async () => {
+    setLoading(false)
+    const fetchData = async () => {
       const userInfo = await AsyncStorage.getItem("userInfo");
-  
       if (userInfo) {
         const user = JSON.parse(userInfo);
         const id = Number(user.id);
         setCurrentUserId(id);
-        await loadMessages(id, userId);
-        await markMessagesAsRead(userId);
-      }
   
-      setLoading(false);
+        // Don't wait for these to finish before rendering
+        loadMessages(userId);
+        markMessagesAsRead(userId);
+      }
     };
-    init();
+  
+    fetchData(); // Fire immediately
   }, []);
 
   if (loading || currentUserId === null) {
@@ -87,17 +111,18 @@ export default function ChatDetail() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
     >
-        <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                <Text style={styles.backText}>←</Text>
-            </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
 
-            <View style={styles.headerCenter}>
-             <Text style={styles.headerTitle}>{username}</Text>
-             </View>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>{username}</Text>
+        </View>
 
-             <View style={styles.rightSpacer} />
-            </View>
+        <View style={styles.rightSpacer} />
+      </View>
+
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id.toString()}
@@ -108,23 +133,33 @@ export default function ChatDetail() {
         }
         renderItem={({ item }) => {
           const isMe = item.sender === currentUserId;
+          const isLastSent = item.id === lastSentId;
+        
           return (
-            <View style={isMe ? styles.myMessage : styles.theirMessage}>
-              <Text style={[styles.messageText, isMe ? { color: "#fff" } : { color: "#000" }]}>
-                {item.content}
-              </Text>
+            <View style={{ alignSelf: isMe ? "flex-end" : "flex-start" }}>
+              <View style={isMe ? styles.myMessage : styles.theirMessage}>
+                <Text style={[styles.messageText, isMe ? { color: "#fff" } : { color: "#000" }]}>
+                  {item.content}
+               </Text>
+             </View>
+             {isMe && isLastSent && sendingStatus && (
+                <Text style={styles.statusText}>
+                  {sendingStatus === "sending" ? "Sending..." : "Sent"}
+                </Text>
+              )}
             </View>
           );
         }}
         contentContainerStyle={{ padding: 10 }}
         inverted
       />
+
       <View style={styles.inputContainer}>
         <TextInput
           value={input}
           onChangeText={setInput}
           placeholder={`Message ${username}`}
-          placeholderTextColor={'#667'}
+          placeholderTextColor={"#667"}
           style={styles.input}
         />
         <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
@@ -148,26 +183,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#ecebeb",
   },
-  
   backButton: {
     width: 40,
     justifyContent: "center",
     alignItems: "flex-start",
-    marginTop: 96,
+    marginTop: 50,
   },
-  
   backText: {
     fontSize: 24,
     color: "#007AFF",
   },
-  
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
     flex: 1,
     marginTop: 50,
-  },  
+  },
   inputContainer: {
     flexDirection: "row",
     padding: 10,
@@ -214,10 +246,16 @@ const styles = StyleSheet.create({
   headerCenter: {
     flex: 1,
     alignItems: "center",
-    marginTop: 50,
+    marginTop: 30,
   },
   rightSpacer: {
     width: 40,
     marginTop: 50,
-  },  
+  },
+  statusText: {
+    fontSize: 10,
+    color: "#667",
+    marginTop: 4,
+    textAlign: "right",
+  },
 });

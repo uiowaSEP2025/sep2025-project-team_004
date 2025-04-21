@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from .models import FriendRequest, Message
 from .serializers import FriendRequestSerializer, MessageSerializer
 from rest_framework.decorators import action
+from django.db import models
 
 User = get_user_model()
 
@@ -93,3 +94,18 @@ class MessageViewSet(viewsets.ModelViewSet):
         )
         messages.update(read=True)
         return Response({"message": "Messages marked as read"})
+    
+    @action(detail=False, methods=["get"])
+    def with_user(self, request):
+        other_user_id = request.query_params.get("user_id")
+        if not other_user_id:
+            return Response({"error": "Missing user_id"}, status=400)
+
+        user = request.user
+        messages = Message.objects.filter(
+            models.Q(sender=user, recipient_id=other_user_id) |
+            models.Q(sender_id=other_user_id, recipient=user)
+        ).order_by("-timestamp")
+
+        serializer = self.get_serializer(messages, many=True)
+        return Response(serializer.data)

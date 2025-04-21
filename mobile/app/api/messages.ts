@@ -62,3 +62,17 @@ export const markMessagesAsRead = async (senderId: number) => {
       throw new Error("Failed to mark messages as read");
     }
   };
+
+  export const getMessagesWithUser = async (userId: number) => {
+    const token = await AsyncStorage.getItem("authToken");
+    if (!token) throw new Error("User not authenticated");
+  
+    const response = await fetch(`${API_URL}with_user/?user_id=${userId}`, {
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+    });
+  
+    if (!response.ok) throw new Error("Failed to fetch messages");
+    return await response.json();
+  };
