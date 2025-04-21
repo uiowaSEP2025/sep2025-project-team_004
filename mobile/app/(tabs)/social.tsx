@@ -188,7 +188,7 @@ export default function SocialScreen() {
       </Animated.ScrollView>
 
       {/* Floating Compose Button */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push({ pathname: "/friends", params: { initialTab: "all" } })}>
         <MaterialIcons name="edit" size={24} color="white" />
         {isExpanded && <Text style={styles.fabText}>Compose</Text>}
       </TouchableOpacity>
