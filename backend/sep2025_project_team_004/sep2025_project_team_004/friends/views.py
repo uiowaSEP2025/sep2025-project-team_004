@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from .models import FriendRequest, Message
 from .serializers import FriendRequestSerializer, MessageSerializer
+from rest_framework.decorators import action
 
 User = get_user_model()
 
@@ -78,3 +79,17 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
+
+    @action(detail=False, methods=["post"])
+    def mark_as_read(self, request):
+        sender_id = request.data.get("sender_id")
+        if not sender_id:
+            return Response({"error": "Missing sender_id"}, status=400)
+
+        messages = Message.objects.filter(
+            sender_id=sender_id,
+            recipient=request.user,
+            read=False
+        )
+        messages.update(read=True)
+        return Response({"message": "Messages marked as read"})

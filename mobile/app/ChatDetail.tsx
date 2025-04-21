@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getMessages, sendMessage } from "./api/messages";
+import { getMessages, sendMessage, markMessagesAsRead } from "./api/messages";
 import { useRouter } from "expo-router";
 
 
@@ -48,6 +48,7 @@ export default function ChatDetail() {
     }
   };
 
+
   const handleSend = async () => {
     if (!input.trim() || currentUserId === null) return;
     await sendMessage(userId, input);
@@ -64,6 +65,7 @@ export default function ChatDetail() {
         const id = Number(user.id);
         setCurrentUserId(id);
         await loadMessages(id, userId);
+        await markMessagesAsRead(userId);
       }
   
       setLoading(false);
@@ -87,10 +89,14 @@ export default function ChatDetail() {
     >
         <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-             <Text style={styles.backText}>←</Text>
+                <Text style={styles.backText}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{username}</Text>
-            <View style={{ width: 40 }} /> {/* Spacer to balance the back button */}
+
+            <View style={styles.headerCenter}>
+             <Text style={styles.headerTitle}>{username}</Text>
+             </View>
+
+             <View style={styles.rightSpacer} />
             </View>
       <FlatList
         data={messages}
@@ -118,6 +124,7 @@ export default function ChatDetail() {
           value={input}
           onChangeText={setInput}
           placeholder={`Message ${username}`}
+          placeholderTextColor={'#667'}
           style={styles.input}
         />
         <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
@@ -132,7 +139,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f9f9f9" },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
-    height: 150,
+    height: 130,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -146,7 +153,7 @@ const styles = StyleSheet.create({
     width: 40,
     justifyContent: "center",
     alignItems: "flex-start",
-    marginTop: 50,
+    marginTop: 96,
   },
   
   backText: {
@@ -204,4 +211,13 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 16,
   },
+  headerCenter: {
+    flex: 1,
+    alignItems: "center",
+    marginTop: 50,
+  },
+  rightSpacer: {
+    width: 40,
+    marginTop: 50,
+  },  
 });
