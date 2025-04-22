@@ -7,6 +7,7 @@ from pathlib import Path
 import environ
 import os
 import logging
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # scheduler_backend/
@@ -109,7 +110,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    #"scheduler_backend.users",
+    "scheduler_backend.users",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -128,7 +129,7 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
-# AUTH_USER_MODEL = "users.User"
+AUTH_USER_MODEL = "users.User"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-redirect-url
 LOGIN_REDIRECT_URL = "users:redirect"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-url
@@ -330,3 +331,44 @@ SPECTACULAR_SETTINGS = {
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+# OpenAI API Configuration
+OPENAI_API_KEY = env("OPENAI_API_KEY", default=None)
+if OPENAI_API_KEY:
+    import openai
+    openai.api_key = OPENAI_API_KEY
+
+CELERY_BEAT_SCHEDULE = {
+    "refresh-all-sensors-every-20-mins": {
+        "task": "scheduler_backend.celery.tasks.refresh_all_sensors",
+        "schedule": 20 * 60,
+    },
+    "generate-daily-summaries": {
+        "task": "scheduler_backend.celery.tasks.generate_all_sensor_summaries",
+        #"schedule": crontab(hour=4, minute=0),  # UTC 4:00 AM (US Eastern 12:00 AM)
+        "schedule": 120,  # every 2 minutes for testing
+    }
+}
+
+# Redis and Celery Configuration
+CELERY_BROKER_POOL_LIMIT = 10 
+CELERY_BROKER_CONNECTION_TIMEOUT = 10 
+CELERY_BROKER_CONNECTION_RETRY = True 
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 3 
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'max_connections': 10,  
+    'socket_timeout': 15,   
+    'socket_connect_timeout': 10, 
+}
+CELERY_REDIS_MAX_CONNECTIONS = 10 
+CELERY_BROKER_HEARTBEAT = 30 
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
+
+CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {
+    'max_connections': 10,
+    'socket_timeout': 15,
+    'retry_on_timeout': True,
+}
+
+CELERY_TASK_RESULT_EXPIRES = 86400  # 24hr expiration
+CELERY_RESULT_EXPIRES = 86400
