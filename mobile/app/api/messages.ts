@@ -8,7 +8,7 @@ const API_BASE_URL =
 
 const API_URL = `${API_BASE_URL}/api/friends/messages/`;
 
-export const sendMessage = async (recipientId: number, content: string) => {
+export const sendMessage = async (recipientId: number, content: string, conversationId: string) => {
   const token = await AsyncStorage.getItem("authToken");
   if (!token) throw new Error("User not authenticated");
 
@@ -18,7 +18,7 @@ export const sendMessage = async (recipientId: number, content: string) => {
       Authorization: `Token ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ recipient: recipientId, content }),
+    body: JSON.stringify({ recipient: recipientId, content, conversation_id: conversationId }),
   });
 
   if (!response.ok) {
@@ -43,7 +43,7 @@ export const getMessages = async () => {
   return await response.json();
 };
 
-export const markMessagesAsRead = async (senderId: number) => {
+export const markMessagesAsRead = async (senderId: number, conversationId: string) => {
     const token = await AsyncStorage.getItem("authToken");
     if (!token) throw new Error("User not authenticated");
   
@@ -53,7 +53,7 @@ export const markMessagesAsRead = async (senderId: number) => {
         Authorization: `Token ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ sender_id: senderId }),
+      body: JSON.stringify({ sender_id: senderId, conversation_id: conversationId }),
     });
   
     if (!response.ok) {
@@ -74,5 +74,19 @@ export const markMessagesAsRead = async (senderId: number) => {
     });
   
     if (!response.ok) throw new Error("Failed to fetch messages");
+    return await response.json();
+  };
+
+  export const getMessagesByConversation = async (conversationId: string, page: number = 1) => {
+    const token = await AsyncStorage.getItem("authToken");
+    if (!token) throw new Error("User not authenticated");
+  
+    const response = await fetch(`${API_URL}conversation/?conversation_id=${conversationId}&page=${page}`, {
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+    });
+  
+    if (!response.ok) throw new Error("Failed to fetch paginated conversation messages");
     return await response.json();
   };

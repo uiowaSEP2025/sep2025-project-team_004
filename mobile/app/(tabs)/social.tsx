@@ -32,36 +32,51 @@ export default function SocialScreen() {
   const [isExpanded, setIsExpanded] = useState(true);
   const [messages, setMessages] = useState<any[]>([]);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
 
   scrollY.addListener(({ value }) => {
     setIsExpanded(value < 10);
   });
 
-  const loadChats = async () => {
+  const loadChats = async (reset = false) => {
+    if (isFetching || (!hasNextPage && !reset)) return;
+    setIsFetching(true);
+  
     try {
       const token = await AsyncStorage.getItem("authToken");
       const userInfo = await AsyncStorage.getItem("userInfo");
-
+  
       if (!token || !userInfo) return;
-
+  
       const currentUser = JSON.parse(userInfo);
       const currentUserId = currentUser.id;
       setCurrentUserId(currentUserId);
-
-      const res = await fetch(MESSAGES_URL, {
+  
+      const currentPage = reset ? 1 : page;
+  
+      const res = await fetch(`${MESSAGES_URL}recent_conversations/?page=${currentPage}`, {
         headers: { Authorization: `Token ${token}` },
       });
-
-      const messages = await res.json();
-
+  
+      const data = await res.json(); // contains .results and .next
+      const newConvos = data.results;
+  
+      // Flatten all messages into one array
+      const allMessages = newConvos.flatMap((c: any) => c.messages);
+  
+      const updatedMessages = reset ? allMessages : [...messages, ...allMessages];
+  
       const chatMap: { [key: string]: any } = {};
-
-      messages.forEach((msg: any) => {
+      updatedMessages.forEach((msg: any) => {
         const isSentByMe = msg.sender === currentUserId;
         const partnerId = isSentByMe ? msg.recipient : msg.sender;
-        const partnerUsername = isSentByMe ? msg.recipient_username ?? "Unknown" : msg.sender_username;
-      
+        const partnerUsername = isSentByMe
+          ? msg.recipient_username ?? "Unknown"
+          : msg.sender_username;
+  
         if (
           !chatMap[partnerId] ||
           new Date(msg.timestamp) > new Date(chatMap[partnerId].timestamp)
@@ -72,32 +87,41 @@ export default function SocialScreen() {
             lastMessage: msg.content,
             unread: 0,
             timestamp: msg.timestamp,
+            conversation_id: msg.conversation_id,
           };
         }
-      
-        // -  Count as unread only if:
-        // - message was received (not sent)
-        // - and message is not marked as read
+  
         if (!isSentByMe && !msg.read) {
           chatMap[partnerId].unread += 1;
         }
       });
-
+  
       const sortedChats = Object.values(chatMap).sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
-      setMessages(messages);
+  
+      setMessages(updatedMessages);
       setChats(sortedChats);
+      setHasNextPage(!!data.next);
+  
+      if (!reset && data.next) {
+        setPage((prev) => prev + 1);
+      } else if (reset) {
+        setPage(2); // Next page will be 2
+      }
     } catch (err) {
       console.error("❌ Failed to load chats", err);
     } finally {
+      setIsFetching(false);
       setLoading(false);
     }
   };
 
   useFocusEffect(
     useCallback(() => {
-      loadChats();
+
+        loadChats(true);
+
     }, [])
   );
 
@@ -137,13 +161,20 @@ export default function SocialScreen() {
       </View>
 
       {/* Chat List */}
-      <Animated.ScrollView
-        contentContainerStyle={styles.chatList}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-      >
+      <ScrollView
+        style={styles.chatList}
+        contentInsetAdjustmentBehavior="automatic"
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isCloseToBottom =
+            layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+
+          if (isCloseToBottom && hasNextPage && !isFetching) {
+            loadChats();
+            }
+          }}
+          scrollEventThrottle={400}
+        >
         {chats.map((chat) => (
           <TouchableOpacity
             key={chat.userId}
@@ -154,12 +185,13 @@ export default function SocialScreen() {
                   (msg.sender === chat.userId && msg.recipient === currentUserId) ||
                   (msg.sender === currentUserId && msg.recipient === chat.userId)
               );
-            
+              console.log("📬 Navigating to ChatDetail with conversation_id:", chat.conversation_id);
               router.push({
                 pathname: "/ChatDetail",
                 params: {
                   userId: chat.userId,
                   username: chat.username,
+                  conversationId: chat.conversation_id,
                   messages: JSON.stringify(filteredMessages),
                 },
               });
@@ -185,7 +217,12 @@ export default function SocialScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </Animated.ScrollView>
+        {isFetching && (
+          <View style={{ alignItems: "center", marginVertical: 16 }}>
+            <Text style={{ color: "#888" }}>Loading more conversations...</Text>
+          </View>
+        )}
+      </ScrollView>
 
       {/* Floating Compose Button */}
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push({ pathname: "/friends", params: { initialTab: "all" } })}>

@@ -13,15 +13,16 @@ import {
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getMessagesWithUser, sendMessage, markMessagesAsRead } from "./api/messages";
+import { getMessagesByConversation, sendMessage, markMessagesAsRead } from "./api/messages";
 import { useRouter } from "expo-router";
 
 export default function ChatDetail() {
   const router = useRouter();
   const route = useRoute();
-  const { userId, username, messages: passedMessages } = route.params as {
+  const { userId, username, conversationId, messages: passedMessages } = route.params as {
     userId: number;
     username: string;
+    conversationId: string;
     messages: string;
   };
   
@@ -31,18 +32,52 @@ export default function ChatDetail() {
       .reverse()
   );
   const [input, setInput] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [lastSentId, setLastSentId] = useState<string | number | null>(null);
   const [sendingStatus, setSendingStatus] = useState<"sending" | "sent" | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadMessages = async (chattingWithId: number) => {
+  const loadMessages = async (pageNum = 1, reset = false) => {
+    if (isFetching || (!hasNextPage && !reset)) return;
+    setIsFetching(true);
+
+    console.log(`📡 Loading page ${pageNum}, reset=${reset}`);
+  
     try {
-      const chat = await getMessagesWithUser(chattingWithId);
-      const sorted = chat.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      setMessages(sorted.reverse());
+      const data = await getMessagesByConversation(conversationId, pageNum);
+      console.log("🧾 New messages (raw):", data.results.map((m: any) => m.timestamp));
+      const newMessages = data.results.sort(
+        (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+  
+      if (reset) {
+        console.log("🔁 Resetting messages");
+        setMessages(newMessages.reverse());
+        setPage(2);
+      } else {
+        console.log("📥 Appending messages at top");
+        setMessages((prev) => {
+          const combined = reset ? newMessages.reverse() : [...prev, ...newMessages.reverse()];
+        
+          // Deduplicate by ID
+          const uniqueMap = new Map();
+          for (const msg of combined) {
+            uniqueMap.set(msg.id, msg);
+          }
+        
+          return Array.from(uniqueMap.values());
+        });
+        if (data.next) setPage((prev) => prev + 1);
+      }
+  
+      setHasNextPage(!!data.next);
     } catch (err) {
       console.error("Failed to fetch messages:", err);
+    } finally {
+      setIsFetching(false);
     }
   };
 
@@ -64,7 +99,7 @@ export default function ChatDetail() {
     setInput("");
   
     try {
-      const savedMessage = await sendMessage(userId, input);
+      const savedMessage = await sendMessage(userId, input, conversationId);
   
       setMessages((prev) =>
         prev.map((msg) =>
@@ -81,6 +116,7 @@ export default function ChatDetail() {
 
   useEffect(() => {
     setLoading(false)
+    console.log("📨 conversationId passed to ChatDetail:", conversationId);
     const fetchData = async () => {
       const userInfo = await AsyncStorage.getItem("userInfo");
       if (userInfo) {
@@ -88,9 +124,11 @@ export default function ChatDetail() {
         const id = Number(user.id);
         setCurrentUserId(id);
   
-        // Don't wait for these to finish before rendering
-        loadMessages(userId);
-        markMessagesAsRead(userId);
+        if (conversationId && conversationId !== "undefined") {
+          await loadMessages(1, true); 
+          await loadMessages(2, false); 
+        }
+        await markMessagesAsRead(userId, conversationId);
       }
     };
   
@@ -125,15 +163,28 @@ export default function ChatDetail() {
 
       <FlatList
         data={messages}
-        keyExtractor={(item) => item.id.toString()}
+        inverted
+        keyExtractor={(item) => item.id?.toString() ?? `temp-${item.timestamp}`}
         ListEmptyComponent={
           <Text style={{ textAlign: "center", marginTop: 20 }}>
             No messages found.
           </Text>
         }
-        renderItem={({ item }) => {
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset } = nativeEvent;
+          const scrollY = contentOffset.y;
+        
+          if (scrollY < 100 && hasNextPage && !isFetching) {
+            console.log("📡 Manually triggered loadMessages at top | page =", page);
+            loadMessages(page);
+          }
+        }}
+        scrollEventThrottle={100}
+        renderItem={({ item, index }) => {
           const isMe = item.sender === currentUserId;
           const isLastSent = item.id === lastSentId;
+          const timestamp = new Date(item.timestamp).toISOString();
+          console.log(`🧷 Render item ${index}: ${timestamp}`);
         
           return (
             <View style={{ alignSelf: isMe ? "flex-end" : "flex-start" }}>
@@ -151,7 +202,10 @@ export default function ChatDetail() {
           );
         }}
         contentContainerStyle={{ padding: 10 }}
-        inverted
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 1,
+        }}
       />
 
       <View style={styles.inputContainer}>

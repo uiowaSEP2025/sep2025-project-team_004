@@ -4,8 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from .models import FriendRequest, Message
 from .serializers import FriendRequestSerializer, MessageSerializer
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from django.db import models
+from django.db.models import Q
+import uuid
 
 User = get_user_model()
 
@@ -68,9 +71,16 @@ class FriendRequestViewSet(viewsets.ViewSet):
         return Response([{"id": user.id, "username": user.username} for user in friends])
 
 
+class ConversationPagination(PageNumberPagination):
+    page_size = 5
+
+class MessagePagination(PageNumberPagination):
+    page_size = 5
+
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = ConversationPagination
 
     def get_queryset(self):
         user = self.request.user
@@ -79,33 +89,83 @@ class MessageViewSet(viewsets.ModelViewSet):
         return sent.union(received)
 
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
+        sender = self.request.user
+        recipient_id = self.request.data.get("recipient")
+        recipient = User.objects.get(id=recipient_id)
+
+        # Sort user IDs to always generate the same conversation ID for a pair
+        ids = sorted([str(sender.id), str(recipient.id)])
+        convo_id = uuid.uuid5(uuid.NAMESPACE_DNS, "-".join(ids))
+
+        serializer.save(sender=sender, conversation_id=convo_id)
 
     @action(detail=False, methods=["post"])
     def mark_as_read(self, request):
         sender_id = request.data.get("sender_id")
-        if not sender_id:
-            return Response({"error": "Missing sender_id"}, status=400)
+        conversation_id = request.data.get("conversation_id")
+        current_user = request.user
+
+        if not sender_id or not conversation_id:
+            return Response({"error": "Missing sender_id or conversation_id"}, status=400)
 
         messages = Message.objects.filter(
             sender_id=sender_id,
-            recipient=request.user,
+            recipient=current_user,
+            conversation_id=conversation_id,
             read=False
         )
-        messages.update(read=True)
-        return Response({"message": "Messages marked as read"})
+
+        updated_count = messages.update(read=True)
+        return Response({"message": f"{updated_count} messages marked as read"})
     
     @action(detail=False, methods=["get"])
-    def with_user(self, request):
-        other_user_id = request.query_params.get("user_id")
-        if not other_user_id:
-            return Response({"error": "Missing user_id"}, status=400)
+    def conversation(self, request):
+        conversation_id = request.query_params.get("conversation_id")
+        try:
+            conversation_uuid = uuid.UUID(conversation_id)
+        except (ValueError, TypeError):
+            return Response({"error": "Invalid conversation_id"}, status=400)
 
+        messages = Message.objects.filter(conversation_id=conversation_uuid).order_by("-timestamp")
+        paginator = MessagePagination()
+        page = paginator.paginate_queryset(messages, request)
+        serializer = self.get_serializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+    
+    @action(detail=False, methods=["get"])
+    def recent_conversations(self, request):
         user = request.user
-        messages = Message.objects.filter(
-            models.Q(sender=user, recipient_id=other_user_id) |
-            models.Q(sender_id=other_user_id, recipient=user)
-        ).order_by("-timestamp")
 
-        serializer = self.get_serializer(messages, many=True)
-        return Response(serializer.data)
+    # All messages sent or received
+        messages = Message.objects.filter(Q(sender=user) | Q(recipient=user)).distinct()
+
+    # Get latest message per conversation_id
+        latest_by_convo = {}
+        for msg in messages:
+            convo_id = msg.conversation_id
+            if convo_id not in latest_by_convo or msg.timestamp > latest_by_convo[convo_id].timestamp:
+                latest_by_convo[convo_id] = msg
+
+    # Sort by most recent message
+        sorted_msgs = sorted(latest_by_convo.values(), key=lambda m: m.timestamp, reverse=True)
+
+    # Paginate
+        paginator = ConversationPagination()
+        paginated = paginator.paginate_queryset(sorted_msgs, request)
+
+    # Fetch the latest 5 messages from each conversation
+        result = []
+        for message in paginated:
+            convo_id = message.conversation_id
+            messages_in_convo = Message.objects.filter(
+             conversation_id=convo_id
+            ).order_by("-timestamp")[:5]
+
+            partner = message.recipient if message.sender == user else message.sender
+            result.append({
+                "partner_id": partner.id,
+                "partner_username": partner.username,
+                "messages": MessageSerializer(messages_in_convo, many=True).data
+            })
+
+        return paginator.get_paginated_response(result)

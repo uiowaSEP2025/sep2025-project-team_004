@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+import uuid
 
 User = get_user_model()
 
@@ -51,6 +52,7 @@ class Message(models.Model):
     content = models.TextField()
     read = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
+    conversation_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
 
     class Meta:
         ordering = ['timestamp']
