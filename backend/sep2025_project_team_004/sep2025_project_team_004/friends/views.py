@@ -2,12 +2,13 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
-from .models import FriendRequest, Message
+from .models import FriendRequest, Message, Friendship
 from .serializers import FriendRequestSerializer, MessageSerializer
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Max, Subquery, OuterRef
+from collections import defaultdict
 import uuid
 
 User = get_user_model()
@@ -38,7 +39,20 @@ class FriendRequestViewSet(viewsets.ViewSet):
             return Response({"error": "Friend request not found"}, status=status.HTTP_404_NOT_FOUND)
 
         # Accept the request (updates status and performs any other logic)
-        friend_request.accept()
+        friend_request.status = 'accepted'
+        friend_request.save()
+
+# Generate a consistent conversation_id using UUIDv5
+        ids = sorted([str(friend_request.from_user.id), str(friend_request.to_user.id)])
+        convo_id = uuid.uuid5(uuid.NAMESPACE_DNS, "-".join(ids))
+
+# Create the friendship with the conversation_id
+        from .models import Friendship  # If not already imported
+        Friendship.objects.create(
+            user1=friend_request.from_user,
+            user2=friend_request.to_user,
+            conversation_id=convo_id
+        )
         
         # Update the ManyToMany field on both users
         request.user.friends.add(friend_request.from_user)
@@ -66,16 +80,29 @@ class FriendRequestViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def list_friends(self, request):
-        """List all accepted friends."""
-        friends = request.user.friends.all()
-        return Response([{"id": user.id, "username": user.username} for user in friends])
+        """List all accepted friends with conversation_id."""
+        user = request.user
+
+    # Get friendships where the user is either user1 or user2
+        friendships = Friendship.objects.filter(Q(user1=user) | Q(user2=user))
+
+        result = []
+        for friendship in friendships:
+            friend = friendship.user2 if friendship.user1 == user else friendship.user1
+            result.append({
+                "id": friend.id,
+                "username": friend.username,
+                "conversation_id": str(friendship.conversation_id)
+            })
+
+        return Response(result)
 
 
 class ConversationPagination(PageNumberPagination):
-    page_size = 5
+    page_size = 10
 
 class MessagePagination(PageNumberPagination):
-    page_size = 5
+    page_size = 20
 
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
@@ -92,10 +119,13 @@ class MessageViewSet(viewsets.ModelViewSet):
         sender = self.request.user
         recipient_id = self.request.data.get("recipient")
         recipient = User.objects.get(id=recipient_id)
+        provided_convo_id = self.request.data.get("conversation_id")
 
-        # Sort user IDs to always generate the same conversation ID for a pair
-        ids = sorted([str(sender.id), str(recipient.id)])
-        convo_id = uuid.uuid5(uuid.NAMESPACE_DNS, "-".join(ids))
+        if provided_convo_id:
+            convo_id = uuid.UUID(provided_convo_id)
+        else:
+            ids = sorted([str(sender.id), str(recipient.id)])
+            convo_id = uuid.uuid5(uuid.NAMESPACE_DNS, "-".join(ids))
 
         serializer.save(sender=sender, conversation_id=convo_id)
 
@@ -136,36 +166,40 @@ class MessageViewSet(viewsets.ModelViewSet):
     def recent_conversations(self, request):
         user = request.user
 
-    # All messages sent or received
-        messages = Message.objects.filter(Q(sender=user) | Q(recipient=user)).distinct()
+        latest_per_convo = (
+            Message.objects
+            .filter(Q(sender=user) | Q(recipient=user))
+            .values("conversation_id")
+            .annotate(latest_time=Max("timestamp"))
+            .order_by("-latest_time")
+        )
 
-    # Get latest message per conversation_id
-        latest_by_convo = {}
-        for msg in messages:
-            convo_id = msg.conversation_id
-            if convo_id not in latest_by_convo or msg.timestamp > latest_by_convo[convo_id].timestamp:
-                latest_by_convo[convo_id] = msg
+        latest_messages = Message.objects.filter(
+            conversation_id__in=Subquery(latest_per_convo.values("conversation_id")),
+            timestamp__in=Subquery(latest_per_convo.values("latest_time")),
+        ).select_related("sender", "recipient")
 
-    # Sort by most recent message
-        sorted_msgs = sorted(latest_by_convo.values(), key=lambda m: m.timestamp, reverse=True)
-
-    # Paginate
         paginator = ConversationPagination()
-        paginated = paginator.paginate_queryset(sorted_msgs, request)
+        paginated = paginator.paginate_queryset(latest_messages, request)
 
-    # Fetch the latest 5 messages from each conversation
+        convo_ids = [msg.conversation_id for msg in paginated]
+        all_messages = Message.objects.filter(
+            conversation_id__in=convo_ids
+        ).select_related("sender", "recipient").order_by("-timestamp")
+
+        convo_map = defaultdict(list)
+        for msg in all_messages:
+            if len(convo_map[msg.conversation_id]) < 20:
+                convo_map[msg.conversation_id].append(msg)
+
         result = []
-        for message in paginated:
-            convo_id = message.conversation_id
-            messages_in_convo = Message.objects.filter(
-             conversation_id=convo_id
-            ).order_by("-timestamp")[:5]
-
-            partner = message.recipient if message.sender == user else message.sender
+        for msg in paginated:
+            convo_id = msg.conversation_id
+            partner = msg.recipient if msg.sender == user else msg.sender
             result.append({
                 "partner_id": partner.id,
                 "partner_username": partner.username,
-                "messages": MessageSerializer(messages_in_convo, many=True).data
+                "messages": MessageSerializer(convo_map[convo_id], many=True).data
             })
 
         return paginator.get_paginated_response(result)

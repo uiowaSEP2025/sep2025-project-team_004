@@ -43,26 +43,20 @@ export default function ChatDetail() {
   const loadMessages = async (pageNum = 1, reset = false) => {
     if (isFetching || (!hasNextPage && !reset)) return;
     setIsFetching(true);
-
-    console.log(`📡 Loading page ${pageNum}, reset=${reset}`);
   
     try {
       const data = await getMessagesByConversation(conversationId, pageNum);
-      console.log("🧾 New messages (raw):", data.results.map((m: any) => m.timestamp));
       const newMessages = data.results.sort(
         (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
   
       if (reset) {
-        console.log("🔁 Resetting messages");
         setMessages(newMessages.reverse());
         setPage(2);
       } else {
-        console.log("📥 Appending messages at top");
         setMessages((prev) => {
           const combined = reset ? newMessages.reverse() : [...prev, ...newMessages.reverse()];
         
-          // Deduplicate by ID
           const uniqueMap = new Map();
           for (const msg of combined) {
             uniqueMap.set(msg.id, msg);
@@ -116,7 +110,6 @@ export default function ChatDetail() {
 
   useEffect(() => {
     setLoading(false)
-    console.log("📨 conversationId passed to ChatDetail:", conversationId);
     const fetchData = async () => {
       const userInfo = await AsyncStorage.getItem("userInfo");
       if (userInfo) {
@@ -126,7 +119,6 @@ export default function ChatDetail() {
   
         if (conversationId && conversationId !== "undefined") {
           await loadMessages(1, true); 
-          await loadMessages(2, false); 
         }
         await markMessagesAsRead(userId, conversationId);
       }
@@ -175,7 +167,6 @@ export default function ChatDetail() {
           const scrollY = contentOffset.y;
         
           if (scrollY < 100 && hasNextPage && !isFetching) {
-            console.log("📡 Manually triggered loadMessages at top | page =", page);
             loadMessages(page);
           }
         }}
@@ -184,7 +175,6 @@ export default function ChatDetail() {
           const isMe = item.sender === currentUserId;
           const isLastSent = item.id === lastSentId;
           const timestamp = new Date(item.timestamp).toISOString();
-          console.log(`🧷 Render item ${index}: ${timestamp}`);
         
           return (
             <View style={{ alignSelf: isMe ? "flex-end" : "flex-start" }}>

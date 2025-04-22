@@ -37,6 +37,7 @@ class Friendship(models.Model):
     """Tracks actual friendships"""
     user1 = models.ForeignKey(User, related_name="friends1", on_delete=models.CASCADE)
     user2 = models.ForeignKey(User, related_name="friends2", on_delete=models.CASCADE)
+    conversation_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

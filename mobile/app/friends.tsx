@@ -21,7 +21,7 @@ import {
 } from "@/app/api/friends";
 
 import { useRouter } from 'expo-router';
-import { getMessagesWithUser } from "@/app/api/messages";
+import { getMessagesByConversation } from "@/app/api/messages";
 
 const defaultPfp = require("@/assets/images/avatar-placeholder.png");
 
@@ -38,6 +38,7 @@ interface FriendRequest {
 interface FriendUser {
   id: number;
   username: string;
+  conversation_id: string;
 }
 
 export default function FriendRequestsScreen() {
@@ -221,13 +222,14 @@ export default function FriendRequestsScreen() {
                   onPress={async () => {
                   setLoadingId(item.id);
                   try {
-                    const messages = await getMessagesWithUser(item.id);
+                    const { results } = await getMessagesByConversation(item.conversation_id, 1);
                     router.push({
                     pathname: "/ChatDetail",
                     params: {
                     userId: item.id,
                     username: item.username,
-                    messages: JSON.stringify(messages),
+                    conversationId: item.conversation_id,
+                    messages: JSON.stringify(results),
                   },
                 });
                 } catch (error) {
