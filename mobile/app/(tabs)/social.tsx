@@ -16,7 +16,20 @@ import { useNavigation } from "@react-navigation/native";
 import { useInbox } from "../../hooks/useInbox";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { getOrCreateDM } from "../api/getorCreateDM";
+import Constants  from "expo-constants";
 
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
+
+
+type FriendUser = {
+  id: number;
+  username: string;
+  profilePicture?: string;
+};
 
 
 export default function SocialScreen() {
@@ -25,6 +38,9 @@ export default function SocialScreen() {
   const [isExpanded, setIsExpanded] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [composeVisible, setComposeVisible] = useState(false);
+  const [friends, setFriends] = useState<FriendUser[]>([]);
+  const [selectedFriends, setSelectedFriends] = useState<number[]>([]);
   const router = useRouter();
 
   // Detect Scroll Direction (Up or Down)
@@ -39,10 +55,42 @@ export default function SocialScreen() {
       console.log("🔥 Stored userInfo:", parsed);
       setCurrentUserId(parsed?.id || null);
     };
+    const fetchFriends = async () => {
+      const token = await AsyncStorage.getItem("authToken");
+      const res = await fetch(`${API_BASE_URL}/api/friends/friends/`, {
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      });
+      const data = await res.json();
+      setFriends(data);
+    };
     fetchUser();
+    fetchFriends();
   }, []);
 
   const inbox = useInbox(currentUserId);
+
+  const handleStartConversation = async () => {
+    if (selectedFriends.length === 1) {
+      const selected = friends.find(f => f.id === selectedFriends[0]);
+      if (!selected || currentUserId === null) return;
+    
+      const conversationId = await getOrCreateDM(currentUserId, selected.id);
+      router.push({
+        pathname: "/ChatDetail",
+        params: {
+          conversationId,
+          username: selected.username,
+          profilePicture: selected.profilePicture || "",
+        },
+      });
+    } else if (selectedFriends.length > 1) {
+      // Later: prompt for group name + call createGroupChat API
+    }
+    setComposeVisible(false);
+    setSelectedFriends([]);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -99,8 +147,44 @@ export default function SocialScreen() {
         ))}
       </Animated.ScrollView>
 
+      {composeVisible && (
+  <View style={styles.overlay}>
+    <View style={styles.popup}>
+      <Text style={styles.popupTitle}>Select friends to chat with</Text>
+      <ScrollView style={{ maxHeight: 400, marginTop: 20 }}>
+        {friends.map(friend => (
+          <TouchableOpacity
+            key={friend.id}
+            style={[
+              styles.friendOption,
+              selectedFriends.includes(friend.id) && styles.friendSelected
+            ]}
+            onPress={() =>
+              setSelectedFriends(prev =>
+                prev.includes(friend.id)
+                  ? prev.filter(id => id !== friend.id)
+                  : [...prev, friend.id]
+              )
+            }
+          >
+            <Text style={{ fontSize: 16 }}>{friend.username}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView >
+      <View style={styles.popupActions}>
+        <TouchableOpacity onPress={() => setComposeVisible(false)}>
+          <Text style={{ color: "#000" }}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleStartConversation()}>
+          <Text style={{ color: "#007AFF", fontWeight: "bold" }}>Start</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+)}
+
       {/* Floating Compose Button */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => setComposeVisible(true)}>
         <MaterialIcons name="edit" size={24} color="white" />
         {isExpanded && <Text style={styles.fabText}>Compose</Text>}
       </TouchableOpacity>
@@ -220,7 +304,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 50,
-    elevation: 5, // Shadow for Android
+    elevation: 5, 
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -233,4 +317,45 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 8,
   },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999,
+  },
+  popup: {
+    backgroundColor: "#fff",
+    padding: 24, 
+    borderRadius: 16, 
+    width: "85%",     
+    height: 400,
+    maxHeight: "90%", 
+  },
+  popupTitle: {
+    fontSize: 20,      
+    fontWeight: "700",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  friendOption: {
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderBottomColor: "#eee",
+    borderBottomWidth: 1,
+    borderRadius: 8,
+  },
+  friendSelected: {
+    backgroundColor: "#e0f0ff",
+  },
+  popupActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 24,
+  },
+  
 });
