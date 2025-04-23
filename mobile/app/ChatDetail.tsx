@@ -9,9 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  InteractionManager,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, useIsFocused } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getMessagesByConversation, sendMessage, markMessagesAsRead } from "./api/messages";
 import { useRouter } from "expo-router";
@@ -39,6 +38,7 @@ export default function ChatDetail() {
   const [lastSentId, setLastSentId] = useState<string | number | null>(null);
   const [sendingStatus, setSendingStatus] = useState<"sending" | "sent" | null>(null);
   const [loading, setLoading] = useState(true);
+  const isFocused = useIsFocused();
 
   const loadMessages = async (pageNum = 1, reset = false) => {
     if (isFetching || (!hasNextPage && !reset)) return;
@@ -75,6 +75,26 @@ export default function ChatDetail() {
     }
   };
 
+  const loadLatestMessages = async () => {
+    try {
+      const data = await getMessagesByConversation(conversationId, 1);
+      const newMessages = data.results.sort(
+        (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+  
+      setMessages((prev) => {
+        const combined = [...newMessages.reverse(), ...prev];
+        const uniqueMap = new Map();
+        for (const msg of combined) {
+          uniqueMap.set(msg.id, msg);
+        }
+        return Array.from(uniqueMap.values());
+      });
+    } catch (err) {
+      console.error("🔁 Polling failed:", err);
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || currentUserId === null) return;
   
@@ -107,6 +127,16 @@ export default function ChatDetail() {
       setSendingStatus(null);
     }
   };
+
+  useEffect(() => {
+    if (!isFocused) return;
+  
+    const interval = setInterval(() => {
+      loadLatestMessages();
+    }, 8000);
+  
+    return () => clearInterval(interval);
+  }, [isFocused]);
 
   useEffect(() => {
     setLoading(false)

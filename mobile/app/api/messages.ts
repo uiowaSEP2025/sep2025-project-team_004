@@ -90,3 +90,24 @@ export const markMessagesAsRead = async (senderId: number, conversationId: strin
     if (!response.ok) throw new Error("Failed to fetch paginated conversation messages");
     return await response.json();
   };
+
+  export const formatChatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+  
+    const isToday = date.toDateString() === now.toDateString();
+  
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+  
+    if (isToday) {
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } else if (isYesterday) {
+      return "Yesterday";
+    } else {
+      return `${date.getMonth() + 1}/${date.getDate()}/${String(
+        date.getFullYear()
+      ).slice(-2)}`;
+    }
+  };

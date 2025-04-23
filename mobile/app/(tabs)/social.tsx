@@ -17,13 +17,14 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { useFocusEffect } from "@react-navigation/native";
+import { formatChatTimestamp } from "../api/messages";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
     ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
     : process.env.EXPO_PUBLIC_BACKEND_URL;
 
-const MESSAGES_URL = `${API_BASE_URL}/api/friends/messages/`;
+const MESSAGES_URL = `${API_BASE_URL}/api/friends/messages/unified_conversations/`;
 
 export default function SocialScreen() {
   const router = useRouter();
@@ -52,71 +53,29 @@ export default function SocialScreen() {
       if (!token || !userInfo) return;
   
       const currentUser = JSON.parse(userInfo);
-      const currentUserId = currentUser.id;
-      setCurrentUserId(currentUserId);
+      setCurrentUserId(currentUser.id);
   
       const currentPage = reset ? 1 : page;
-  
-      const res = await fetch(`${MESSAGES_URL}recent_conversations/?page=${currentPage}`, {
+      const res = await fetch(`${MESSAGES_URL}?page=${currentPage}`, {
         headers: { Authorization: `Token ${token}` },
       });
   
-      const data = await res.json(); // contains .results and .next
-      const newConvos = data.results;
+      const data = await res.json();
+      const conversations = reset ? data.results : [...chats, ...data.results];
   
-      // Flatten all messages into one array
-      const allMessages = newConvos.flatMap((c: any) => c.messages);
-  
-      const updatedMessages = reset ? allMessages : [...messages, ...allMessages];
-  
-      const chatMap: { [key: string]: any } = {};
-      updatedMessages.forEach((msg: any) => {
-        const isSentByMe = msg.sender === currentUserId;
-        const partnerId = isSentByMe ? msg.recipient : msg.sender;
-        const partnerUsername = isSentByMe
-          ? msg.recipient_username ?? "Unknown"
-          : msg.sender_username;
-  
-        if (
-          !chatMap[partnerId] ||
-          new Date(msg.timestamp) > new Date(chatMap[partnerId].timestamp)
-        ) {
-          chatMap[partnerId] = {
-            userId: partnerId,
-            username: partnerUsername,
-            lastMessage: msg.content,
-            unread: 0,
-            timestamp: msg.timestamp,
-            conversation_id: msg.conversation_id,
-          };
-        }
-  
-        if (!isSentByMe && !msg.read) {
-          chatMap[partnerId].unread += 1;
-        }
-      });
-  
-      const sortedChats = Object.values(chatMap).sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-  
-      setMessages(updatedMessages);
-      setChats(sortedChats);
+      setChats(conversations);
       setHasNextPage(!!data.next);
+      if (!reset && data.next) setPage((prev) => prev + 1);
+      else if (reset) setPage(2);
   
-      if (!reset && data.next) {
-        setPage((prev) => prev + 1);
-      } else if (reset) {
-        setPage(2); // Next page will be 2
-      }
     } catch (err) {
-      console.error("❌ Failed to load chats", err);
+      console.error("❌ Failed to load unified chats", err);
     } finally {
       setIsFetching(false);
       setLoading(false);
     }
   };
-
+  
   useFocusEffect(
     useCallback(() => {
 
@@ -175,48 +134,73 @@ export default function SocialScreen() {
           }}
           scrollEventThrottle={400}
         >
-        {chats.map((chat) => (
-          <TouchableOpacity
-            key={chat.userId}
-            style={styles.chatItem}
-            onPress={() => {
-              const filteredMessages = messages.filter(
-                (msg: any) =>
-                  (msg.sender === chat.userId && msg.recipient === currentUserId) ||
-                  (msg.sender === currentUserId && msg.recipient === chat.userId)
-              );
-              console.log("📬 Navigating to ChatDetail with conversation_id:", chat.conversation_id);
-              router.push({
-                pathname: "/ChatDetail",
-                params: {
-                  userId: chat.userId,
-                  username: chat.username,
-                  conversationId: chat.conversation_id,
-                  messages: JSON.stringify(filteredMessages),
-                },
-              });
-            }}
-          >
-            <Image
-              source={require("../../assets/images/avatar-placeholder.png")}
-              style={styles.avatar}
-            />
-            <View style={styles.chatInfo}>
-              <Text style={styles.chatName}>{chat.username}</Text>
-              <Text style={styles.chatMessage} numberOfLines={1}>
-                {chat.lastMessage}
-              </Text>
-            </View>
-            {chat.unread > 0 && (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>{chat.unread}</Text>
-              </View>
-            )}
-            <Text style={styles.chatTime}>
-              {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {chats.map((chat, index) => {
+  const isDM = chat.type === "dm";
+  const unreadCount = isDM
+    ? chat.messages?.filter(
+        (msg: any) => !msg.read && msg.sender !== currentUserId
+      ).length
+    : chat.messages?.filter(
+        (msg: any) => !msg.read_by?.some((u: any) => u.id === currentUserId)
+      ).length;
+
+
+  return (
+    <TouchableOpacity
+      key={index}
+      style={styles.chatItem}
+      onPress={() => {
+        if (isDM) {
+          router.push({
+            pathname: "/ChatDetail",
+            params: {
+              userId: chat.partner_id,
+              username: chat.partner_username,
+              conversationId: chat.conversation_id,
+              messages: JSON.stringify(chat.messages),
+            },
+          });
+        } else {
+          router.push({
+            pathname: "/GroupChatDetail",
+            params: {
+              groupId: chat.group_id,
+              groupName: chat.group_name,
+              groupImage: chat.group_image,
+              messages: JSON.stringify(chat.messages),
+            },
+          });
+        }
+      }}
+    >
+      <Image
+        source={
+          chat.type === "group" && chat.group_image
+            ? { uri: chat.group_image }
+            : require("../../assets/images/avatar-placeholder.png")
+        }
+        style={styles.avatar}
+      />
+      <View style={styles.chatInfo}>
+        <Text style={styles.chatName}>
+          {chat.type === "dm" ? chat.partner_username : chat.group_name}
+        </Text>
+        <Text style={styles.chatMessage} numberOfLines={1}>
+          {chat.messages?.[0]?.content || "No messages"}
+        </Text>
+      </View>
+      {/* Unread Badge */}
+      {unreadCount > 0 && (
+        <View style={styles.unreadBadge}>
+          <Text style={styles.unreadText}>{unreadCount}</Text>
+        </View>
+      )}
+      <Text style={styles.chatTime}>
+        {formatChatTimestamp(chat.timestamp)}
+      </Text>
+    </TouchableOpacity>
+  );
+})}
         {isFetching && (
           <View style={{ alignItems: "center", marginVertical: 16 }}>
             <Text style={{ color: "#888" }}>Loading more conversations...</Text>
@@ -225,7 +209,7 @@ export default function SocialScreen() {
       </ScrollView>
 
       {/* Floating Compose Button */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push({ pathname: "/friends", params: { initialTab: "all" } })}>
+      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push("/Compose")}>
         <MaterialIcons name="edit" size={24} color="white" />
         {isExpanded && <Text style={styles.fabText}>Compose</Text>}
       </TouchableOpacity>

@@ -60,3 +60,39 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.sender.username} → {self.recipient.username}: {self.content[:30]}"
+    
+class GroupChat(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    image = models.ImageField(upload_to='group_images/', null=True, blank=True)
+    admin = models.ForeignKey(User, related_name='administered_groups', on_delete=models.CASCADE)
+    members = models.ManyToManyField(User, through='GroupMembership')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class GroupMembership(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    group = models.ForeignKey(GroupChat, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'group')
+
+
+class GroupMessage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    group = models.ForeignKey(GroupChat, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_system = models.BooleanField(default=False)  # For system messages like "X added Y"
+    read_by = models.ManyToManyField(User, related_name='read_group_messages', blank=True)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"{self.sender.username}: {self.content[:30]}"
