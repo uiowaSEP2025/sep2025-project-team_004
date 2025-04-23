@@ -1,0 +1,63 @@
+name: Python Tests with Coverage
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django pytest-cov
+      working-directory: ./backend/sep2025_project_team_004
+        
+    - name: Run tests with coverage
+      run: |
+        pytest --cov=sep2025_project_team_004 --cov-report=xml
+      working-directory: ./backend/sep2025_project_team_004
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/sep2025_project_team_004/coverage.xml
+        fail_ci_if_error: false
+        
+    - name: Check minimum coverage threshold
+      run: |
+        coverage_percentage=$(python -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(float(root.attrib['line-rate']) * 100)")
+        echo "Coverage: $coverage_percentage%"
+        if (( $(echo "$coverage_percentage < 70" | bc -l) )); then
+          echo "Code coverage is below 70%"
+          exit 1
+        fi
+      working-directory: ./backend/sep2025_project_team_004 
