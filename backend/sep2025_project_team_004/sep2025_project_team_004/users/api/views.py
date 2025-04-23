@@ -174,6 +174,7 @@ class UserDetailView(APIView):
             "state": user.state,
             "city": user.city,
             "role": user.role,
+            "id": user.id,
                
         })
         

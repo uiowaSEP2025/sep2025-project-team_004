@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,33 +13,10 @@ import {
 import Icon from "react-native-vector-icons/Feather";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useInbox } from "../../hooks/useInbox";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
-const chats = [
-  { id: 1, name: "Daniel Atkins", lastMessage: "The weather will be perfect!", unread: 1 },
-  { id: 2, name: "Erin, Ursula, Matthew", lastMessage: "You: The store only has 2% milk!", unread: 2 },
-  { id: 3, name: "Photographers", lastMessage: "@Philippe: Hmm, are you sure?", unread: 10 },
-  { id: 4, name: "Regina Jones", lastMessage: "The class has open enrollment...", unread: 0 },
-  { id: 5, name: "Baker Hayfield", lastMessage: "Is Cleveland nice in October?", unread: 0 },
-  { id: 6, name: "Alex Johnson", lastMessage: "Just finished the project!", unread: 3 },
-  { id: 7, name: "Sarah Williams", lastMessage: "Dinner plans for tomorrow?", unread: 5 },
-  { id: 8, name: "Tech Gurus", lastMessage: "New AI breakthrough announced!", unread: 7 },
-  { id: 9, name: "Fitness Group", lastMessage: "Let's go for a morning run!", unread: 0 },
-  { id: 10, name: "Movie Club", lastMessage: "Next movie night: Inception!", unread: 4 },
-  { id: 11, name: "Gaming Squad", lastMessage: "Who's online tonight?", unread: 1 },
-  { id: 12, name: "Work Chat", lastMessage: "Meeting rescheduled to 2 PM.", unread: 0 },
-  { id: 13, name: "Michael Scott", lastMessage: "That's what she said!", unread: 6 },
-  { id: 14, name: "Coding Ninjas", lastMessage: "React Native vs Flutter?", unread: 9 },
-  { id: 15, name: "Crypto News", lastMessage: "Bitcoin just hit 50k!", unread: 0 },
-  { id: 16, name: "Anna Kendrick", lastMessage: "Loved the new album!", unread: 2 },
-  { id: 17, name: "The Boys", lastMessage: "Game night at my place!", unread: 0 },
-  { id: 18, name: "Design Team", lastMessage: "Check out the new UI update!", unread: 1 },
-  { id: 19, name: "Startup Hub", lastMessage: "Looking for co-founders!", unread: 0 },
-  { id: 20, name: "Travel Buddies", lastMessage: "Flights to Tokyo booked!", unread: 3 },
-  { id: 21, name: "Family Group", lastMessage: "Grandma's birthday is next week!", unread: 8 },
-  { id: 22, name: "The Office Fans", lastMessage: "Best episode ever?", unread: 5 },
-  { id: 23, name: "Debbie Thompson", lastMessage: "Lunch this weekend?", unread: 0 },
-  { id: 24, name: "Book Club", lastMessage: "New book suggestion: The Alchemist!", unread: 2 },
-];
 
 
 export default function SocialScreen() {
@@ -47,11 +24,25 @@ export default function SocialScreen() {
   const { push } = require("expo-router").useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const router = useRouter();
 
   // Detect Scroll Direction (Up or Down)
   scrollY.addListener(({ value }) => {
     setIsExpanded(value < 10); // Expand when near the top
   });
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userInfo = await AsyncStorage.getItem("userInfo");
+      const parsed = userInfo ? JSON.parse(userInfo) : null;
+      console.log("🔥 Stored userInfo:", parsed);
+      setCurrentUserId(parsed?.id || null);
+    };
+    fetchUser();
+  }, []);
+
+  const inbox = useInbox(currentUserId);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,20 +74,27 @@ export default function SocialScreen() {
           { useNativeDriver: false }
         )}
       >
-        {chats.map((chat) => (
-          <TouchableOpacity key={chat.id} style={styles.chatItem} onPress={() => navigation.navigate("ChatDetail", { userId: chat.id })}>
+        {inbox.map((chat) => (
+          <TouchableOpacity
+            key={chat.id}
+            style={styles.chatItem}
+            onPress={() =>
+              router.push({
+                pathname: "/ChatDetail",
+                params: {
+                  conversationId: chat.id,
+                  username: chat.name,
+                  profilePicture: chat.profilePicture,
+                },
+              })
+            }
+          >
             <Image source={require("../../assets/images/avatar-placeholder.png")} style={styles.avatar} />
             <View style={styles.chatInfo}>
               <Text style={styles.chatName}>{chat.name}</Text>
               <Text style={styles.chatMessage} numberOfLines={1}>{chat.lastMessage}</Text>
             </View>
-            {/* Unread Message Count */}
-            {chat.unread > 0 && (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>{chat.unread}</Text>
-              </View>
-            )}
-            <Text style={styles.chatTime}>2:14 PM</Text>
+            <Text style={styles.chatTime}>Just now</Text>
           </TouchableOpacity>
         ))}
       </Animated.ScrollView>
@@ -217,7 +215,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     position: "absolute",
     right: 20,
-    bottom: 30,
+    bottom: 10,
     backgroundColor: "#007AFF",
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -227,6 +225,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    marginBottom: 100,
   },
   fabText: {
     color: "white",

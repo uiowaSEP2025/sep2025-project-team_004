@@ -14,6 +14,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { firestore } from "../_utlis/firebaseConfig";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
@@ -58,6 +60,18 @@ export default function HomeScreen() {
   
         const userData = await userResponse.json();
         if (userResponse.ok) {
+          await AsyncStorage.setItem("userInfo", JSON.stringify(userData));
+
+          const userDocRef = doc(firestore, "users", String(userData.id));
+          const userSnapshot = await getDoc(userDocRef);
+
+          if (!userSnapshot.exists()) {
+            await setDoc(userDocRef, {
+              id: userData.id,
+              username: userData.username,
+              profilePicture: "", // or set a default
+            });
+          }
           await AsyncStorage.setItem("userInfo", JSON.stringify(userData));
           navigation.reset({
             index: 0,
