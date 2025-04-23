@@ -56,7 +56,9 @@ export default function FirstLook() {
     try {
       // Will change the URL to env var later
       // const url = `https://d2tedebo3dq0kj.cloudfront.net/api/sensor_data/${sensorId.trim()}`;
-      const url = `https://esmc.uiowa.edu/esmc_services/data_base/querySensorInDB_working_reverse.php?sensorID=${sensorId.trim()}`;
+      const baseURL = process.env.EXPO_PUBLIC_REALTIME_DATA_URL; 
+      const url = `${baseURL}/querySensorInDB_working_reverse.php?sensorID=${sensorId.trim()}`;
+
       const resp = (await fetch(url).then((r) => r.json())) as {
         status: number;
         message: string;
