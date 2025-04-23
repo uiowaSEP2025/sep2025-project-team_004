@@ -109,7 +109,7 @@ jobs:
         run: python manage.py migrate --noinput
 
       - name: Run pytest with coverage
-        run: pytest --ds=config.settings.test --nomigrations --cov=. --cov-report=xml --cov-report=term-missing
+        run: pytest --ds=config.settings.test --nomigrations --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=50
 
       - name: Upload back-end coverage
         if: always()
