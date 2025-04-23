@@ -9,7 +9,7 @@ on:
 
 jobs:
   ############################################
-  # FRONT‑END – Expo / Jest
+  # FRONT-END – Expo / Jest
   ############################################
   frontend-tests:
     name: Expo / Jest
@@ -32,15 +32,15 @@ jobs:
       - name: Run Jest with coverage
         run: npx jest --ci --coverage --runInBand
 
-      - name: Upload front‑end coverage
+      - name: Upload front-end coverage
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
           path: mobile/coverage
 
   ############################################
-  # BACK‑END – Django / Pytest
+  # BACK-END – Django / Pytest
   ############################################
   backend-tests:
     name: Django / Pytest
@@ -111,9 +111,9 @@ jobs:
       - name: Run pytest with coverage (no migrations rebuild)
         run: pytest --ds=config.settings.test --nomigrations --cov=. --cov-report=xml --cov-report=term-missing
 
-      - name: Upload back‑end coverage
+      - name: Upload back-end coverage
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
           path: backend/coverage.xml
