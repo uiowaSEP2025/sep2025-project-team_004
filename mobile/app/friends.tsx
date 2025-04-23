@@ -7,10 +7,11 @@ import {
   FlatList,
   StyleSheet,
   Modal,
-  Image
+  Image,
+  ActivityIndicator
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   sendFriendRequest,
   getPendingRequests,
@@ -18,6 +19,9 @@ import {
   acceptFriendRequest,
   rejectFriendRequest,
 } from "@/app/api/friends";
+
+import { useRouter } from 'expo-router';
+import { getMessagesByConversation } from "@/app/api/messages";
 
 const defaultPfp = require("@/assets/images/avatar-placeholder.png");
 
@@ -34,16 +38,22 @@ interface FriendRequest {
 interface FriendUser {
   id: number;
   username: string;
+  conversation_id: string;
 }
 
 export default function FriendRequestsScreen() {
+  const router = useRouter();
+  const route = useRoute();
+  const initialTab = (route.params as any)?.initialTab;
+
+  const [activeTab, setActiveTab] = useState(initialTab || "pending");
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState("pending");
   const [searchTerm, setSearchTerm] = useState("");
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [loadingId, setLoadingId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -207,6 +217,43 @@ export default function FriendRequestsScreen() {
             renderItem={({ item }) => (
               <View style={styles.friendItem}>
                 <Text style={styles.friendName}>{item.username}</Text>
+                <TouchableOpacity
+                  disabled={loadingId === item.id}
+                  onPress={async () => {
+                  setLoadingId(item.id);
+                  try {
+                    const { results } = await getMessagesByConversation(item.conversation_id, 1);
+                    router.push({
+                    pathname: "/ChatDetail",
+                    params: {
+                    userId: item.id,
+                    username: item.username,
+                    conversationId: item.conversation_id,
+                    messages: JSON.stringify(results),
+                  },
+                });
+                } catch (error) {
+                  console.error("Failed to fetch messages:", error);
+                } finally {
+                  setLoadingId(null);
+                }
+              }}
+            style={{
+                backgroundColor: loadingId === item.id ? "#999" : "#007AFF",
+                padding: 8,
+                borderRadius: 6,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+               minWidth: 90,
+             }}
+            >
+              {loadingId === item.id ? (
+               <ActivityIndicator color="#fff" size="small" />
+              ) : (
+               <Text style={{ color: "white" }}>Message</Text>
+             )}
+           </TouchableOpacity>
               </View>
             )}
           />

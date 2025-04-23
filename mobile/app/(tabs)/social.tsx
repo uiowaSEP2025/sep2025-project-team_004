@@ -1,108 +1,231 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
   Image,
   SafeAreaView,
-  ScrollView,
   TextInput,
   StyleSheet,
   TouchableOpacity,
   Animated,
+  ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+import { useFocusEffect } from "@react-navigation/native";
 
-const chats = [
-  { id: 1, name: "Daniel Atkins", lastMessage: "The weather will be perfect!", unread: 1 },
-  { id: 2, name: "Erin, Ursula, Matthew", lastMessage: "You: The store only has 2% milk!", unread: 2 },
-  { id: 3, name: "Photographers", lastMessage: "@Philippe: Hmm, are you sure?", unread: 10 },
-  { id: 4, name: "Regina Jones", lastMessage: "The class has open enrollment...", unread: 0 },
-  { id: 5, name: "Baker Hayfield", lastMessage: "Is Cleveland nice in October?", unread: 0 },
-  { id: 6, name: "Alex Johnson", lastMessage: "Just finished the project!", unread: 3 },
-  { id: 7, name: "Sarah Williams", lastMessage: "Dinner plans for tomorrow?", unread: 5 },
-  { id: 8, name: "Tech Gurus", lastMessage: "New AI breakthrough announced!", unread: 7 },
-  { id: 9, name: "Fitness Group", lastMessage: "Let's go for a morning run!", unread: 0 },
-  { id: 10, name: "Movie Club", lastMessage: "Next movie night: Inception!", unread: 4 },
-  { id: 11, name: "Gaming Squad", lastMessage: "Who's online tonight?", unread: 1 },
-  { id: 12, name: "Work Chat", lastMessage: "Meeting rescheduled to 2 PM.", unread: 0 },
-  { id: 13, name: "Michael Scott", lastMessage: "That's what she said!", unread: 6 },
-  { id: 14, name: "Coding Ninjas", lastMessage: "React Native vs Flutter?", unread: 9 },
-  { id: 15, name: "Crypto News", lastMessage: "Bitcoin just hit 50k!", unread: 0 },
-  { id: 16, name: "Anna Kendrick", lastMessage: "Loved the new album!", unread: 2 },
-  { id: 17, name: "The Boys", lastMessage: "Game night at my place!", unread: 0 },
-  { id: 18, name: "Design Team", lastMessage: "Check out the new UI update!", unread: 1 },
-  { id: 19, name: "Startup Hub", lastMessage: "Looking for co-founders!", unread: 0 },
-  { id: 20, name: "Travel Buddies", lastMessage: "Flights to Tokyo booked!", unread: 3 },
-  { id: 21, name: "Family Group", lastMessage: "Grandma's birthday is next week!", unread: 8 },
-  { id: 22, name: "The Office Fans", lastMessage: "Best episode ever?", unread: 5 },
-  { id: 23, name: "Debbie Thompson", lastMessage: "Lunch this weekend?", unread: 0 },
-  { id: 24, name: "Book Club", lastMessage: "New book suggestion: The Alchemist!", unread: 2 },
-];
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
+const MESSAGES_URL = `${API_BASE_URL}/api/friends/messages/`;
 
 export default function SocialScreen() {
-  const navigation = useNavigation();
-  const { push } = require("expo-router").useRouter();
+  const router = useRouter();
+  const [chats, setChats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Detect Scroll Direction (Up or Down)
   scrollY.addListener(({ value }) => {
-    setIsExpanded(value < 10); // Expand when near the top
+    setIsExpanded(value < 10);
   });
+
+  const loadChats = async (reset = false) => {
+    if (isFetching || (!hasNextPage && !reset)) return;
+    setIsFetching(true);
+  
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      const userInfo = await AsyncStorage.getItem("userInfo");
+  
+      if (!token || !userInfo) return;
+  
+      const currentUser = JSON.parse(userInfo);
+      const currentUserId = currentUser.id;
+      setCurrentUserId(currentUserId);
+  
+      const currentPage = reset ? 1 : page;
+  
+      const res = await fetch(`${MESSAGES_URL}recent_conversations/?page=${currentPage}`, {
+        headers: { Authorization: `Token ${token}` },
+      });
+  
+      const data = await res.json(); // contains .results and .next
+      const newConvos = data.results;
+  
+      // Flatten all messages into one array
+      const allMessages = newConvos.flatMap((c: any) => c.messages);
+  
+      const updatedMessages = reset ? allMessages : [...messages, ...allMessages];
+  
+      const chatMap: { [key: string]: any } = {};
+      updatedMessages.forEach((msg: any) => {
+        const isSentByMe = msg.sender === currentUserId;
+        const partnerId = isSentByMe ? msg.recipient : msg.sender;
+        const partnerUsername = isSentByMe
+          ? msg.recipient_username ?? "Unknown"
+          : msg.sender_username;
+  
+        if (
+          !chatMap[partnerId] ||
+          new Date(msg.timestamp) > new Date(chatMap[partnerId].timestamp)
+        ) {
+          chatMap[partnerId] = {
+            userId: partnerId,
+            username: partnerUsername,
+            lastMessage: msg.content,
+            unread: 0,
+            timestamp: msg.timestamp,
+            conversation_id: msg.conversation_id,
+          };
+        }
+  
+        if (!isSentByMe && !msg.read) {
+          chatMap[partnerId].unread += 1;
+        }
+      });
+  
+      const sortedChats = Object.values(chatMap).sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+  
+      setMessages(updatedMessages);
+      setChats(sortedChats);
+      setHasNextPage(!!data.next);
+  
+      if (!reset && data.next) {
+        setPage((prev) => prev + 1);
+      } else if (reset) {
+        setPage(2); // Next page will be 2
+      }
+    } catch (err) {
+      console.error("❌ Failed to load chats", err);
+    } finally {
+      setIsFetching(false);
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+
+        loadChats(true);
+
+    }, [])
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Image source={require("../../assets/images/avatar-placeholder.png")} style={styles.profileIcon} />
+        <Image
+          source={require("../../assets/images/avatar-placeholder.png")}
+          style={styles.profileIcon}
+        />
         <Text style={styles.headerText}>Chat</Text>
         <TouchableOpacity
           style={styles.addFriendIconContainer}
-          onPress={() => push("../friends")}
+          onPress={() => router.push("../friends")}
         >
           <MaterialIcons name="person-add" size={28} color="#000" />
         </TouchableOpacity>
-
-
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <TextInput style={styles.searchInput} placeholder="Search" placeholderTextColor="#7a7a7a" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search"
+          placeholderTextColor="#7a7a7a"
+        />
         <Icon name="search" size={18} color="#7a7a7a" style={styles.searchIcon} />
       </View>
 
       {/* Chat List */}
-      <Animated.ScrollView
-        contentContainerStyle={styles.chatList}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-      >
+      <ScrollView
+        style={styles.chatList}
+        contentInsetAdjustmentBehavior="automatic"
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isCloseToBottom =
+            layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+
+          if (isCloseToBottom && hasNextPage && !isFetching) {
+            loadChats();
+            }
+          }}
+          scrollEventThrottle={400}
+        >
         {chats.map((chat) => (
-          <TouchableOpacity key={chat.id} style={styles.chatItem} onPress={() => navigation.navigate("ChatDetail", { userId: chat.id })}>
-            <Image source={require("../../assets/images/avatar-placeholder.png")} style={styles.avatar} />
+          <TouchableOpacity
+            key={chat.userId}
+            style={styles.chatItem}
+            onPress={() => {
+              const filteredMessages = messages.filter(
+                (msg: any) =>
+                  (msg.sender === chat.userId && msg.recipient === currentUserId) ||
+                  (msg.sender === currentUserId && msg.recipient === chat.userId)
+              );
+              console.log("📬 Navigating to ChatDetail with conversation_id:", chat.conversation_id);
+              router.push({
+                pathname: "/ChatDetail",
+                params: {
+                  userId: chat.userId,
+                  username: chat.username,
+                  conversationId: chat.conversation_id,
+                  messages: JSON.stringify(filteredMessages),
+                },
+              });
+            }}
+          >
+            <Image
+              source={require("../../assets/images/avatar-placeholder.png")}
+              style={styles.avatar}
+            />
             <View style={styles.chatInfo}>
-              <Text style={styles.chatName}>{chat.name}</Text>
-              <Text style={styles.chatMessage} numberOfLines={1}>{chat.lastMessage}</Text>
+              <Text style={styles.chatName}>{chat.username}</Text>
+              <Text style={styles.chatMessage} numberOfLines={1}>
+                {chat.lastMessage}
+              </Text>
             </View>
-            {/* Unread Message Count */}
             {chat.unread > 0 && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadText}>{chat.unread}</Text>
               </View>
             )}
-            <Text style={styles.chatTime}>2:14 PM</Text>
+            <Text style={styles.chatTime}>
+              {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
           </TouchableOpacity>
         ))}
-      </Animated.ScrollView>
+        {isFetching && (
+          <View style={{ alignItems: "center", marginVertical: 16 }}>
+            <Text style={{ color: "#888" }}>Loading more conversations...</Text>
+          </View>
+        )}
+      </ScrollView>
 
       {/* Floating Compose Button */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push({ pathname: "/friends", params: { initialTab: "all" } })}>
         <MaterialIcons name="edit" size={24} color="white" />
         {isExpanded && <Text style={styles.fabText}>Compose</Text>}
       </TouchableOpacity>
@@ -110,12 +233,9 @@ export default function SocialScreen() {
   );
 }
 
-/* Styles */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fcfcfc",
-  },
+  container: { flex: 1, backgroundColor: "#fcfcfc" },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
     height: 56,
     flexDirection: "row",
@@ -126,16 +246,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#ecebeb",
   },
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  headerText: {
-    fontSize: 16,
-    fontWeight: "700",
-    textAlign: "center",
-  },
+  profileIcon: { width: 40, height: 40, borderRadius: 20 },
+  headerText: { fontSize: 16, fontWeight: "700", textAlign: "center" },
   addFriendIconContainer: {
     width: 40,
     height: 40,
@@ -156,16 +268,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 10,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-  },
-  searchIcon: {
-    marginLeft: 8,
-  },
-  chatList: {
-    paddingVertical: 10,
-  },
+  searchInput: { flex: 1, fontSize: 14 },
+  searchIcon: { marginLeft: 8 },
+  chatList: { paddingVertical: 10 },
   chatItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -181,17 +286,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 12,
   },
-  chatInfo: {
-    flex: 1,
-  },
-  chatName: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  chatMessage: {
-    fontSize: 14,
-    color: "#7a7a7a",
-  },
+  chatInfo: { flex: 1 },
+  chatName: { fontSize: 16, fontWeight: "700" },
+  chatMessage: { fontSize: 14, color: "#7a7a7a" },
   unreadBadge: {
     width: 18,
     height: 18,
@@ -201,17 +298,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 10,
   },
-  unreadText: {
-    color: "#ffffff",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  chatTime: {
-    fontSize: 12,
-    color: "#7a7a7a",
-  },
-
-  /* Floating Action Button (FAB) */
+  unreadText: { color: "#ffffff", fontSize: 11, fontWeight: "700" },
+  chatTime: { fontSize: 12, color: "#7a7a7a" },
   fab: {
     flexDirection: "row",
     alignItems: "center",
@@ -222,16 +310,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 50,
-    elevation: 5, // Shadow for Android
+    elevation: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    marginBottom: 70,
   },
-  fabText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
-  },
+  fabText: { color: "white", fontSize: 16, fontWeight: "600", marginLeft: 8},
 });
