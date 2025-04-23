@@ -37,6 +37,11 @@ jobs:
           name: frontend-coverage
           path: mobile/coverage
 
+      - name: DEBUG – show env var is present
+        run: |
+          echo "DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:+<present>}"
+
+
   ############################################
   # BACKEND – Django / Pytest
   ############################################
@@ -79,7 +84,6 @@ jobs:
       MAILGUN_DOMAIN: dummy
       MAILGUN_API_URL: dummy
       DJANGO_ADMIN_URL: dummy
-      DJANGO_SECRET_KEY: dummy
       AWS_ACCESS_KEY_ID: dummy
       AWS_SECRET_ACCESS_KEY: dummy
       AWS_STORAGE_BUCKET_NAME: dummy
