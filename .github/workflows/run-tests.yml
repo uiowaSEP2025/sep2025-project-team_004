@@ -70,6 +70,17 @@ jobs:
       SMARTY_AUTH_TOKEN: ${{ secrets.SMARTY_AUTH_TOKEN }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+      DJANGO_AWS_ACCESS_KEY_ID: dummy
+      DJANGO_AWS_SECRET_ACCESS_KEY: dummy
+      DJANGO_AWS_STORAGE_BUCKET_NAME: dummy
+      DJANGO_AWS_S3_REGION_NAME: dummy
+      DJANGO_AWS_S3_CUSTOM_DOMAIN: dummy
+      MAILGUN_API_KEY: dummy
+      MAILGUN_DOMAIN: dummy
+      MAILGUN_API_URL: dummy
+      AWS_ACCESS_KEY_ID: dummy
+      AWS_SECRET_ACCESS_KEY: dummy
+      AWS_STORAGE_BUCKET_NAME: dummy
     defaults:
       run:
         working-directory: backend/sep2025_project_team_004
