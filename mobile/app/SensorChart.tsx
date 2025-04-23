@@ -30,6 +30,14 @@ const SensorChart = ({
   return (
     <View style={styles.card}>
       <Text style={styles.chartTitle}>{title}</Text>
+      {/* Display Coordinates when active */}
+      {isActive && state.x.value !== undefined && state.y.y.value !== undefined && (
+        <View style={styles.tooltip}>
+          <Text style={styles.tooltipText}>
+            {`Time: ${state.x.value.value}\n${title}: ${state.y.y.value.value.toFixed(1)}`}
+          </Text>
+        </View>
+      )}
       <View style={{ height: 220 }}>
         <CartesianChart
           data={data}
@@ -70,12 +78,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
+    // Ensure positioning context for absolute children
+    position: "relative",
   },
   chartTitle: {
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 8,
     textAlign: "center",
+  },
+  // Style for the coordinate display
+  tooltip: {
+    position: "absolute",
+    top: 5,
+    left: 5,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    zIndex: 10, // Ensure it's above chart elements
+  },
+  tooltipText: {
+    color: "#fff",
+    fontSize: 10,
   },
 });
 
