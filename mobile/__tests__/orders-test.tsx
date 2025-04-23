@@ -6,7 +6,7 @@ import {
   act,
   cleanup,
 } from "@testing-library/react-native";
-import OrderHistoryScreen from "../app/orders";
+import OrderHistoryScreen from "../app/my-reviews";
 import { ActivityIndicator, Alert, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";

@@ -35,7 +35,13 @@ export const unstable_settings = {
 
 export default function Profile() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [user, setUser] = useState({ first_name: "", last_name: "", email: "" });
+  const [user, setUser] = useState({ 
+    first_name: "", 
+    last_name: "", 
+    email: "", 
+    role: "",
+    profile_picture: null
+  });
   const [modalVisible, setModalVisible] = useState(false);
   const [defaultCard, setDefaultCard] = useState<any>(null);
 
@@ -136,7 +142,9 @@ export default function Profile() {
         >
           <Image
             style={styles.avatar}
-            source={require('@/assets/images/avatar-placeholder.png')}
+            source={user.profile_picture 
+              ? { uri: user.profile_picture } 
+              : require('@/assets/images/default-pfp.png')}
           />
           <View style={styles.userInfo}>
             <Text style={styles.username}>
@@ -208,14 +216,14 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => {
+  
             /* TODO:  My Reviews page */
-          }}
+          onPress={() => navigation.navigate("my-reviews")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoTitle}>My Reviews</Text>
-              <Text style={styles.infoSubtitle}>Review for x items</Text>
+              <Text style={styles.infoSubtitle}>Handle your reviews</Text>
             </View>
             <Image
               style={styles.arrowIcon}
@@ -243,6 +251,26 @@ export default function Profile() {
             />
           </View>
         </TouchableOpacity>
+        {user.role?.toLowerCase()=== "admin" && (
+        <TouchableOpacity
+          style={styles.infoItem}
+          onPress={() => navigation.navigate("admin-orders")}
+        >
+          <View style={styles.infoRow}>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoTitle}>Admin Orders</Text>
+              <Text style={styles.infoSubtitle}>
+                Manage all customer orders
+              </Text>
+            </View>
+           <Image
+             style={styles.arrowIcon}
+             source={require('@/assets/images/forward-arrow.png')}
+             resizeMode="contain"
+           />
+         </View>
+       </TouchableOpacity>
+      )}
       </ScrollView>
 
       {/* Logout Confirmation Modal */}

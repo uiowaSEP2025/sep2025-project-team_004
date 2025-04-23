@@ -15,5 +15,8 @@ export type RootStackParamList = {
   ResetPasswordScreen: {email: string, token: string},
   "my-orders": undefined;
   "settings": undefined;
+  "my-reviews": undefined;
+  "admin-orders": undefined;
+  ChatDetail: { userId: number, username: string };
   // Add other routes as needed
 };

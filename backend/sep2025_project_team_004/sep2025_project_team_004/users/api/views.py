@@ -20,6 +20,7 @@ from email.mime.text import MIMEText
 import os
 import requests
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 
 env = environ.Env()
 
@@ -164,6 +165,7 @@ class UserDetailView(APIView):
         """
         user = request.user
         return Response({
+            "id": user.id,
             "first_name": user.first_name,
             "last_name": user.last_name,
             "email": user.email,
@@ -173,7 +175,8 @@ class UserDetailView(APIView):
             "phone_number": user.phone_number,
             "state": user.state,
             "city": user.city,
-               
+            "role": user.role,
+            "profile_picture": user.profile_picture.url if user.profile_picture else None,    
         })
         
 class SearchUsersView(APIView):
@@ -225,3 +228,24 @@ def ValidateAddressView(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
+class ProfilePictureUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def post(self, request):
+        try:
+            if 'profile_picture' not in request.FILES:
+                return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            user = request.user
+            user.profile_picture = request.FILES['profile_picture']
+            user.save()
+            
+            # Return the URL to the uploaded image
+            return Response({
+                "message": "Profile picture uploaded successfully",
+                "profile_picture": user.profile_picture.url if user.profile_picture else None
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

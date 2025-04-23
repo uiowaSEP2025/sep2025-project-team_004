@@ -20,6 +20,8 @@ const API_BASE_URL =
     ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
     : process.env.EXPO_PUBLIC_BACKEND_URL;
 
+
+
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState("");
