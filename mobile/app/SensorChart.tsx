@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import {
   CartesianChart,
@@ -6,9 +6,12 @@ import {
   useChartPressState,
 } from "victory-native";
 import { Circle, useFont } from "@shopify/react-native-skia";
+import { useDerivedValue, runOnJS } from "react-native-reanimated";
 import inter from "../assets/fonts/Inter_18pt-Medium.ttf";
 
-// Use system font — no import needed!
+// Define type for tooltip state
+type TooltipData = { x: string | number; y: number } | null;
+
 const SensorChart = ({
   title,
   data,
@@ -19,22 +22,47 @@ const SensorChart = ({
   color: string;
 }) => {
   const font = useFont(inter, 12);
+  const [tooltipData, setTooltipData] = useState<TooltipData>(null);
 
   const { state, isActive } = useChartPressState<{
     x: string | number;
     y: Record<"y", number>;
   }>({ x: 0, y: { y: 0 } });
 
+  // Function to update state on JS thread
+  const updateTooltip = (newData: TooltipData) => {
+    "worklet";
+    runOnJS(setTooltipData)(newData);
+  };
+
+  // Derived value to react to changes on UI thread and update JS state
+  useDerivedValue(() => {
+    if (isActive) {
+      if (state.x.value.value !== undefined && state.y.y.value.value !== undefined) {
+        const currentData = {
+          x: state.x.value.value,
+          y: state.y.y.value.value,
+        };
+        updateTooltip(currentData);
+      }else{
+        updateTooltip(null);
+      }
+    } else { // When finger is lifted
+      // Clear tooltip data
+      updateTooltip(null);
+    }
+  }, [isActive, state.x.value, state.y.y.value]);
+
   if (!font) return null;
 
   return (
     <View style={styles.card}>
       <Text style={styles.chartTitle}>{title}</Text>
-      {/* Display Coordinates when active */}
-      {isActive && state.x.value !== undefined && state.y.y.value !== undefined && (
+      {/* Display Coordinates using React state */}
+      {tooltipData !== null && (
         <View style={styles.tooltip}>
           <Text style={styles.tooltipText}>
-            {`Time: ${state.x.value.value}\n${title}: ${state.y.y.value.value.toFixed(1)}`}
+            {`Time: ${tooltipData.x}\n${title}: ${tooltipData.y.toFixed(1)}`}
           </Text>
         </View>
       )}
