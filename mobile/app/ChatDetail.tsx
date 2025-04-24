@@ -1,213 +1,321 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, AppState} from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { firestore } from "../_utlis/firebaseConfig";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  InteractionManager,
-} from "react-native";
-import { useRoute } from "@react-navigation/native";
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  getDoc,
+  getDocs,
+  startAfter,
+  limit,
+  setDoc,
+  increment,
+  writeBatch,
+} from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getMessagesByConversation, sendMessage, markMessagesAsRead } from "./api/messages";
 import { useRouter } from "expo-router";
 
-export default function ChatDetail() {
-  const router = useRouter();
-  const route = useRoute();
-  const { userId, username, conversationId, messages: passedMessages } = route.params as {
-    userId: number;
+type Message = {
+    id: string;
+    content: string;
+    senderId: number;
+    timestamp: { toMillis: () => number }; // Firestore Timestamp
+    system?: boolean;
+  };
+
+type TypingStatus = {
+    typing: boolean;
     username: string;
-    conversationId: string;
-    messages: string;
+    timestamp: { toMillis: () => number };
   };
-  
-  const [messages, setMessages] = useState<any[]>(
-    JSON.parse(passedMessages)
-      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-      .reverse()
-  );
-  const [input, setInput] = useState("");
-  const [page, setPage] = useState(1);
-  const [hasNextPage, setHasNextPage] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
+
+export default function ChatDetail() {
+  const { conversationId, username, profilePicture } = useLocalSearchParams();
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  const [lastSentId, setLastSentId] = useState<string | number | null>(null);
-  const [sendingStatus, setSendingStatus] = useState<"sending" | "sent" | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadMessages = async (pageNum = 1, reset = false) => {
-    if (isFetching || (!hasNextPage && !reset)) return;
-    setIsFetching(true);
-  
-    try {
-      const data = await getMessagesByConversation(conversationId, pageNum);
-      const newMessages = data.results.sort(
-        (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
-  
-      if (reset) {
-        setMessages(newMessages.reverse());
-        setPage(2);
-      } else {
-        setMessages((prev) => {
-          const combined = reset ? newMessages.reverse() : [...prev, ...newMessages.reverse()];
-        
-          const uniqueMap = new Map();
-          for (const msg of combined) {
-            uniqueMap.set(msg.id, msg);
-          }
-        
-          return Array.from(uniqueMap.values());
-        });
-        if (data.next) setPage((prev) => prev + 1);
-      }
-  
-      setHasNextPage(!!data.next);
-    } catch (err) {
-      console.error("Failed to fetch messages:", err);
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
-  const handleSend = async () => {
-    if (!input.trim() || currentUserId === null) return;
-  
-    const tempId = `temp-${Date.now()}`;
-    const newMessage = {
-      id: tempId,
-      sender: currentUserId,
-      recipient: userId,
-      content: input,
-      timestamp: new Date().toISOString(),
-    };
-  
-    setMessages((prev) => [newMessage, ...prev]);
-    setLastSentId(tempId);
-    setSendingStatus("sending");
-    setInput("");
-  
-    try {
-      const savedMessage = await sendMessage(userId, input, conversationId);
-  
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === tempId ? savedMessage : msg
-        )
-      );
-      setLastSentId(savedMessage.id);
-      setSendingStatus("sent");
-    } catch (err) {
-      console.error("Failed to send message:", err);
-      setSendingStatus(null);
-    }
-  };
+  const flatListRef = useRef<FlatList>(null);
+  const router = useRouter();
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [userName, setUserName] = useState<string | null>(null);
+  const PAGE_SIZE = 20;
 
   useEffect(() => {
-    setLoading(false)
-    const fetchData = async () => {
+    const fetchUser = async () => {
       const userInfo = await AsyncStorage.getItem("userInfo");
-      if (userInfo) {
-        const user = JSON.parse(userInfo);
-        const id = Number(user.id);
-        setCurrentUserId(id);
-  
-        if (conversationId && conversationId !== "undefined") {
-          await loadMessages(1, true); 
-        }
-        await markMessagesAsRead(userId, conversationId);
-      }
+      const parsed = userInfo ? JSON.parse(userInfo) : null;
+      setCurrentUserId(parsed?.id || null);
+      setUserName(parsed?.username || null);
     };
-  
-    fetchData(); // Fire immediately
+    fetchUser();
   }, []);
 
-  if (loading || currentUserId === null) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", async (nextAppState) => {
+      if (nextAppState !== "active" && currentUserId && conversationId) {
+        const typingRef = doc(
+          firestore,
+          `conversations/${conversationId}/typingStatus/${currentUserId}`
+        );
+        await setDoc(typingRef, { typing: false }, { merge: true });
+      }
+    });
+  
+    return () => {
+      subscription.remove();
+    };
+  }, [conversationId, currentUserId]);
+  
+
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        if (currentUserId) {
+          updateDoc(
+            doc(firestore, `conversations/${conversationId}/typingStatus/${currentUserId}`),
+            { typing: false }
+          ).then(() => {
+          }).catch((err) => {
+            console.error("❌ Failed to clear typing on screen blur:", err);
+          });
+        }
+      };
+    }, [conversationId, currentUserId])
+  );
+
+  useEffect(() => {
+    const q = collection(firestore, `conversations/${conversationId}/typingStatus`);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const now = Date.now();
+      const active: string[] = snapshot.docs
+        .map((doc) => {
+          const data = doc.data() as TypingStatus & { lastUpdated?: { toMillis: () => number } };
+          const id = doc.id;
+          const isStale = data.lastUpdated && now - data.lastUpdated.toMillis() > 10000;
+          return !isStale && data.typing && id !== String(currentUserId)
+            ? data.username
+            : null;
+        })
+        .filter(Boolean) as string[];
+    
+      setTypingUsers(active);
+    });
+  
+    return () => unsubscribe();
+  }, [conversationId, currentUserId]);
+
+  useEffect(() => {
+    const timeoutRef = setTimeout(() => {
+      if (currentUserId) {
+        updateDoc(doc(firestore, `conversations/${conversationId}/typingStatus/${currentUserId}`), {
+          typing: false,
+        });
+      }
+    }, 1500);
+  
+    return () => clearTimeout(timeoutRef);
+  }, [newMessage]);
+
+  useEffect(() => {
+    if (conversationId && currentUserId !== null) {
+      loadInitialMessages();
+
+    // Real-time listener for new messages
+    const q = query(
+      collection(firestore, `conversations/${conversationId}/messages`),
+      orderBy("timestamp", "desc"),
+      limit(1)
     );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const latest = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Message[];
+      if (latest.length && latest[0].timestamp?.toMillis()) {
+        setMessages((prev) => {
+          if (!prev.length || prev[0].id !== latest[0].id) {
+            return [latest[0], ...prev];
+          }
+          return prev;
+        });
+      }
+    });
+
+    return () => unsubscribe();
   }
+  }, [conversationId, currentUserId]);
+
+  const handleTyping = async (text: string) => {
+    setNewMessage(text);
+    if (currentUserId) {
+      await setDoc(doc(firestore, `conversations/${conversationId}/typingStatus/${currentUserId}`), {
+        typing: true,
+        username: userName,
+        lastUpdated: serverTimestamp(), 
+      });
+    }
+  };
+
+  const loadInitialMessages = async () => {
+    const ref = collection(firestore, `conversations/${conversationId}/messages`);
+    const q = query(ref, orderBy("timestamp", "desc"), limit(PAGE_SIZE));
+    const snap = await getDocs(q);
+    const fetched = snap.docs.map(
+      (doc) => ({ ...(doc.data() as Message), id: doc.id })
+    );
+
+    setMessages(fetched);
+    setLastVisible(snap.docs[snap.docs.length - 1]);
+    setHasMore(snap.docs.length === PAGE_SIZE);
+
+    if (currentUserId !== null) {
+      const convoRef = doc(firestore, "conversations", conversationId as string);
+      try {
+        await updateDoc(convoRef, {
+          [`readCount.${currentUserId}`]: 0,
+        });
+      } catch (error) {
+        console.error("❌ Failed to reset readCount:", error);
+      }
+    }
+  };
+
+  const loadMoreMessages = async () => {
+    if (loadingMore || !hasMore || !lastVisible) return;
+    setLoadingMore(true);
+
+    const ref = collection(firestore, `conversations/${conversationId}/messages`);
+    const q = query(
+      ref,
+      orderBy("timestamp", "desc"),
+      startAfter(lastVisible),
+      limit(PAGE_SIZE)
+    );
+
+    const snap = await getDocs(q);
+    const older = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    setMessages((prev) => [...prev, ...older]);
+    setLastVisible(snap.docs[snap.docs.length - 1]);
+    setHasMore(snap.docs.length === PAGE_SIZE);
+    setLoadingMore(false);
+  };
+
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !currentUserId) return;
+
+    const messageText = newMessage.trim();
+
+    await addDoc(collection(firestore, `conversations/${conversationId}/messages`), {
+    content: messageText,
+    senderId: currentUserId,
+    timestamp: serverTimestamp(),
+    system: false,
+    });
+
+    const docSnap = await getDoc(doc(firestore, "conversations", conversationId as string));
+    const data = docSnap.data();
+    const recipientId = data?.members?.find((id: number) => id !== Number(currentUserId));
+
+// 🔥 Update parent conversation doc
+    await updateDoc(doc(firestore, "conversations", conversationId as string), {
+    lastMessage: messageText,
+    lastSenderId: Number(currentUserId),
+    lastUpdated: serverTimestamp(),
+    [`readCount.${recipientId}`]: increment(1),
+    });
+
+    setNewMessage("");
+  };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      behavior={Platform.select({ ios: "padding", android: undefined })}
+      keyboardVerticalOffset={80}
     >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{username}</Text>
-        </View>
-
-        <View style={styles.rightSpacer} />
-      </View>
-
-      <FlatList
-        data={messages}
-        inverted
-        keyExtractor={(item) => item.id?.toString() ?? `temp-${item.timestamp}`}
-        ListEmptyComponent={
-          <Text style={{ textAlign: "center", marginTop: 20 }}>
-            No messages found.
-          </Text>
-        }
-        onScroll={({ nativeEvent }) => {
-          const { contentOffset } = nativeEvent;
-          const scrollY = contentOffset.y;
-        
-          if (scrollY < 100 && hasNextPage && !isFetching) {
-            loadMessages(page);
+        <View style={styles.header}>
+        <TouchableOpacity
+        onPress={async () => {
+          if (currentUserId) {
+            try {
+              await updateDoc(doc(firestore, `conversations/${conversationId}/typingStatus/${currentUserId}`), {
+                typing: false,
+              });
+            } catch (error) {
+              console.error("❌ Failed to clear typing on back press:", error);
+            }
           }
+          router.back();
         }}
-        scrollEventThrottle={100}
-        renderItem={({ item, index }) => {
-          const isMe = item.sender === currentUserId;
-          const isLastSent = item.id === lastSentId;
-          const timestamp = new Date(item.timestamp).toISOString();
-        
-          return (
-            <View style={{ alignSelf: isMe ? "flex-end" : "flex-start" }}>
-              <View style={isMe ? styles.myMessage : styles.theirMessage}>
-                <Text style={[styles.messageText, isMe ? { color: "#fff" } : { color: "#000" }]}>
-                  {item.content}
-               </Text>
-             </View>
-             {isMe && isLastSent && sendingStatus && (
-                <Text style={styles.statusText}>
-                  {sendingStatus === "sending" ? "Sending..." : "Sent"}
+        style={styles.backButton}
+      >
+  <Text style={styles.backText}>←</Text>
+</TouchableOpacity>
+  <Text style={styles.usernameText} numberOfLines={1}>
+    {username}
+  </Text>
+  <Image
+    source={profilePicture ? { uri: profilePicture } : require("../assets/images/avatar-placeholder.png")}
+    style={styles.avatar}
+  />
+</View>
+      <FlatList
+        inverted
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: 16 }}
+        onEndReached={loadMoreMessages}
+        onEndReachedThreshold={0.2}
+        ListFooterComponent={
+            loadingMore ? (
+              <View style={{ marginVertical: 10 }}>
+                <Text style={{ textAlign: "center", color: "#888" }}>
+                  Loading more messages
                 </Text>
-              )}
+              </View>
+            ) : null
+          }
+        renderItem={({ item }) => {
+        const isMe = item.senderId === currentUserId;
+        return (
+            <View style={{ alignSelf: isMe ? "flex-end" : "flex-start" }}>
+              <View style={[styles.message, isMe ? styles.myMessage : styles.theirMessage]}>
+                <Text style={[styles.messageText, { color: isMe ? "#fff" : "#000" }]}>
+                  {item.content}
+                </Text>
+              </View>
             </View>
           );
         }}
-        contentContainerStyle={{ padding: 10 }}
-        maintainVisibleContentPosition={{
-          minIndexForVisible: 0,
-          autoscrollToTopThreshold: 1,
-        }}
       />
-
+      
+      {typingUsers.length > 0 && (
+      <View style={styles.typingWrapper}>
+        <Text style={styles.typingText}>
+          {typingUsers.join(", ")} {typingUsers.length > 1 ? "are" : "is"} typing...
+        </Text>
+      </View>
+    )}
       <View style={styles.inputContainer}>
         <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder={`Message ${username}`}
-          placeholderTextColor={"#667"}
           style={styles.input}
+          placeholder="Type your message"
+          value={newMessage}
+          onChangeText={handleTyping}
         />
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <Text style={{ color: "white" }}>Send</Text>
+        <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+          <Text style={{ color: "white", fontWeight: "bold" }}>Send</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -215,62 +323,8 @@ export default function ChatDetail() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9f9f9" },
-  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: {
-    height: 130,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ecebeb",
-  },
-  backButton: {
-    width: 40,
-    justifyContent: "center",
-    alignItems: "flex-start",
-    marginTop: 50,
-  },
-  backText: {
-    fontSize: 24,
-    color: "#007AFF",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    textAlign: "center",
-    flex: 1,
-    marginTop: 50,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
-    marginBottom: 20,
-  },
-  input: {
-    flex: 1,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    paddingHorizontal: 12,
-    height: 40,
-    backgroundColor: "#fff",
-  },
-  sendButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 16,
-    marginLeft: 8,
-    borderRadius: 20,
-    justifyContent: "center",
-  },
-  theirMessage: {
-    alignSelf: "flex-start",
-    backgroundColor: "#e5e5ea",
+  container: { flex: 1, backgroundColor: "#fff" },
+  message: {
     borderRadius: 16,
     marginVertical: 4,
     padding: 10,
@@ -279,27 +333,88 @@ const styles = StyleSheet.create({
   myMessage: {
     alignSelf: "flex-end",
     backgroundColor: "#007AFF",
-    borderRadius: 16,
-    marginVertical: 4,
+  },
+  theirMessage: {
+    alignSelf: "flex-start",
+    backgroundColor: "#e5e5ea",
+  },
+  inputContainer: {
+    flexDirection: "row",
     padding: 10,
-    maxWidth: "75%",
+    borderTopWidth: 1,
+    borderTopColor: "#ddd",
+    backgroundColor: "#f9f9f9",
+    marginBottom:10,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderColor: "#ccc",
+    borderWidth: 1,
+  },
+  sendButton: {
+    marginLeft: 10,
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    backgroundColor: "#fff",
+    marginTop: 70,
+  },
+  
+  backButton: {
+    padding: 4,
+  },
+  
+  backText: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#007AFF",
+  },
+  
+  usernameText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    flex: 1,
+    textAlign: "center",
+    marginHorizontal: 12,
+  },
+  
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#ccc",
   },
   messageText: {
     fontSize: 16,
   },
-  headerCenter: {
-    flex: 1,
-    alignItems: "center",
-    marginTop: 30,
+  typingWrapper: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    alignItems: "flex-start",
   },
-  rightSpacer: {
-    width: 40,
-    marginTop: 50,
+  
+  typingText: {
+    fontSize: 13,
+    fontStyle: "italic",
+    color: "#666",
   },
-  statusText: {
-    fontSize: 10,
-    color: "#667",
-    marginTop: 4,
-    textAlign: "right",
-  },
+  
+  
 });

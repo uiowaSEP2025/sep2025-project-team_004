@@ -4,6 +4,7 @@ import { MaterialIcons, Feather } from "@expo/vector-icons";
 import { CartContext } from "../context/CartContext";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
+import StoreSkeletonLoader from "@/components/skeletons/StoreSkeletonLoader";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
@@ -55,7 +56,7 @@ export default function StoreScreen() {
   }, []);
 
   if (loading) {
-    return <ActivityIndicator size="large" color="blue" style={{ marginTop: Platform.OS === "web" ? 20 : 70 }} />;
+    return <StoreSkeletonLoader />;
   }
 
   const openModal = (product: Product) => {
