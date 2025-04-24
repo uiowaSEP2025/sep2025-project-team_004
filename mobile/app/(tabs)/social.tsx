@@ -18,6 +18,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useInbox } from "../../hooks/useInbox";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
+import SocialSkeletonLoader from "@/components/skeletons/SocialSkeletonLoader";
 import { useRouter } from "expo-router";
 import { getOrCreateDM } from "../api/getorCreateDM";
 import Constants  from "expo-constants";
@@ -128,6 +130,15 @@ export default function SocialScreen() {
     setSelectedFriends([]);
   };
 
+  useFocusEffect(
+    useCallback(() => {
+        loadChats(true);
+    }, [])
+  );
+
+  if (loading) {
+    return <SocialSkeletonLoader />;
+  }
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
