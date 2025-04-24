@@ -38,8 +38,8 @@ describe('Profile Component', () => {
     Platform.OS = 'web';
     // Set default mocks for SecureStore methods
     (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(null);
-    (SecureStore.setItemAsync as jest.Mock).mockResolvedValue();
-    (SecureStore.deleteItemAsync as jest.Mock).mockResolvedValue();
+    (SecureStore.setItemAsync as jest.Mock).mockResolvedValue(undefined);
+    (SecureStore.deleteItemAsync as jest.Mock).mockResolvedValue(undefined);
   });
 
   test('redirects to index if authToken is missing', async () => {
@@ -70,7 +70,7 @@ describe('Profile Component', () => {
   });
 
   test('renders default card info when default card is fetched', async () => {
-    const defaultCardData = { is_default: true, card_type: 'MasterCard', last4: '5678' };
+    const defaultCardData = { is_default: true, brand: 'MasterCard', last4: '5678' };
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
       if (key === 'authToken') return Promise.resolve('dummy-token');
       if (key === 'userInfo')
@@ -80,13 +80,13 @@ describe('Profile Component', () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([defaultCardData]),
-    });
+    }) as jest.Mock;
 
     const { getByText } = render(<Profile />);
     await waitFor(() => {
       expect(getByText('MasterCard ending in 5678')).toBeTruthy();
     });
-    global.fetch.mockRestore?.();
+    (global.fetch as jest.Mock).mockRestore();
   });
 
   test('handles error when fetching default card (fetch rejected)', async () => {
@@ -97,12 +97,12 @@ describe('Profile Component', () => {
       return Promise.resolve(null);
     });
     const error = new Error("Test fetch error");
-    global.fetch = jest.fn().mockRejectedValue(error);
+    global.fetch = jest.fn().mockRejectedValue(error) as jest.Mock;
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     render(<Profile />);
     await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Error fetching default payment method:", error);
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Error fetching default Stripe card:", error);
     });
     consoleErrorSpy.mockRestore();
   });
@@ -118,15 +118,15 @@ describe('Profile Component', () => {
       ok: false,
       json: () => Promise.resolve({}),
     };
-    global.fetch = jest.fn().mockResolvedValue(fetchResponse);
+    global.fetch = jest.fn().mockResolvedValue(fetchResponse) as jest.Mock;
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     render(<Profile />);
     await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Error fetching default payment method:", expect.any(Error));
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Error fetching default Stripe card:", expect.any(Error));
     });
     consoleErrorSpy.mockRestore();
-    global.fetch.mockRestore?.();
+    (global.fetch as jest.Mock).mockRestore();
   });
 
   test('opens logout modal on web when logout is pressed', async () => {
@@ -193,7 +193,7 @@ describe('Profile Component', () => {
   });
   
   test('navigates to payment-method when Payment Information is pressed', async () => {
-    const defaultCardData = { is_default: true, card_type: 'Visa', last4: '9999' };
+    const defaultCardData = { is_default: true, brand: 'Visa', last4: '9999' };
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
       if (key === 'authToken') return Promise.resolve('dummy-token');
       if (key === 'userInfo')
@@ -203,7 +203,7 @@ describe('Profile Component', () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([defaultCardData]),
-    });
+    }) as jest.Mock;
   
     const { getByText } = render(<Profile />);
     await waitFor(() => {
@@ -253,14 +253,12 @@ describe('Profile Additional Branch Coverage', () => {
       return Promise.resolve(null);
     });
   
-    const { getByText, queryByText } = render(<Profile />);
+    const { getByText } = render(<Profile />);
     fireEvent.press(getByText('Logout'));
+    const cancelButton = await waitFor(() => getByText('Cancel'));
+    fireEvent.press(cancelButton);
     await waitFor(() => {
-      expect(getByText('Are you sure you want to log out?')).toBeTruthy();
-    });
-    fireEvent.press(getByText('Cancel'));
-    await waitFor(() => {
-      expect(queryByText('Are you sure you want to log out?')).toBeNull();
+      expect(() => getByText('Are you sure you want to log out?')).toThrow();
     });
   });
 });

@@ -1,5 +1,6 @@
 // app/(tabs)/Profile.tsx
 import React, {useState, useCallback, useEffect } from 'react';
+// import { ensureHttps } from '../../utils/imageUtils';
 import {
   View,
   Text,

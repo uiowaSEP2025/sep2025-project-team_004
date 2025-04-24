@@ -71,11 +71,19 @@ describe("EditProfilePage", () => {
   });
 
   it("updates the profile successfully", async () => {
-    // Simulate a successful GET then a successful PATCH update.
+    // Simulate a successful address validation then a successful PATCH update.
     global.fetch = jest.fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(fakeProfile),
+        json: () => Promise.resolve({ 
+          valid: true, 
+          standardized: {
+            address: "123 Main St",
+            city: "Test City",
+            state: "TS",
+            zip_code: "12345"
+          }
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -155,7 +163,7 @@ describe("EditProfilePage", () => {
   });
 
   it("alerts the user when the profile update returns a 403 Forbidden error", async () => {
-    // For update profile, simulate a PATCH call that returns 403 with a detail message.
+    // For update profile, simulate address validation success then a 403 forbidden response
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
       if (key === "authToken") return Promise.resolve("dummyToken");
       if (key === "userInfo") return Promise.resolve(JSON.stringify(fakeProfile));
@@ -163,13 +171,28 @@ describe("EditProfilePage", () => {
     });
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      status: 403,
-      ok: false,
-      json: () => Promise.resolve({ detail: "You do not have permission to access this resource." }),
-    });
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        // First mock the address validation call
+        ok: true,
+        json: () => Promise.resolve({ 
+          valid: true, 
+          standardized: {
+            address: "123 Main St",
+            city: "Test City",
+            state: "TS",
+            zip_code: "12345"
+          }
+        }),
+      })
+      .mockResolvedValueOnce({
+        // Then mock the profile update with a 403 error
+        status: 403,
+        ok: false,
+        json: () => Promise.resolve({ detail: "You do not have permission to access this resource." }),
+      });
 
-    const { getByText, getByPlaceholderText } = render(
+    const { getByText } = render(
       <NavigationContext.Provider value={mockNavigation}>
         <EditProfilePage />
       </NavigationContext.Provider>

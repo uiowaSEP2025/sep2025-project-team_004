@@ -60,16 +60,18 @@ const mockPaymentContext = {
       id: 1,
       last4: "1234",
       cardholder_name: "John Doe",
-      expiration_date: "12/24",
-      card_type: "visa",
+      exp_month: "12",
+      exp_year: "24",
+      brand: "visa",
       is_default: false,
     },
     {
       id: 2,
       last4: "5678",
       cardholder_name: "Jane Doe",
-      expiration_date: "11/25",
-      card_type: "mastercard",
+      exp_month: "11",
+      exp_year: "25",
+      brand: "mastercard",
       is_default: false,
     },
   ],
@@ -115,13 +117,18 @@ describe("PaymentMethod Screen", () => {
         id: i,
         last4: `${1000 + i}`,
         cardholder_name: `User ${i}`,
-        expiration_date: "10/26",
-        card_type: "visa",
+        exp_month: "10",
+        exp_year: "26",
+        brand: "visa",
         is_default: false,
       }));
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(
         JSON.stringify(manyCards)
       );
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => manyCards,
+      });
       const { getAllByTestId } = renderPaymentMethod();
       await waitFor(() => {
         const checkboxes = getAllByTestId(/default-checkbox-/);
@@ -181,7 +188,7 @@ describe("PaymentMethod Screen", () => {
       });
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining("/api/payment/set-default/1/"),
+          expect.stringContaining("/api/payment/stripe/set-default/1/"),
           expect.objectContaining({ method: "POST" })
         );
       });
@@ -211,7 +218,7 @@ describe("PaymentMethod Screen", () => {
         );
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalledWith(
-            expect.stringContaining("/api/payment/delete/2/"),
+            expect.stringContaining("/api/payment/stripe/delete/2/"),
             expect.objectContaining({ method: "DELETE" })
           );
         });
@@ -227,7 +234,7 @@ describe("PaymentMethod Screen", () => {
         });
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalledWith(
-            expect.stringContaining("/api/payment/delete/1/"),
+            expect.stringContaining("/api/payment/stripe/delete/1/"),
             expect.objectContaining({ method: "DELETE" })
           );
         });
@@ -247,7 +254,7 @@ describe("PaymentMethod Screen", () => {
       });
       await waitFor(() => {
         expect(
-          consoleSpy.mock.calls.some((call) => call[0] === "User not authenticated.")
+          consoleSpy.mock.calls.some((call) => call[0] === "Error loading Stripe cards:" && call[1] instanceof Error)
         ).toBe(true);
       });
       consoleSpy.mockRestore();
@@ -255,16 +262,17 @@ describe("PaymentMethod Screen", () => {
 
     it("logs an error when fetch fails in loadCards", async () => {
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      // Simulate an error in SecureStore.
-      (SecureStore.getItemAsync as jest.Mock).mockRejectedValue(new Error("Test error"));
+      // Simulate fetch rejection.
+      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
       renderPaymentMethod();
+      // Flush pending microtasks.
       await act(async () => {
         await Promise.resolve();
       });
       await waitFor(() => {
         expect(
           consoleSpy.mock.calls.some((call) =>
-            call[0].includes("Error loading payment methods:")
+            call[0].includes("Error loading Stripe cards:")
           )
         ).toBe(true);
       });
@@ -273,11 +281,10 @@ describe("PaymentMethod Screen", () => {
 
     it("logs an error when no auth token is found in deletePaymentMethod", async () => {
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      // Simulate token available for loadCards but missing during deletion.
+      // First getItem call should succeed for loadCards, second should fail for delete.
       (AsyncStorage.getItem as jest.Mock)
         .mockResolvedValueOnce("dummyToken")
         .mockResolvedValueOnce(null);
-      Platform.OS = "web";
       const { getByTestId } = renderPaymentMethod();
       await waitFor(() => expect(getByTestId("delete-button-1")).toBeTruthy());
       await act(async () => {
@@ -285,7 +292,7 @@ describe("PaymentMethod Screen", () => {
       });
       await waitFor(() => {
         expect(
-          consoleSpy.mock.calls.some((call) => call[0] === "User not authenticated.")
+          consoleSpy.mock.calls.some((call) => /Error (during|in) delete payment/i.test(call[0]))
         ).toBe(true);
       });
       consoleSpy.mockRestore();
