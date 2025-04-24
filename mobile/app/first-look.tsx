@@ -27,6 +27,15 @@ const FIELDS = [
   "vcc",
 ];
 
+// Mapping for display header names
+const HEADER_DISPLAY_NAMES: Record<string, string> = {
+  temperature: "Temp(°C)",
+  humidity: "Humidity(%)",
+  pressure: "Pressure(kPa)",
+  soilTemperature: "soilTemp(°C)",
+  vcc: "Voltage(mV)",
+};
+
 const formatChicagoTime = (utcString: string): string => {
     const utc = new Date(utcString);
     const offsetMs = -5 * 60 * 60 * 1000; // UTC-5 !! Hardcoded for now
@@ -170,7 +179,8 @@ export default function FirstLook() {
                 <View style={[styles.row, styles.header]}>
                   {otherCols.map((c) => (
                     <Text style={[styles.cell, styles.headerText]} key={c}>
-                      {c}
+                      {/* Use mapped display name if available, else original */}
+                      {HEADER_DISPLAY_NAMES[c] || c}
                     </Text>
                   ))}
                 </View>
