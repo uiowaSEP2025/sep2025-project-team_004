@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
 
 interface Sensor {
   id: string;
@@ -25,6 +26,8 @@ const SensorSelector: React.FC<Props> = ({
   setShowDropdown,
   onSelect,
 }) => {
+  const router = useRouter();
+
   return (
     <View style={styles.wrapper}>
       <TouchableOpacity onPress={() => setShowDropdown(!showDropdown)} style={styles.selector}>
@@ -74,6 +77,24 @@ const SensorSelector: React.FC<Props> = ({
               />
             </TouchableOpacity>
           ))}
+          <TouchableOpacity
+            style={styles.addSensorButton}
+            onPress={() => {
+              router.push('/first-look');
+              setShowDropdown(false);
+            }}
+          >
+            <Text style={styles.addSensorButtonText}>Add More Sensors</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.deployButton}
+            onPress={() => {
+              router.push('/first-look');
+              setShowDropdown(false);
+            }}
+          >
+            <Text style={styles.deployButtonText}>First Time Deploy</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -147,6 +168,34 @@ const styles = StyleSheet.create({
     height: 20,
     tintColor: "#999",
     marginRight: 8,
+  },
+  addSensorButton: {
+    backgroundColor: '#000000',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+    marginHorizontal: 0,
+  },
+  addSensorButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deployButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+    marginHorizontal: 0,
+  },
+  deployButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
