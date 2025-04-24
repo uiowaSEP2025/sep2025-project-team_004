@@ -9,6 +9,7 @@ type InboxItem = {
   profilePicture: string;
   lastMessage: string;
   lastUpdated: string;
+  readCount?: Record<number, number>;
 };
 
 export const useInbox = (currentUserId: number | null) => {
@@ -42,6 +43,7 @@ export const useInbox = (currentUserId: number | null) => {
           profilePicture: userData.profilePicture,
           lastMessage: data.lastMessage,
           lastUpdated: data.lastUpdated?.toDate().toISOString() || new Date().toISOString(),
+          readCount: data.readCount ?? {}
         };
       }));
 

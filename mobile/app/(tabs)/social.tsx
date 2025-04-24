@@ -32,6 +32,8 @@ type FriendUser = {
 };
 
 
+
+
 export default function SocialScreen() {
   const navigation = useNavigation();
   const { push } = require("expo-router").useRouter();
@@ -122,42 +124,52 @@ export default function SocialScreen() {
           { useNativeDriver: false }
         )}
       >
-        {inbox.map((chat) => (
+        {inbox.map((chat) => {
+  console.log("💬 Chat ID:", chat.id, "readCount:", chat.readCount, "currentUserId:", currentUserId);
 
-          <TouchableOpacity
-          key={chat.id}
-          style={styles.chatItem}
-          onPress={() => {
-            if (chat.type === "groupChat") {
-              router.push({
-                pathname: "/GroupChatDetail",
-                params: {
-                  groupId: chat.id,
-                  groupName: chat.name,
-                  groupImage: chat.profilePicture,
-                  friends: JSON.stringify(friends),
-                },
-              });
-            } else {
-              router.push({
-                pathname: "/ChatDetail",
-                params: {
-                  conversationId: chat.id,
-                  username: chat.name,
-                  profilePicture: chat.profilePicture,
-                },
-              });
-            }
-          }}
-        >
-            <Image source={require("../../assets/images/avatar-placeholder.png")} style={styles.avatar} />
-            <View style={styles.chatInfo}>
-              <Text style={styles.chatName}>{chat.name}</Text>
-              <Text style={styles.chatMessage} numberOfLines={1}>{chat.lastMessage}</Text>
-            </View>
-            <Text style={styles.chatTime}>Just now</Text>
-          </TouchableOpacity>
-        ))}
+  return (
+    <TouchableOpacity
+      key={chat.id}
+      style={styles.chatItem}
+      onPress={() => {
+        if (chat.type === "groupChat") {
+          router.push({
+            pathname: "/GroupChatDetail",
+            params: {
+              groupId: chat.id,
+              groupName: chat.name,
+              groupImage: chat.profilePicture,
+              friends: JSON.stringify(friends),
+            },
+          });
+        } else {
+          router.push({
+            pathname: "/ChatDetail",
+            params: {
+              conversationId: chat.id,
+              username: chat.name,
+              profilePicture: chat.profilePicture,
+            },
+          });
+        }
+      }}
+    >
+      <Image source={require("../../assets/images/avatar-placeholder.png")} style={styles.avatar} />
+      <View style={styles.chatInfo}>
+        <Text style={styles.chatName}>{chat.name}</Text>
+        <Text style={styles.chatMessage} numberOfLines={1}>{chat.lastMessage}</Text>
+      </View>
+
+      {currentUserId !== null && chat.readCount && chat.readCount[currentUserId] > 0 ? (
+        <View style={styles.unreadBadge}>
+          <Text style={styles.unreadText}>{chat.readCount[currentUserId]}</Text>
+        </View>
+      ) : (
+        <Text style={styles.chatTime}>Just now</Text>
+      )}
+      </TouchableOpacity>
+    );
+  })}
       </Animated.ScrollView>
 
       {composeVisible && (
@@ -370,5 +382,4 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 24,
   },
-  
 });

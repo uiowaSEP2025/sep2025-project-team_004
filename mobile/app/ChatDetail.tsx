@@ -15,6 +15,9 @@ import {
   getDocs,
   startAfter,
   limit,
+  setDoc,
+  increment,
+  writeBatch,
 } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -27,16 +30,24 @@ type Message = {
     system?: boolean;
   };
 
+type TypingStatus = {
+    typing: boolean;
+    username: string;
+    timestamp: { toMillis: () => number };
+  };
+
 export default function ChatDetail() {
   const { conversationId, username, profilePicture } = useLocalSearchParams();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [userName, setUserName] = useState<string | null>(null);
   const PAGE_SIZE = 20;
 
   useEffect(() => {
@@ -44,13 +55,47 @@ export default function ChatDetail() {
       const userInfo = await AsyncStorage.getItem("userInfo");
       const parsed = userInfo ? JSON.parse(userInfo) : null;
       setCurrentUserId(parsed?.id || null);
+      setUserName(parsed?.username || null);
     };
     fetchUser();
   }, []);
 
   useEffect(() => {
-    if (!conversationId) return;
-    loadInitialMessages();
+    const q = collection(firestore, `conversations/${conversationId}/typingStatus`);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const now = Date.now();
+      const active: string[] = snapshot.docs
+        .map((doc) => {
+          const data = doc.data() as TypingStatus & { lastUpdated?: { toMillis: () => number } };
+          const id = doc.id;
+          const isStale = data.lastUpdated && now - data.lastUpdated.toMillis() > 10000;
+          return !isStale && data.typing && id !== String(currentUserId)
+            ? data.username
+            : null;
+        })
+        .filter(Boolean) as string[];
+    
+      setTypingUsers(active);
+    });
+  
+    return () => unsubscribe();
+  }, [conversationId, currentUserId]);
+
+  useEffect(() => {
+    const timeoutRef = setTimeout(() => {
+      if (currentUserId) {
+        updateDoc(doc(firestore, `conversations/${conversationId}/typingStatus/${currentUserId}`), {
+          typing: false,
+        });
+      }
+    }, 1500);
+  
+    return () => clearTimeout(timeoutRef);
+  }, [newMessage]);
+
+  useEffect(() => {
+    if (conversationId && currentUserId !== null) {
+      loadInitialMessages();
 
     // Real-time listener for new messages
     const q = query(
@@ -71,17 +116,43 @@ export default function ChatDetail() {
     });
 
     return () => unsubscribe();
-  }, [conversationId]);
+  }
+  }, [conversationId, currentUserId]);
+
+  const handleTyping = async (text: string) => {
+    setNewMessage(text);
+    if (currentUserId) {
+      await setDoc(doc(firestore, `conversations/${conversationId}/typingStatus/${currentUserId}`), {
+        typing: true,
+        username: userName,
+        lastUpdated: serverTimestamp(), 
+      });
+    }
+  };
 
   const loadInitialMessages = async () => {
     const ref = collection(firestore, `conversations/${conversationId}/messages`);
     const q = query(ref, orderBy("timestamp", "desc"), limit(PAGE_SIZE));
     const snap = await getDocs(q);
-    const fetched = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const fetched = snap.docs.map(
+      (doc) => ({ ...(doc.data() as Message), id: doc.id })
+    );
 
     setMessages(fetched);
     setLastVisible(snap.docs[snap.docs.length - 1]);
     setHasMore(snap.docs.length === PAGE_SIZE);
+
+    if (currentUserId !== null) {
+      const convoRef = doc(firestore, "conversations", conversationId as string);
+      try {
+        await updateDoc(convoRef, {
+          [`readCount.${currentUserId}`]: 0,
+        });
+        console.log("✅ Successfully reset readCount for user:", currentUserId);
+      } catch (error) {
+        console.error("❌ Failed to reset readCount:", error);
+      }
+    }
   };
 
   const loadMoreMessages = async () => {
@@ -118,11 +189,16 @@ export default function ChatDetail() {
     system: false,
     });
 
+    const docSnap = await getDoc(doc(firestore, "conversations", conversationId as string));
+    const data = docSnap.data();
+    const recipientId = data?.members?.find((id: number) => id !== Number(currentUserId));
+
 // 🔥 Update parent conversation doc
     await updateDoc(doc(firestore, "conversations", conversationId as string), {
     lastMessage: messageText,
     lastSenderId: Number(currentUserId),
     lastUpdated: serverTimestamp(),
+    [`readCount.${recipientId}`]: increment(1),
     });
 
     setNewMessage("");
@@ -135,9 +211,23 @@ export default function ChatDetail() {
       keyboardVerticalOffset={80}
     >
         <View style={styles.header}>
-  <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-    <Text style={styles.backText}>←</Text>
-  </TouchableOpacity>
+        <TouchableOpacity
+        onPress={async () => {
+          if (currentUserId) {
+            try {
+              await updateDoc(doc(firestore, `conversations/${conversationId}/typingStatus/${currentUserId}`), {
+                typing: false,
+              });
+            } catch (error) {
+              console.error("❌ Failed to clear typing on back press:", error);
+            }
+          }
+          router.back();
+        }}
+        style={styles.backButton}
+      >
+  <Text style={styles.backText}>←</Text>
+</TouchableOpacity>
   <Text style={styles.usernameText} numberOfLines={1}>
     {username}
   </Text>
@@ -176,13 +266,20 @@ export default function ChatDetail() {
           );
         }}
       />
-
+      
+      {typingUsers.length > 0 && (
+      <View style={styles.typingWrapper}>
+        <Text style={styles.typingText}>
+          {typingUsers.join(", ")} {typingUsers.length > 1 ? "are" : "is"} typing...
+        </Text>
+      </View>
+    )}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
           placeholder="Type your message"
           value={newMessage}
-          onChangeText={setNewMessage}
+          onChangeText={handleTyping}
         />
         <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
           <Text style={{ color: "white", fontWeight: "bold" }}>Send</Text>
@@ -273,5 +370,18 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 16,
-  }
+  },
+  typingWrapper: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    alignItems: "flex-start",
+  },
+  
+  typingText: {
+    fontSize: 13,
+    fontStyle: "italic",
+    color: "#666",
+  },
+  
+  
 });

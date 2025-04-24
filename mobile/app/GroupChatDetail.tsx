@@ -7,11 +7,19 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { firestore } from "../_utlis/firebaseConfig";
 import {
   collection, query, orderBy, onSnapshot, arrayRemove, deleteDoc,
-  addDoc, serverTimestamp, updateDoc, doc, getDocs, setDoc, arrayUnion
+  addDoc, serverTimestamp, updateDoc, doc, getDocs, setDoc, arrayUnion, limit, startAfter
 } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+
+type Message = {
+  id: string;
+  content: string;
+  senderId: number;
+  timestamp: { toMillis: () => number }; // Firestore Timestamp
+  system?: boolean;
+};
 
 export default function GroupChatDetail() {
   const { groupId, groupName, groupImage, friends } = useLocalSearchParams();
@@ -25,6 +33,12 @@ export default function GroupChatDetail() {
   const [addableFriends, setAddableFriends] = useState<any[]>([]);
   const sidebarAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
   const flatListRef = useRef<FlatList>(null);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const PAGE_SIZE = 20;
   const router = useRouter();
   
 
@@ -33,22 +47,58 @@ export default function GroupChatDetail() {
       const userInfo = await AsyncStorage.getItem("userInfo");
       const parsed = userInfo ? JSON.parse(userInfo) : null;
       setCurrentUserId(parsed?.id || null);
+      setUserName(parsed?.username || null)
     };
     fetchUser();
   }, []);
 
   useEffect(() => {
+    if (!groupId || !currentUserId) return;
+  
+    const q = collection(firestore, `groupChats/${groupId}/typingStatus`);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const othersTyping = snapshot.docs
+          .filter(
+          (doc) =>
+            String(doc.id) !== String(currentUserId) &&
+            doc.data()?.typing &&
+            doc.data()?.username
+  )
+  .map((doc) => doc.data().username);
+  
+      setTypingUsers(othersTyping);
+    });
+  
+    return () => unsubscribe();
+  }, [groupId, currentUserId]);
+
+  useEffect(() => {
+    if (!groupId) return;
+    loadInitialMessages();
+  
+    // Real-time listener for new messages
     const q = query(
       collection(firestore, `groupChats/${groupId}/messages`),
-      orderBy("timestamp", "asc")
+      orderBy("timestamp", "desc"),
+      limit(1)
     );
-
+  
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setMessages(msgs);
-      flatListRef.current?.scrollToEnd({ animated: true });
+      const latest = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Omit<Message, "id">),
+      }));
+    
+      if (latest.length && latest[0].timestamp?.toMillis()) {
+        setMessages((prev) => {
+          if (!prev.length || prev[0].id !== latest[0].id) {
+            return [latest[0], ...prev];
+          }
+          return prev;
+        });
+      }
     });
-
+  
     return () => unsubscribe();
   }, [groupId]);
 
@@ -62,6 +112,38 @@ export default function GroupChatDetail() {
   useEffect(() => {
     fetchMembers();
   }, [groupId]);
+
+  const loadInitialMessages = async () => {
+    const ref = collection(firestore, `groupChats/${groupId}/messages`);
+    const q = query(ref, orderBy("timestamp", "desc"), limit(PAGE_SIZE));
+    const snap = await getDocs(q);
+    const fetched = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  
+    setMessages(fetched);
+    setLastVisible(snap.docs[snap.docs.length - 1]);
+    setHasMore(snap.docs.length === PAGE_SIZE);
+  };
+  
+  const loadMoreMessages = async () => {
+    if (loadingMore || !hasMore || !lastVisible) return;
+    setLoadingMore(true);
+  
+    const ref = collection(firestore, `groupChats/${groupId}/messages`);
+    const q = query(
+      ref,
+      orderBy("timestamp", "desc"),
+      startAfter(lastVisible),
+      limit(PAGE_SIZE)
+    );
+  
+    const snap = await getDocs(q);
+    const older = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  
+    setMessages((prev) => [...prev, ...older]);
+    setLastVisible(snap.docs[snap.docs.length - 1]);
+    setHasMore(snap.docs.length === PAGE_SIZE);
+    setLoadingMore(false);
+  };
 
   const toggleSidebar = () => { setSidebarVisible((prev) => !prev); Animated.timing(sidebarAnim, { toValue: sidebarVisible ? SCREEN_WIDTH : SCREEN_WIDTH * 0.3, duration: 250, useNativeDriver: false, }).start(); };
 
@@ -97,6 +179,29 @@ export default function GroupChatDetail() {
     // 4. Refresh members
     await fetchMembers();
   };
+
+  const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+
+const handleTyping = (text: string) => {
+  setNewMessage(text);
+
+  if (!currentUserId || !groupId) return;
+
+  const typingRef = doc(firestore, `groupChats/${groupId}/typingStatus/${currentUserId}`);
+
+  // Set typing to true
+  setDoc(typingRef, {
+    username: userName, // you may store this in state already
+    typing: true,
+    timestamp: serverTimestamp(),
+  });
+
+  // Clear typing after 3s of inactivity
+  if (typingTimeout.current) clearTimeout(typingTimeout.current);
+  typingTimeout.current = setTimeout(() => {
+    setDoc(typingRef, { typing: false }, { merge: true });
+  }, 3000);
+};
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !currentUserId) return;
@@ -184,10 +289,22 @@ export default function GroupChatDetail() {
 
       {/* Messages */}
       <FlatList
+        inverted
         ref={flatListRef}
         data={messages}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16 }}
+        onEndReached={loadMoreMessages}
+        onEndReachedThreshold={0.2}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={{ marginVertical: 10 }}>
+              <Text style={{ textAlign: "center", color: "#888" }}>
+                Loading more messages...
+              </Text>
+            </View>
+          ) : null
+        }
         renderItem={({ item }) => {
             const isSystem = item.system;
             const isMe = item.senderId === Number(currentUserId);
@@ -272,13 +389,19 @@ export default function GroupChatDetail() {
   />
 )}
 
+{typingUsers.length > 0 && (
+  <Text style={{ color: "#888", marginLeft: 16, marginBottom: 4 }}>
+    {typingUsers.join(", ")} {typingUsers.length === 1 ? "is" : "are"} typing...
+  </Text>
+)}
+
       {/* Input */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
           placeholder="Type your message"
           value={newMessage}
-          onChangeText={setNewMessage}
+          onChangeText={handleTyping}
         />
         <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
           <Text style={{ color: "white", fontWeight: "bold" }}>Send</Text>
