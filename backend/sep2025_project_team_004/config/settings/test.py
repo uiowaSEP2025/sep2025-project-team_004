@@ -17,7 +17,6 @@ print(f"SECRET_KEY: {'<present>' if 'SECRET_KEY' in os.environ else '<missing>'}
 print("*" * 80)
 
 from .base import *  # noqa: F403
-from .base import DATABASES
 from .base import INSTALLED_APPS
 from .base import REDIS_URL
 from .base import SPECTACULAR_SETTINGS
@@ -34,25 +33,21 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "changelater.com").split(
 
 # DATABASES
 # ------------------------------------------------------------------------------
-DATABASES["default"]["CONN_MAX_AGE"] = int(os.environ.get("CONN_MAX_AGE", "60"))
-# https://docs.djangoproject.com/en/dev/ref/settings/#databases
-# If DATABASE_URL is provided, use it; otherwise, use a test database
-if os.environ.get("DATABASE_URL"):
-    DATABASES = {"default": env.db("DATABASE_URL")}
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": "test_db.sqlite3",
-            "TEST": {
-                "NAME": None,  # Use in-memory database for tests
-            },
-        }
+# Always use SQLite for tests, regardless of DATABASE_URL setting
+# This prevents issues with trying to use external databases that may not exist
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": "test_db.sqlite3",
+        "TEST": {
+            "NAME": None,  # Use in-memory database for tests
+        },
     }
+}
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
+DATABASES["default"]["CONN_MAX_AGE"] = int(os.environ.get("CONN_MAX_AGE", "60"))
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 
 # SECURITY
 # ------------------------------------------------------------------------------
