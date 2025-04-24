@@ -107,9 +107,6 @@ jobs:
       - name: Check for missing migrations
         run: python manage.py makemigrations --check --dry-run
 
-      - name: Apply migrations
-        run: python manage.py migrate --noinput
-
       - name: Run pytest with coverage
         run: pytest --ds=config.settings.test --nomigrations --cov=sep2025_project_team_004 --cov-config=.coveragerc --cov-report=xml --cov-report=term-missing --cov-fail-under=40
 
