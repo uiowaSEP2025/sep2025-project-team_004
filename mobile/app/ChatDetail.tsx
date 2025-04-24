@@ -85,7 +85,6 @@ export default function ChatDetail() {
   };
 
   const loadMoreMessages = async () => {
-    console.log("Loading More Messages")
     if (loadingMore || !hasMore || !lastVisible) return;
     setLoadingMore(true);
 

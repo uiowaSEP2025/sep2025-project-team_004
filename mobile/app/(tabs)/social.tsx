@@ -123,10 +123,22 @@ export default function SocialScreen() {
         )}
       >
         {inbox.map((chat) => (
+
           <TouchableOpacity
-            key={chat.id}
-            style={styles.chatItem}
-            onPress={() =>
+          key={chat.id}
+          style={styles.chatItem}
+          onPress={() => {
+            if (chat.type === "groupChat") {
+              router.push({
+                pathname: "/GroupChatDetail",
+                params: {
+                  groupId: chat.id,
+                  groupName: chat.name,
+                  groupImage: chat.profilePicture,
+                  friends: JSON.stringify(friends),
+                },
+              });
+            } else {
               router.push({
                 pathname: "/ChatDetail",
                 params: {
@@ -134,9 +146,10 @@ export default function SocialScreen() {
                   username: chat.name,
                   profilePicture: chat.profilePicture,
                 },
-              })
+              });
             }
-          >
+          }}
+        >
             <Image source={require("../../assets/images/avatar-placeholder.png")} style={styles.avatar} />
             <View style={styles.chatInfo}>
               <Text style={styles.chatName}>{chat.name}</Text>

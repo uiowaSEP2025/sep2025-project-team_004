@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 type InboxItem = {
   id: string;
-  type: "dm" | "group";
+  type: "dm" | "groupChat";
   name: string;
   profilePicture: string;
   lastMessage: string;
@@ -23,10 +23,7 @@ export const useInbox = (currentUserId: number | null) => {
       where("members", "array-contains", numericId)
     );
 
-    const groupQuery = query(
-      collection(firestore, "groupChats"),
-      where("members", "array-contains", numericId)
-    );
+
 
     const unsubscribeDMs = onSnapshot(dmQuery, async (snapshot) => {
       const enrichedDMs = await Promise.all(snapshot.docs.map(async (docSnap) => {
@@ -53,19 +50,28 @@ export const useInbox = (currentUserId: number | null) => {
       );
     });
 
-    const unsubscribeGroups = onSnapshot(groupQuery, (snapshot) => {
-      const groups = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        type: "group" as const,
-        name: doc.data().name,
-        profilePicture: "", // Add group profile picture support if needed
-        lastMessage: doc.data().lastMessage,
-        lastUpdated: doc.data().lastUpdated?.toDate().toISOString() || new Date().toISOString(),
-      }));
-      setInbox((prev) =>
-        mergeAndSort([...prev.filter(i => i.type !== "group"), ...groups])
+    const groupQuery = query(
+        collection(firestore, "groupChats"),
+        where("membersArray", "array-contains", numericId)
       );
-    });
+      
+      const unsubscribeGroups = onSnapshot(groupQuery, (snapshot) => {
+        const groups = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            type: "groupChat" as const,
+            name: data.name,
+            profilePicture: data.image || "",
+            lastMessage: data.lastMessage,
+            lastUpdated: data.lastUpdated?.toDate().toISOString() || new Date().toISOString(),
+          };
+        });
+      
+        setInbox((prev) =>
+          mergeAndSort([...prev.filter(i => i.type !== "groupChat"), ...groups])
+        );
+      });
 
     return () => {
       unsubscribeDMs();
