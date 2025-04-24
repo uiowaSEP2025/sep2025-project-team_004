@@ -18,6 +18,7 @@ import SensorSelector from "../SensorSelector";
 import SensorChart from "../SensorChart";
 import MapSection from "../MapSection";
 import NoSensorFallbackView from "../NoSensorFallback";
+import HomeSkeletonLoader from "@/components/skeletons/HomeSkeletonLoader";
 
 const chartCache: Record<string, any> = {};
 
@@ -186,6 +187,10 @@ const WelcomePage: React.FC = () => {
   const humData = useMemo(() => makeChartData("humidity", cutoff), [sensorData, selectedRange, selectedSensor]);
 
   if (hasNoSensors) return <NoSensorFallbackView />;
+
+  if (loading) {
+    return <HomeSkeletonLoader />;
+  }
 
   if (!selectedSensor) {
     return (

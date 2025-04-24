@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { useFocusEffect } from "@react-navigation/native";
+import SocialSkeletonLoader from "@/components/skeletons/SocialSkeletonLoader";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
@@ -119,18 +120,12 @@ export default function SocialScreen() {
 
   useFocusEffect(
     useCallback(() => {
-
         loadChats(true);
-
     }, [])
   );
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
+    return <SocialSkeletonLoader />;
   }
 
   return (
