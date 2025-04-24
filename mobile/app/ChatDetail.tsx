@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, Image, AppState} from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { firestore } from "../_utlis/firebaseConfig";
 import {
   collection,
@@ -59,6 +60,39 @@ export default function ChatDetail() {
     };
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", async (nextAppState) => {
+      if (nextAppState !== "active" && currentUserId && conversationId) {
+        const typingRef = doc(
+          firestore,
+          `conversations/${conversationId}/typingStatus/${currentUserId}`
+        );
+        await setDoc(typingRef, { typing: false }, { merge: true });
+      }
+    });
+  
+    return () => {
+      subscription.remove();
+    };
+  }, [conversationId, currentUserId]);
+  
+
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        if (currentUserId) {
+          updateDoc(
+            doc(firestore, `conversations/${conversationId}/typingStatus/${currentUserId}`),
+            { typing: false }
+          ).then(() => {
+          }).catch((err) => {
+            console.error("❌ Failed to clear typing on screen blur:", err);
+          });
+        }
+      };
+    }, [conversationId, currentUserId])
+  );
 
   useEffect(() => {
     const q = collection(firestore, `conversations/${conversationId}/typingStatus`);
@@ -148,7 +182,6 @@ export default function ChatDetail() {
         await updateDoc(convoRef, {
           [`readCount.${currentUserId}`]: 0,
         });
-        console.log("✅ Successfully reset readCount for user:", currentUserId);
       } catch (error) {
         console.error("❌ Failed to reset readCount:", error);
       }

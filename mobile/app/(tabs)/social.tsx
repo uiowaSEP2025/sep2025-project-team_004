@@ -9,7 +9,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Alert,
 } from "react-native";
+import { firestore } from "../../_utlis/firebaseConfig";
+import { collection, addDoc, doc, setDoc, updateDoc, arrayUnion, serverTimestamp } from "firebase/firestore";
 import Icon from "react-native-vector-icons/Feather";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -54,7 +57,6 @@ export default function SocialScreen() {
     const fetchUser = async () => {
       const userInfo = await AsyncStorage.getItem("userInfo");
       const parsed = userInfo ? JSON.parse(userInfo) : null;
-      console.log("🔥 Stored userInfo:", parsed);
       setCurrentUserId(parsed?.id || null);
     };
     const fetchFriends = async () => {
@@ -77,7 +79,7 @@ export default function SocialScreen() {
     if (selectedFriends.length === 1) {
       const selected = friends.find(f => f.id === selectedFriends[0]);
       if (!selected || currentUserId === null) return;
-    
+  
       const conversationId = await getOrCreateDM(currentUserId, selected.id);
       router.push({
         pathname: "/ChatDetail",
@@ -87,9 +89,41 @@ export default function SocialScreen() {
           profilePicture: selected.profilePicture || "",
         },
       });
-    } else if (selectedFriends.length > 1) {
-      // Later: prompt for group name + call createGroupChat API
+    } else if (selectedFriends.length > 1 && currentUserId !== null) {
+      Alert.prompt("Group Name", "Enter a name for the group chat:", async (groupName) => {
+        if (!groupName) return;
+  
+        // 1. Create groupChat doc
+        const newGroupRef = await addDoc(collection(firestore, "groupChats"), {
+          name: groupName,
+          image: "", // optional
+          adminId: currentUserId,
+          membersArray: [...selectedFriends, currentUserId],
+          lastMessage: "",
+          lastUpdated: serverTimestamp(),
+          readCount: { [currentUserId]: 0 }
+        });
+  
+        // 2. Add members to subcollection
+        await Promise.all([...selectedFriends, currentUserId].map(id =>
+          setDoc(doc(firestore, `groupChats/${newGroupRef.id}/members/${id}`), {
+            username: friends.find(f => f.id === id)?.username || "Unknown"
+          })
+        ));
+  
+        // 3. Navigate
+        router.push({
+          pathname: "/GroupChatDetail",
+          params: {
+            groupId: newGroupRef.id,
+            groupName,
+            groupImage: "",
+            friends: JSON.stringify(friends),
+          },
+        });
+      });
     }
+  
     setComposeVisible(false);
     setSelectedFriends([]);
   };
@@ -125,7 +159,6 @@ export default function SocialScreen() {
         )}
       >
         {inbox.map((chat) => {
-  console.log("💬 Chat ID:", chat.id, "readCount:", chat.readCount, "currentUserId:", currentUserId);
 
   return (
     <TouchableOpacity

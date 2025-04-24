@@ -32,7 +32,6 @@ export const useInbox = (currentUserId: number | null) => {
         const otherId = data.members.find((id: number) => id !== numericId);
 
         const userDoc = await getDoc(doc(firestore, "users", otherId.toString()));
-        console.log("📦 Fetching user doc from Firestore for ID:", otherId.toString());
         const userData = userDoc.exists() ? userDoc.data() : { username: "Unknown", profilePicture: "" };
 
 
@@ -67,6 +66,7 @@ export const useInbox = (currentUserId: number | null) => {
             profilePicture: data.image || "",
             lastMessage: data.lastMessage,
             lastUpdated: data.lastUpdated?.toDate().toISOString() || new Date().toISOString(),
+            readCount: data.readCount ?? {}
           };
         });
       

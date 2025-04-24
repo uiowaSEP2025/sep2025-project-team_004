@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, Animated,
+  View, Text, TextInput, TouchableOpacity, FlatList, Animated, Alert, AppState,
   KeyboardAvoidingView, Platform, StyleSheet, Image, Dimensions
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { firestore } from "../_utlis/firebaseConfig";
 import {
-  collection, query, orderBy, onSnapshot, arrayRemove, deleteDoc,
+  collection, query, orderBy, onSnapshot, arrayRemove, deleteDoc, increment, deleteField,
   addDoc, serverTimestamp, updateDoc, doc, getDocs, setDoc, arrayUnion, limit, startAfter
 } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -38,6 +39,13 @@ export default function GroupChatDetail() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedGroupName, setEditedGroupName] = useState(
+    Array.isArray(groupName) ? groupName[0] : groupName || ""
+  );
+  const [ribbonGroupName, setRibbonGroupName] = useState(
+    Array.isArray(groupName) ? groupName[0] : groupName || ""
+  );
   const PAGE_SIZE = 20;
   const router = useRouter();
   
@@ -51,6 +59,42 @@ export default function GroupChatDetail() {
     };
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", async (nextAppState) => {
+      if (nextAppState !== "active" && groupId && currentUserId) {
+        const typingRef = doc(firestore, `groupChats/${groupId}/typingStatus/${currentUserId}`);
+        await setDoc(typingRef, { typing: false }, { merge: true });
+      }
+    });
+  
+    return () => {
+      subscription.remove();
+    };
+  }, [groupId, currentUserId]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        if (currentUserId && groupId) {
+          const typingRef = doc(firestore, `groupChats/${groupId}/typingStatus/${currentUserId}`);
+          setDoc(typingRef, { typing: false }, { merge: true });
+        }
+      };
+    }, [groupId, currentUserId])
+  );
+
+  useEffect(() => {
+    if (!groupId || !currentUserId) return;
+  
+    const viewerRef = doc(firestore, `groupChats/${groupId}/viewers/${currentUserId}`);
+    setDoc(viewerRef, { active: true, lastEntered: serverTimestamp() });
+  
+    return () => {
+      // When they leave, remove them from the viewers list
+      deleteDoc(viewerRef);
+    };
+  }, [groupId, currentUserId]);
 
   useEffect(() => {
     if (!groupId || !currentUserId) return;
@@ -112,6 +156,22 @@ export default function GroupChatDetail() {
   useEffect(() => {
     fetchMembers();
   }, [groupId]);
+
+  useEffect(() => {
+    if (!groupId || !currentUserId) return;
+  
+    const resetGroupReadCount = async () => {
+      try {
+        await updateDoc(doc(firestore, "groupChats", groupId as string), {
+          [`readCount.${currentUserId}`]: 0,
+        });
+      } catch (error) {
+        console.error("❌ Failed to reset group readCount:", error);
+      }
+    };
+  
+    resetGroupReadCount();
+  }, [groupId, currentUserId]);
 
   const loadInitialMessages = async () => {
     const ref = collection(firestore, `groupChats/${groupId}/messages`);
@@ -219,6 +279,25 @@ const handleTyping = (text: string) => {
       lastMessage: trimmed,
       lastUpdated: serverTimestamp(),
     });
+  
+    // Fetch all members except the sender
+    const membersSnap = await getDocs(collection(firestore, `groupChats/${groupId}/members`));
+    const allMemberIds = membersSnap.docs.map(doc => Number(doc.id)).filter(id => id !== Number(currentUserId));
+  
+    // Fetch current viewers
+    const viewersSnap = await getDocs(collection(firestore, `groupChats/${groupId}/viewers`));
+    const activeUserIds = viewersSnap.docs.map(doc => Number(doc.id));
+  
+    // Users who are NOT viewing the chat
+    const toIncrement = allMemberIds.filter(id => !activeUserIds.includes(id));
+  
+    const groupRef = doc(firestore, "groupChats", groupId as string);
+    const updates: Record<string, any> = {};
+    toIncrement.forEach(id => {
+      updates[`readCount.${id}`] = increment(1);
+    });
+  
+    await updateDoc(groupRef, updates);
 
     setNewMessage("");
   };
@@ -265,6 +344,72 @@ const handleTyping = (text: string) => {
         }
       }, [friends, members]);
 
+      const handleLeaveGroup = async () => {
+        if (!currentUserId || !groupId) return;
+      
+        const groupRef = doc(firestore, "groupChats", groupId as string);
+        const memberRef = doc(firestore, `groupChats/${groupId}/members/${currentUserId}`);
+        const viewerRef = doc(firestore, `groupChats/${groupId}/viewers/${currentUserId}`);
+      
+        try {
+          await deleteDoc(memberRef);
+      
+          await updateDoc(groupRef, {
+            membersArray: arrayRemove(Number(currentUserId)),
+            [`readCount.${currentUserId}`]: deleteField(), 
+          });
+      
+          await deleteDoc(viewerRef);
+      
+          await addDoc(collection(firestore, `groupChats/${groupId}/messages`), {
+            content: `${userName} has left the group`,
+            senderId: Number(currentUserId),
+            system: true,
+            timestamp: serverTimestamp(),
+          });
+      
+          router.back();
+        } catch (error) {
+          console.error("❌ Failed to leave group:", error);
+        }
+      };
+
+      const confirmLeaveGroup = () => {
+        if (Platform.OS === 'web') {
+          handleLeaveGroup();
+        }
+          Alert.alert(
+          "Leave Group",
+          "Are you sure you want to leave this group?",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Leave", style: "destructive", onPress: handleLeaveGroup }
+          ]
+        );
+      };
+
+      const handleDeleteGroup = async () => {
+        if (!groupId) return;
+      
+        try {
+          await deleteDoc(doc(firestore, "groupChats", groupId as string));
+          router.back();
+        } catch (err) {
+          console.error("❌ Failed to delete group chat:", err);
+        }
+      };
+
+      const confirmDeleteGroup = () => {
+        Alert.alert(
+          "Delete Group Chat",
+          "Are you sure you want to delete this group chat? This cannot be undone.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Delete", style: "destructive", onPress: handleDeleteGroup }
+          ]
+        );
+      };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -277,7 +422,7 @@ const handleTyping = (text: string) => {
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.usernameText} numberOfLines={1}>
-          {groupName}
+          {ribbonGroupName}
         </Text>
         <TouchableOpacity onPress={toggleSidebar}>
             <Image
@@ -340,7 +485,40 @@ const handleTyping = (text: string) => {
     source={groupImage ? { uri: groupImage } : require("../assets/images/avatar-placeholder.png")}
     style={styles.sidebarAvatar}
   />
+  {Number(currentUserId) === groupAdminId ? (
+  isEditingName ? (
+    <TextInput
+      style={[styles.sidebarTitle, { borderBottomWidth: 1, borderColor: "#ccc" }]}
+      value={editedGroupName}
+      onChangeText={setEditedGroupName}
+      onBlur={() => setIsEditingName(false)}
+      onSubmitEditing={async () => {
+        const trimmed = editedGroupName.trim();
+        if (trimmed && trimmed !== groupName) {
+          await updateDoc(doc(firestore, "groupChats", groupId as string), {
+            name: trimmed,
+          });
+
+          await addDoc(collection(firestore, `groupChats/${groupId}/messages`), {
+            content: `${userName} renamed the group to "${trimmed}"`,
+            senderId: Number(currentUserId),
+            system: true,
+            timestamp: serverTimestamp(),
+          });
+        }
+        setRibbonGroupName(trimmed);
+        setIsEditingName(false);
+      }}
+      autoFocus
+    />
+  ) : (
+    <TouchableOpacity onPress={() => setIsEditingName(true)}>
+      <Text style={styles.sidebarTitle}>{editedGroupName || groupName}</Text>
+    </TouchableOpacity>
+  )
+) : (
   <Text style={styles.sidebarTitle}>{groupName}</Text>
+)}
 
   <Text style={styles.sectionTitle}>Members</Text>
   {members.map((member) => (
@@ -376,9 +554,15 @@ const handleTyping = (text: string) => {
     <View style={{ height: 1, backgroundColor: "#eee", marginVertical: 4 }} />
   </TouchableOpacity>
 ))}
-  <TouchableOpacity style={styles.leaveGroupBtn}>
+  <TouchableOpacity style={styles.leaveGroupBtn} onPress={confirmLeaveGroup}>
     <Text style={{ color: "#007AFF", fontWeight: "bold" }}>Leave Group</Text>
   </TouchableOpacity>
+
+  {Number(currentUserId) === groupAdminId && (
+  <TouchableOpacity style={[styles.leaveGroupBtn, {marginTop: 40}]} onPress={confirmDeleteGroup}>
+    <Text style={{ color: "red", fontWeight: "bold" }}>Delete Group Chat</Text>
+  </TouchableOpacity>
+)}
 </Animated.View>
 
 {sidebarVisible && (
