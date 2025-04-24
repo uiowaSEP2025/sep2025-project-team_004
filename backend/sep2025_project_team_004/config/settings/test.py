@@ -9,6 +9,13 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 
+# Debug statements to see environment variables
+print("*" * 80)
+print("DEBUG - Environment Variables:")
+print(f"DJANGO_SECRET_KEY: {'<present>' if 'DJANGO_SECRET_KEY' in os.environ else '<missing>'}")
+print(f"SECRET_KEY: {'<present>' if 'SECRET_KEY' in os.environ else '<missing>'}")
+print("*" * 80)
+
 from .base import *  # noqa: F403
 from .base import DATABASES
 from .base import INSTALLED_APPS
@@ -19,10 +26,9 @@ from .base import env
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
-SECRET_KEY = env(
-    "DJANGO_SECRET_KEY",
-    default="test-only-secret-key-not-for-production-use"
-)
+# Direct assignment without using env() to avoid casting issues
+SECRET_KEY = "test-only-secret-key-not-for-production-use"
+print(f"DEBUG - Using hardcoded SECRET_KEY: {SECRET_KEY[:5]}...")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "changelater.com").split(",")
 
@@ -75,11 +81,11 @@ SECURE_CONTENT_TYPE_NOSNIFF = os.environ.get("DJANGO_SECURE_CONTENT_TYPE_NOSNIFF
 
 
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#settings
-AWS_ACCESS_KEY_ID = env("DJANGO_AWS_ACCESS_KEY_ID")
+AWS_ACCESS_KEY_ID = "test-key-id"
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#settings
-AWS_SECRET_ACCESS_KEY = env("DJANGO_AWS_SECRET_ACCESS_KEY")
+AWS_SECRET_ACCESS_KEY = "test-access-key"
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#settings
-AWS_STORAGE_BUCKET_NAME = env("DJANGO_AWS_STORAGE_BUCKET_NAME")
+AWS_STORAGE_BUCKET_NAME = "test-bucket"
 # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#settings
 AWS_QUERYSTRING_AUTH = False
 # DO NOT change these unless you know what you're doing.
@@ -114,10 +120,10 @@ MEDIA_URL = f"https://{aws_s3_domain}/media/"
 
 
 # Admin
-DJANGO_ADMIN_FORCE_ALLAUTH = os.environ.get("DJANGO_ADMIN_FORCE_ALLAUTH", "False").lower() == "true"
+DJANGO_ADMIN_FORCE_ALLAUTH = False
 
 
-REDIS_URL = env("REDIS_URL")
+REDIS_URL = "redis://localhost:6379/0"
 
 REDIS_SSL = REDIS_URL.startswith("rediss://")
 CACHES = {
@@ -192,7 +198,7 @@ ACCOUNT_EMAIL_SUBJECT_PREFIX = EMAIL_SUBJECT_PREFIX
 # ADMIN
 # ------------------------------------------------------------------------------
 # Django Admin URL regex.
-ADMIN_URL = env("DJANGO_ADMIN_URL")
+ADMIN_URL = "admin/"
 
 # Anymail
 # ------------------------------------------------------------------------------
@@ -203,9 +209,9 @@ INSTALLED_APPS += ["anymail"]
 # https://anymail.readthedocs.io/en/stable/esps/mailgun/
 EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
 ANYMAIL = {
-    "MAILGUN_API_KEY": env("MAILGUN_API_KEY"),
-    "MAILGUN_SENDER_DOMAIN": env("MAILGUN_DOMAIN"),
-    "MAILGUN_API_URL": env("MAILGUN_API_URL", default="https://api.mailgun.net/v3"),
+    "MAILGUN_API_KEY": "test-mailgun-key",
+    "MAILGUN_SENDER_DOMAIN": "example.com",
+    "MAILGUN_API_URL": "https://api.mailgun.net/v3",
 }
 
 
