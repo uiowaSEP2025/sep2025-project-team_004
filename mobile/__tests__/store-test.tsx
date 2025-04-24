@@ -90,10 +90,24 @@ const setup = () => {
 
 // --- Test Suite ---
 describe('StoreScreen', () => {
-  it('renders the loading indicator initially', () => {
-    const { UNSAFE_getByType } = setup();
-    const indicator = UNSAFE_getByType(ActivityIndicator);
-    expect(indicator).toBeTruthy();
+  it('renders the loading indicator initially', async () => {
+    // Mock the fetch call to control loading state
+    global.fetch = jest.fn(() => 
+      new Promise(resolve => setTimeout(() => {
+        resolve({
+          json: () => Promise.resolve([])
+        });
+      }, 100))
+    );
+    
+    const { UNSAFE_getByType } = render(
+      <CartContext.Provider value={{ cart: [], addToCart: jest.fn(), removeFromCart: jest.fn(), clearCart: jest.fn() }}>
+        <StoreScreen />
+      </CartContext.Provider>
+    );
+    
+    // Find the ActivityIndicator by type instead of testID
+    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
   });
 
   it('renders the product list after fetching', async () => {

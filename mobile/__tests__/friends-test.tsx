@@ -166,9 +166,10 @@ describe("FriendRequestsScreen", () => {
 
     await waitFor(() => {
       expect(api.acceptFriendRequest).toHaveBeenCalledWith(1);
-      expect(queryByText("alice")).toBeNull();
-      expect(getByText("Friend request accepted!")).toBeTruthy();
-    });
+    }, { timeout: 1000 });
+
+    expect(queryByText("alice")).toBeNull();
+    expect(getByText("Friend request accepted!")).toBeTruthy();
   });
 
   it("calls rejectFriendRequest and updates list", async () => {
