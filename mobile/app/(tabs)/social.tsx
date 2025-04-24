@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -48,6 +48,7 @@ export default function SocialScreen() {
   const [composeVisible, setComposeVisible] = useState(false);
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [selectedFriends, setSelectedFriends] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   // Detect Scroll Direction (Up or Down)
@@ -74,6 +75,12 @@ export default function SocialScreen() {
     fetchUser();
     fetchFriends();
   }, []);
+
+  useEffect(() => {
+    if (currentUserId !== null && friends.length > 0) {
+      setLoading(false);
+    }
+  }, [currentUserId, friends]);
 
   const inbox = useInbox(currentUserId);
 
@@ -130,11 +137,6 @@ export default function SocialScreen() {
     setSelectedFriends([]);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-        loadChats(true);
-    }, [])
-  );
 
   if (loading) {
     return <SocialSkeletonLoader />;
