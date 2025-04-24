@@ -1,5 +1,5 @@
 import React from "react";
-import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
+import { render, fireEvent, waitFor, act, cleanup } from "@testing-library/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Navigation from "@react-navigation/native";
 
@@ -52,6 +52,10 @@ jest.mock("@react-navigation/native", () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+});
+
+afterEach(() => {
+  cleanup();
 });
 
 const mockSensor = {
@@ -133,12 +137,13 @@ const setup = () => render(<WelcomePage />);
 
 describe("WelcomePage", () => {
   it("renders correctly", async () => {
-    const { findByText } = setup();
+    const { getByText } = setup();
     
+    // Use getByText instead of findByText to ensure component is mounted
     await waitFor(() => {
-      expect(findByText("Today")).toBeTruthy();
-      expect(findByText("Past Week")).toBeTruthy();
-      expect(findByText("Past 30 Days")).toBeTruthy();
+      expect(getByText("Today")).toBeTruthy();
+      expect(getByText("Past Week")).toBeTruthy();
+      expect(getByText("Past 30 Days")).toBeTruthy();
     }, { timeout: 5000 });
   });
 
