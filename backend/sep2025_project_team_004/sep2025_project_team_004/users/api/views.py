@@ -176,7 +176,8 @@ class UserDetailView(APIView):
             "state": user.state,
             "city": user.city,
             "role": user.role,
-            "profile_picture": user.profile_picture.url if user.profile_picture else None,    
+            "profile_picture": user.profile_picture.url if user.profile_picture else None,
+               
         })
         
 class SearchUsersView(APIView):
