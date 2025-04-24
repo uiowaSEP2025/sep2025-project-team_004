@@ -20,6 +20,8 @@ jest.mock('firebase/firestore', () => ({
   query: jest.fn(() => ({})),
   where: jest.fn(() => ({})),
   addDoc: jest.fn(() => Promise.resolve({ id: 'mock-id' })),
+  onSnapshot: jest.fn(() => jest.fn()),
+  orderBy: jest.fn(() => ({})),
 }));
 
 // Create a virtual mock for any import of firebaseConfig

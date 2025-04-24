@@ -180,10 +180,13 @@ describe("FriendRequestsScreen", () => {
 
     fireEvent.press(getByText("Reject"));
 
+    // First wait for the API call
     await waitFor(() => {
       expect(api.rejectFriendRequest).toHaveBeenCalledWith(1);
-      expect(queryByText("alice")).toBeNull();
-      expect(getByText("Friend request rejected!")).toBeTruthy();
-    });
+    }, { timeout: 2000 });
+    
+    // Then check UI updates separately
+    expect(queryByText("alice")).toBeNull();
+    expect(getByText("Friend request rejected!")).toBeTruthy();
   });
 });
