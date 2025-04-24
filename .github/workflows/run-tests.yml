@@ -25,7 +25,10 @@ jobs:
           node-version: 18
 
       - name: Install NPM dependencies
-        run: npm ci
+        run: |
+          cd mobile
+          npm ci
+          npm install --no-save @testing-library/react-native
 
       - name: Run Jest with coverage
         run: npx jest --ci --coverage --runInBand

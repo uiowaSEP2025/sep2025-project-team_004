@@ -90,10 +90,16 @@ const setup = () => {
 
 // --- Test Suite ---
 describe('StoreScreen', () => {
-  it('renders the loading indicator initially', () => {
+  it('renders the loading indicator initially', async () => {
     const { UNSAFE_getByType } = setup();
-    const indicator = UNSAFE_getByType(ActivityIndicator);
-    expect(indicator).toBeTruthy();
+    
+    // Wait for the component to render
+    await act(async () => {
+      await waitFor(() => {
+        const indicator = UNSAFE_getByType(ActivityIndicator);
+        expect(indicator).toBeTruthy();
+      });
+    });
   });
 
   it('renders the product list after fetching', async () => {
