@@ -50,6 +50,7 @@ export default function SocialScreen() {
   const [selectedFriends, setSelectedFriends] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<FriendUser | null>(null);
 
   // Detect Scroll Direction (Up or Down)
   scrollY.addListener(({ value }) => {
@@ -61,6 +62,13 @@ export default function SocialScreen() {
       const userInfo = await AsyncStorage.getItem("userInfo");
       const parsed = userInfo ? JSON.parse(userInfo) : null;
       setCurrentUserId(parsed?.id || null);
+      if (parsed?.id && parsed?.username) {
+        setCurrentUser({
+          id: parsed.id,
+          username: parsed.username,
+          profilePicture: parsed.profilePicture || "",
+        });
+      }
     };
     const fetchFriends = async () => {
       const token = await AsyncStorage.getItem("authToken");
@@ -114,9 +122,14 @@ export default function SocialScreen() {
         });
   
         // 2. Add members to subcollection
-        await Promise.all([...selectedFriends, currentUserId].map(id =>
-          setDoc(doc(firestore, `groupChats/${newGroupRef.id}/members/${id}`), {
-            username: friends.find(f => f.id === id)?.username || "Unknown"
+        const allMembers: FriendUser[] = [
+          ...(selectedFriends.map(id => friends.find(f => f.id === id)).filter(Boolean) as FriendUser[]),
+          ...(currentUser ? [currentUser] : [])
+        ];
+        
+        await Promise.all(allMembers.map(member =>
+          setDoc(doc(firestore, `groupChats/${newGroupRef.id}/members/${member.id}`), {
+            username: member.username
           })
         ));
   
@@ -135,6 +148,27 @@ export default function SocialScreen() {
   
     setComposeVisible(false);
     setSelectedFriends([]);
+  };
+
+  const formatTime = (timestamp: string | null | undefined) => {
+    if (!timestamp) return "";
+  
+    const date = new Date(timestamp);
+    const now = new Date();
+  
+    const isToday = date.toDateString() === now.toDateString();
+  
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+  
+    if (isToday) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (isYesterday) {
+      return "Yesterday";
+    } else {
+      return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    }
   };
 
 
@@ -211,7 +245,7 @@ export default function SocialScreen() {
           <Text style={styles.unreadText}>{chat.readCount[currentUserId]}</Text>
         </View>
       ) : (
-        <Text style={styles.chatTime}>Just now</Text>
+        <Text style={styles.chatTime}>{formatTime(chat.lastUpdated)}</Text>
       )}
       </TouchableOpacity>
     );
