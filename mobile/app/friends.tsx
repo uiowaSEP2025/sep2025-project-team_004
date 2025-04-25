@@ -21,7 +21,6 @@ import {
 } from "@/app/api/friends";
 
 import { useRouter } from 'expo-router';
-import { getMessagesByConversation } from "@/app/api/messages";
 
 const defaultPfp = require("@/assets/images/avatar-placeholder.png");
 
@@ -217,43 +216,6 @@ export default function FriendRequestsScreen() {
             renderItem={({ item }) => (
               <View style={styles.friendItem}>
                 <Text style={styles.friendName}>{item.username}</Text>
-                <TouchableOpacity
-                  disabled={loadingId === item.id}
-                  onPress={async () => {
-                  setLoadingId(item.id);
-                  try {
-                    const { results } = await getMessagesByConversation(item.conversation_id, 1);
-                    router.push({
-                    pathname: "/ChatDetail",
-                    params: {
-                    userId: item.id,
-                    username: item.username,
-                    conversationId: item.conversation_id,
-                    messages: JSON.stringify(results),
-                  },
-                });
-                } catch (error) {
-                  console.error("Failed to fetch messages:", error);
-                } finally {
-                  setLoadingId(null);
-                }
-              }}
-            style={{
-                backgroundColor: loadingId === item.id ? "#999" : "#007AFF",
-                padding: 8,
-                borderRadius: 6,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-               minWidth: 90,
-             }}
-            >
-              {loadingId === item.id ? (
-               <ActivityIndicator color="#fff" size="small" />
-              ) : (
-               <Text style={{ color: "white" }}>Message</Text>
-             )}
-           </TouchableOpacity>
               </View>
             )}
           />
