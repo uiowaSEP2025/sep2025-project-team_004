@@ -2,10 +2,13 @@
   "expo": {
     "name": "Iowa-Sensors",
     "slug": "Iowa-Sensors",
+    "owner": "sep_team4", 
     "version": "1.0.0",
+
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
+    "deepLinks": ["myapp://"],
     "platforms": [
       "ios",
       "android",
@@ -18,7 +21,8 @@
       "bundleIdentifier": "com.septeam4.IowaSensors",
       "buildNumber": "4",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "This app uses the camera to let users add profile photos, use faceID to verify the apple pay, and scan QR codes to register sensors."
       }
     },
     "android": {
@@ -43,7 +47,14 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.septeam4.IowaSensors"
+        }
+      ],
+      "expo-dev-client"
     ],
     "experiments": {
       "typedRoutes": true

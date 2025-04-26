@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+import uuid
 
 User = get_user_model()
 
@@ -36,6 +37,7 @@ class Friendship(models.Model):
     """Tracks actual friendships"""
     user1 = models.ForeignKey(User, related_name="friends1", on_delete=models.CASCADE)
     user2 = models.ForeignKey(User, related_name="friends2", on_delete=models.CASCADE)
+    conversation_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -43,3 +45,18 @@ class Friendship(models.Model):
 
     def __str__(self):
         return f"{self.user1} ↔ {self.user2}"
+    
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, related_name="sent_messages", on_delete=models.CASCADE)
+    recipient = models.ForeignKey(User, related_name="received_messages", on_delete=models.CASCADE)
+    content = models.TextField()
+    read = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    conversation_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"{self.sender.username} → {self.recipient.username}: {self.content[:30]}"

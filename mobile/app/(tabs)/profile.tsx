@@ -1,5 +1,6 @@
 // app/(tabs)/Profile.tsx
 import React, {useState, useCallback, useEffect } from 'react';
+// import { ensureHttps } from '../../utils/imageUtils';
 import {
   View,
   Text,
@@ -19,7 +20,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types"; 
 import Constants from "expo-constants";
-import * as SecureStore from 'expo-secure-store';
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
@@ -36,7 +36,13 @@ export const unstable_settings = {
 
 export default function Profile() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [user, setUser] = useState({ first_name: "", last_name: "", email: "" });
+  const [user, setUser] = useState({ 
+    first_name: "", 
+    last_name: "", 
+    email: "", 
+    role: "",
+    profile_picture: null
+  });
   const [modalVisible, setModalVisible] = useState(false);
   const [defaultCard, setDefaultCard] = useState<any>(null);
 
@@ -61,52 +67,28 @@ export default function Profile() {
       };
 
       const fetchDefaultCard = async () => {
-        if (await SecureStore.getItemAsync("paymentInfo") === null) {
-          try {
-            const authToken = await AsyncStorage.getItem("authToken");
-            if (!authToken) {
-              return;
-            }
-          
-            const response = await fetch(`${API_BASE_URL}/api/payment/payment-methods/`, {
-              method: "GET",
-              headers: {
-                "Authorization": `Token ${authToken}`,
-                "Content-Type": "application/json",
-              },
-            });
-  
-            if (!response.ok) {
-              throw new Error("Failed to fetch payment methods.");
-            }
-  
-            const data = await response.json();
-            await SecureStore.setItemAsync('paymentInfo', JSON.stringify(data));
-            const defaultCard = data.find((card: any) => card.is_default);
-          
-            setDefaultCard(defaultCard || null);
-          } catch (error) {
-            console.error("Error fetching default payment method:", error);
-          }
-      }
-      else {
-        const getDefaultCard = async () => {
-          const stored = await SecureStore.getItemAsync('paymentInfo');
-          if (stored) {
-            try {
-              const cards = JSON.parse(stored);
-              const defaultCardStorage = cards.find((card: any) => card.is_default);
-              return defaultCardStorage;
-            } catch (err) {
-              console.error('Failed to parse stored payment info:', err);
-            }
-          }
-          return null;
-        };
-        const defaultCard = await getDefaultCard();
-        setDefaultCard(defaultCard || null);
-      }
-    };
+        try {
+          const authToken = await AsyncStorage.getItem("authToken");
+          if (!authToken) return;
+      
+          const response = await fetch(`${API_BASE_URL}/api/payment/stripe-methods/`, {
+            method: "GET",
+            headers: {
+              "Authorization": `Token ${authToken}`,
+              "Content-Type": "application/json",
+            },
+          });
+      
+          if (!response.ok) throw new Error("Failed to fetch Stripe cards");
+      
+          const data = await response.json();
+          const defaultCard = data.find((card: any) => card.is_default);
+      
+          setDefaultCard(defaultCard || null);
+        } catch (error) {
+          console.error("Error fetching default Stripe card:", error);
+        }
+      };
 
       fetchUserInfo();
       fetchDefaultCard();
@@ -128,7 +110,6 @@ export default function Profile() {
   const confirmLogout = async () => {
     try {
       await AsyncStorage.clear();
-      await SecureStore.deleteItemAsync('paymentInfo'); 
       navigation.reset({ index: 0, routes: [{ name: "index" }] });
       setModalVisible(false);
     } catch (error) {
@@ -162,7 +143,9 @@ export default function Profile() {
         >
           <Image
             style={styles.avatar}
-            source={require('@/assets/images/avatar-placeholder.png')}
+            source={user.profile_picture 
+              ? { uri: user.profile_picture } 
+              : require('@/assets/images/default-pfp.png')}
           />
           <View style={styles.userInfo}>
             <Text style={styles.username}>
@@ -220,7 +203,7 @@ export default function Profile() {
               <Text style={styles.infoTitle}>Payment Information</Text>
               <Text style={styles.infoSubtitle}>
                 {defaultCard
-                  ? `${defaultCard.card_type} ending in ${defaultCard.last4}`
+                  ? `${defaultCard.brand} ending in ${defaultCard.last4}`
                   : "No default payment set"}
               </Text>
             </View>
@@ -234,14 +217,14 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => {
+  
             /* TODO:  My Reviews page */
-          }}
+          onPress={() => navigation.navigate("my-reviews")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoTitle}>My Reviews</Text>
-              <Text style={styles.infoSubtitle}>Review for x items</Text>
+              <Text style={styles.infoSubtitle}>Handle your reviews</Text>
             </View>
             <Image
               style={styles.arrowIcon}
@@ -253,7 +236,7 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.infoItem}
-          onPress={() => navigation.navigate("setting")}
+          onPress={() => navigation.navigate("settings")}
         >
           <View style={styles.infoRow}>
             <View style={styles.infoTextContainer}>
@@ -269,6 +252,26 @@ export default function Profile() {
             />
           </View>
         </TouchableOpacity>
+        {user.role?.toLowerCase()=== "admin" && (
+        <TouchableOpacity
+          style={styles.infoItem}
+          onPress={() => navigation.navigate("admin-orders")}
+        >
+          <View style={styles.infoRow}>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoTitle}>Admin Orders</Text>
+              <Text style={styles.infoSubtitle}>
+                Manage all customer orders
+              </Text>
+            </View>
+           <Image
+             style={styles.arrowIcon}
+             source={require('@/assets/images/forward-arrow.png')}
+             resizeMode="contain"
+           />
+         </View>
+       </TouchableOpacity>
+      )}
       </ScrollView>
 
       {/* Logout Confirmation Modal */}

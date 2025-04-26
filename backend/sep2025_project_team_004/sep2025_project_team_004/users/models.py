@@ -1,4 +1,3 @@
-
 from typing import ClassVar
 
 from django.contrib.auth.models import AbstractUser
@@ -19,9 +18,13 @@ class User(AbstractUser):
     If adding fields that need to be filled at user signup,
     check forms.SignupForm and forms.SocialSignupForms accordingly.
     """
-
+    ROLE_CHOICES = [
+        ('user', 'User'),
+        ('admin', 'Admin'),
+    ]
     # First and last name do not cover name patterns around the globe
-    name = CharField(_("Name of User"), blank=True, max_length=255)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
+    stripe_customer_id = models.CharField(_("Stripe Customer ID"), blank=True, null=True, max_length=255)
     first_name = CharField(_("First Name"), blank=True, max_length=255)
     last_name = CharField(_("Last Name"), blank=True, max_length=255)
     phone_number = CharField(_("Phone Number"), blank=True, max_length=20)
@@ -31,6 +34,7 @@ class User(AbstractUser):
     address = CharField(_("Address"), blank=True, max_length=255)
     email = EmailField(_("email address"), unique=True)
     username = CharField(_("username"), unique=True, blank=False, null=False, max_length=255)
+    profile_picture = models.ImageField(_("Profile Picture"), upload_to="profile_pictures/", blank=True, null=True)
     
     friends = models.ManyToManyField("self", symmetrical=False, blank=True, related_name="friend_requests")
 

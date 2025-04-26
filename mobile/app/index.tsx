@@ -14,11 +14,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 import Constants from "expo-constants";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { firestore } from "../_utlis/firebaseConfig";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === "true"
     ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
     : process.env.EXPO_PUBLIC_BACKEND_URL;
+
 
 
 export default function HomeScreen() {
@@ -35,8 +38,6 @@ export default function HomeScreen() {
     }
     setLoading(true);
     try {
-      const fullUrl = `${API_BASE_URL}/api/users/api-token-auth/`;
-      console.log("API URL:", fullUrl);
       const response = await fetch(`${API_BASE_URL}/api/users/api-token-auth/`, {
         method: "POST",
         headers: {
@@ -49,7 +50,6 @@ export default function HomeScreen() {
       });
 
       const data = await response.json();
-      console.log("API Response:", data);
       if (response.ok && data.token) {
         await AsyncStorage.setItem("authToken", data.token); 
         
@@ -61,18 +61,29 @@ export default function HomeScreen() {
         const userData = await userResponse.json();
         if (userResponse.ok) {
           await AsyncStorage.setItem("userInfo", JSON.stringify(userData));
+
+          const userDocRef = doc(firestore, "users", String(userData.id));
+          const userSnapshot = await getDoc(userDocRef);
+
+          if (!userSnapshot.exists()) {
+            await setDoc(userDocRef, {
+              id: userData.id,
+              username: userData.username,
+              profilePicture: "", // or set a default
+            });
+          }
+          await AsyncStorage.setItem("userInfo", JSON.stringify(userData));
           navigation.reset({
             index: 0,
             routes: [{ name: "(tabs)", params: { screen: "home" } }],
           });
         } else {
-          console.error("Failed to fetch user details:", userData);
+          setError("Failed to fetch user details. Please try again.");
         }
       } else {
         setError("Invalid credentials. Please try again.");
       }
     } catch (err) {
-      console.error("Login error:", err);
       setError("Something went wrong. Please try again later.");
     }
     setLoading(false);

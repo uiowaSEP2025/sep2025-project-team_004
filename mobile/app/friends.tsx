@@ -7,10 +7,11 @@ import {
   FlatList,
   StyleSheet,
   Modal,
-  Image
+  Image,
+  ActivityIndicator
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   sendFriendRequest,
   getPendingRequests,
@@ -18,6 +19,8 @@ import {
   acceptFriendRequest,
   rejectFriendRequest,
 } from "@/app/api/friends";
+
+import { useRouter } from 'expo-router';
 
 const defaultPfp = require("@/assets/images/avatar-placeholder.png");
 
@@ -34,16 +37,22 @@ interface FriendRequest {
 interface FriendUser {
   id: number;
   username: string;
+  conversation_id: string;
 }
 
 export default function FriendRequestsScreen() {
+  const router = useRouter();
+  const route = useRoute();
+  const initialTab = (route.params as any)?.initialTab;
+
+  const [activeTab, setActiveTab] = useState(initialTab || "pending");
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState("pending");
   const [searchTerm, setSearchTerm] = useState("");
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [loadingId, setLoadingId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {

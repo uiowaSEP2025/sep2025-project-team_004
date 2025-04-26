@@ -11,6 +11,7 @@
         "EXPO_PUBLIC_DEV_FLAG": "true" ,
         "EXPO_PUBLIC_BACKEND_URL": "this_should_never_be_used" ,
         "EXPO_PUBLIC_SENSOR_DATA_URL": "this_should_never_be_used"
+        "EXPO_PUBLIC_SENSOR_DATA_URL": "this_should_never_be_used"
       }
     },
     "preview": {
@@ -18,14 +19,17 @@
     },
     "production": {
       "autoIncrement": true,
-      "env": {
-        "EXPO_PUBLIC_DEV_FLAG": "false" ,
-        "EXPO_PUBLIC_BACKEND_URL": "https://d2tedebo3dq0kj.cloudfront.net" ,
-        "EXPO_PUBLIC_SENSOR_DATA_URL": "https://d2tedebo3dq0kj.cloudfront.net/api/sensor_data/"
-      }
+      "environment": "production"
+
+      
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6743309326"
+      }
+
+    }
   }
 }

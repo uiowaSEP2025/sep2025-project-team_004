@@ -1,0 +1,15 @@
+[run]
+# Only measure coverage for your app's code
+source = sep2025_project_team_004
+
+# Files to exclude from coverage
+omit = 
+    */migrations/*
+    */tests/*
+    */settings/*
+    *.txt
+    *.md
+    *.html
+    manage.py
+    wsgi.py
+    asgi.py

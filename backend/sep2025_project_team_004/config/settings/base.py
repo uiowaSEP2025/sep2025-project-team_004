@@ -48,6 +48,11 @@ EMAIL_USE_SSL = True
 EMAIL_HOST_USER = env("EMAIL_HOST_USER") 
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD") 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+REDIS_URL = env("REDIS_URL", default=None)
+SMARTY_AUTH_ID = env("SMARTY_AUTH_ID")
+SMARTY_AUTH_TOKEN = env("SMARTY_AUTH_TOKEN")
+STRIPE_SECRET_KEY= env("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug

@@ -15,5 +15,8 @@ export type RootStackParamList = {
   ResetPasswordScreen: {email: string, token: string},
   "my-orders": undefined;
   "settings": undefined;
+  "my-reviews": undefined;
+  "admin-orders": undefined;
+  "Firebasescreentest": undefined;
   // Add other routes as needed
 };
