@@ -1,14 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, Alert} from 'react-native';
+import { ActivityIndicator, SafeAreaView, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from "expo-constants";
+import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
-
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
-    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
-    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const AddCardWebview = () => {
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
@@ -16,6 +11,11 @@ const AddCardWebview = () => {
 
   useEffect(() => {
     const startCheckout = async () => {
+      const API_BASE_URL =
+        process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
+          ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost'}:8000`
+          : process.env.EXPO_PUBLIC_BACKEND_URL;
+
       const token = await AsyncStorage.getItem('authToken');
       if (!token) return;
 
@@ -26,8 +26,8 @@ const AddCardWebview = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          return_url: API_BASE_URL
-        })
+          return_url: API_BASE_URL,
+        }),
       });
 
       const data = await response.json();

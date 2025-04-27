@@ -377,5 +377,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
     "SCHEMA_PATH_PREFIX": "/api/",
 }
+
+# settings.py
+AUTH_USER_MODEL = "users.User"
+
 # Your stuff...
 # ------------------------------------------------------------------------------

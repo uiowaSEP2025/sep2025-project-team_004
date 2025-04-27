@@ -1,346 +1,176 @@
-import React, { useState, useCallback } from 'react';
+// AdminOrders.tsx
+import React, { useState, useCallback } from 'react'
 import {
+  SafeAreaView,
   View,
   Text,
+  TouchableOpacity,
   ImageBackground,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   Dimensions,
   TextInput,
   Modal,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
+} from 'react-native'
+import { useRouter } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
+import Constants from 'expo-constants'
+import { useAdminOrders, OrderStatus, OrderDetail } from '../hooks/useAdminOrders'
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
-    ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost'}:8000`
-    : process.env.EXPO_PUBLIC_BACKEND_URL;
+    ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() || 'localhost'}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL!
 
 export default function AdminOrders() {
-  type OrderStatus = 'Out for Delivery' | 'Processing' | 'Canceled';
+  const router = useRouter()
+  // pull in everything from your hook
+  const { orders, loading, hasNext, fetchOrders, completeOrder } =
+    useAdminOrders(API_BASE_URL)
 
-  type OrderDetail = {
-    id: number;
-    stripe_payment_method_id: string | null;
-    shipping_address: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    total_price: string;
-    status: string;
-    tracking_number: string | null;
-    created_at: string;
-    user: {
-      first_name: string;
-      last_name: string;
-      email: string;
-    };
-    items: {
-      product_name: string;
-      product_price: string;
-      quantity: number;
-    }[];
-  };
-  const [selectedTab, setSelectedTab] = useState<OrderStatus>('Out for Delivery');
-  const [ordersData, setOrdersData] = useState<{ [key in OrderStatus]: any[] }>({
-    'Out for Delivery': [],
-    Processing: [],
-    Canceled: [],
-  });
-  const [showModal, setShowModal] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const [trackingNumber, setTrackingNumber] = useState('');
+  const [selectedTab, setSelectedTab] = useState<OrderStatus>('Out for Delivery')
+  const [page, setPage] = useState(1)
 
-  const router = useRouter();
-  const tabContainerWidth = Dimensions.get('window').width;
-  const tabWidth = tabContainerWidth / 3;
-  const tabs: OrderStatus[] = ['Out for Delivery', 'Processing', 'Canceled'];
-  const indicatorLeft = tabs.indexOf(selectedTab) * tabWidth + (tabWidth * 0.5);
+  const [showCompleteModal, setShowCompleteModal] = useState(false)
+  const [currentOrderId, setCurrentOrderId] = useState<number | null>(null)
+  const [trackingNumber, setTrackingNumber] = useState('')
 
-  const [page, setPage] = useState(1);
-  const [hasNext, setHasNext] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [detailsOrder, setDetailsOrder] = useState<OrderDetail | null>(null)
 
-  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetail | null>(null);
-
+  // 1) On focus: reset page, re-fetch
   useFocusEffect(
     useCallback(() => {
-      setPage(1);
-      fetchOrders(1);
-    }, [])
-  );
-  
-  const fetchOrders = async (pageNum = 1) => {
-    const token = await AsyncStorage.getItem('authToken');
-    if (!token) return;
-  
-    setLoading(true);
-    const res = await fetch(`${API_BASE_URL}/api/store/orders/admin/?page=${pageNum}`, {
-      headers: {
-        Authorization: `Token ${token}`,
-      },
-    });
-  
-    const data = await res.json();
-    setLoading(false);
-  
-    const newOrdersByStatus: Record<OrderStatus, OrderDetail[]> = {
-      'Out for Delivery': [],
-      Processing: [],
-      Canceled: [],
-    };
-  
-    for (const order of data.results || []) {
-      const status = (
-        order.status === 'out_for_delivery'
-          ? 'Out for Delivery'
-          : order.status === 'cancelled'
-          ? 'Canceled'
-          : 'Processing' ) as OrderStatus;
-      newOrdersByStatus[status].push(order);
+      setPage(1)
+      fetchOrders(1)
+    }, [fetchOrders])
+  )
+
+  // 2) infinite scroll handler
+  const onScroll = ({ nativeEvent }: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent
+    if (
+      layoutMeasurement.height + contentOffset.y >= contentSize.height - 20 &&
+      hasNext &&
+      !loading
+    ) {
+      const next = page + 1
+      setPage(next)
+      fetchOrders(next)
     }
-  
-    if (pageNum === 1) {
-      setOrdersData(newOrdersByStatus);
-    } else {
-      setOrdersData(prev => {
-        const updated = { ...prev };
-        for (const status of Object.keys(newOrdersByStatus) as OrderStatus[]) {
-          updated[status] = [...prev[status], ...newOrdersByStatus[status]];
-        }
-        return updated;
-      });
+  }
+
+  // 3) when you press “Complete”
+  const handleComplete = async () => {
+    if (currentOrderId != null) {
+      await completeOrder(currentOrderId, trackingNumber)
     }
-    setHasNext(!!data.next);
-  };
+    setShowCompleteModal(false)
+    setTrackingNumber('')
+    setCurrentOrderId(null)
+  }
 
-  const handleCompleteOrder = async () => {
-    if (!selectedOrderId) return;
-    const token = await AsyncStorage.getItem('authToken');
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/store/orders/update/${selectedOrderId}/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Token ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: "out_for_delivery",
-          tracking_number: trackingNumber,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Failed to update order");
-      setShowModal(false);
-      setTrackingNumber('');
-      setSelectedOrderId(null);
-      const refreshedOrder = await res.json();
-      setOrdersData(prev => {
-        const updated = { ...prev };
-      
-        if (!updated['Out for Delivery']) updated['Out for Delivery'] = [];
-        if (!updated['Processing']) updated['Processing'] = [];
-
-        const cleanedOrder = { ...refreshedOrder, status: 'out_for_delivery' };
-      
-        updated['Out for Delivery'].push(cleanedOrder);
-        updated['Processing'] = updated['Processing'].filter(o => o.id !== refreshedOrder.id);
-      
-        return updated;
-      });
-    } catch (error) {
-      console.error("Error completing order:", error);
-    }
-  };
+  // UI math for the tab indicator
+  const tabWidth = Dimensions.get('window').width / 3
+  const tabs: OrderStatus[] = ['Out for Delivery', 'Processing', 'Canceled']
+  const indicatorLeft = tabs.indexOf(selectedTab) * tabWidth + tabWidth * 0.5
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* ─── HEADER & TABS ───────────────────── */}
       <View style={styles.fixedHeader}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={router.back}>
             <ImageBackground
-              style={styles.backIcon}
               source={require('@/assets/images/back-arrow.png')}
-              resizeMode="cover"
+              style={styles.backIcon}
             />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Admin Orders</Text>
           <View style={{ width: 20 }} />
         </View>
-
         <View style={styles.orderTabs}>
           {tabs.map(tab => (
             <TouchableOpacity key={tab} onPress={() => setSelectedTab(tab)}>
-              <Text style={selectedTab === tab ? styles.tabActive : styles.tabInactive}>{tab}</Text>
+              <Text style={selectedTab === tab ? styles.tabActive : styles.tabInactive}>
+                {tab}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
         <View style={[styles.tabIndicator, { marginLeft: indicatorLeft }]} />
       </View>
 
-      <ScrollView style={styles.scrollContainer} 
-      onScroll={({ nativeEvent }) => {
-        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-        const isCloseToBottom =
-          layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
-        if (isCloseToBottom && hasNext && !loading) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchOrders(nextPage);
-        }
-      }}
-      scrollEventThrottle={400}
+      {/* ─── ORDERS LIST ─────────────────────── */}
+      <ScrollView
+        style={styles.scrollContainer}
+        onScroll={onScroll}
+        scrollEventThrottle={200}
       >
-        <View style={styles.contentContainer}>
-          {(ordersData[selectedTab] || []).map(order => (
-            <View key={order.id} style={styles.orderCard}>
-              <View style={styles.orderCardHeader}>
-                <Text style={styles.orderNo}>{`Order #${order.id}`}</Text>
-                <Text style={styles.orderDate}>{new Date(order.created_at).toLocaleDateString()}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.orderCardDetail}>
-                <Text style={styles.totalAmount}>
-                </Text>
-                <Text style={styles.orderTotal}>
-                  <Text style={styles.detailLabel}>Total Amount: </Text>
-                  <Text style={styles.totalAmount}>${Number(order.total_price).toFixed(2)}</Text>
-                </Text>
-              </View>
-              <View style={styles.orderCardFooter}>
-                <TouchableOpacity style={styles.detailButton} onPress={() => setSelectedOrderDetails(order)}>
-                    <Text style={styles.detailButtonText}>Details</Text>
-                  </TouchableOpacity>
-
-                  {selectedTab === 'Processing' ? (
-                    <TouchableOpacity
-                      style={[styles.detailButton]}
-                      onPress={() => {
-                       setSelectedOrderId(order.id);
-                        setShowModal(true);
-                     }}
-                   >
-                      <Text style={styles.detailButtonText}>Complete</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
-                      <Text
-                        style={[
-                          styles.orderStatus,
-                          {
-                            color:
-                             order.status === 'out_for_delivery'
-                                ? '#27ae60'
-                                : order.status === 'processing'
-                               ? '#F79E1B'
-                                : '#EB001B',
-                         },
-                       ]}
-                     >
-                       {selectedTab}
-                     </Text>
-                     {order.tracking_number && (
-                       <Text style={styles.trackingNumber}>
-                         Tracking No. {order.tracking_number}
-                       </Text>
-                     )}
-                   </View>
-                  )}
-                </View>
-            </View>
-          ))}
-          {loading && (
-            <View style={{ alignItems: 'center', marginVertical: 16 }}>
-              <Text style={{ color: '#888' }}>Loading more orders...</Text>
-            </View>
-          )}
-        </View>
+        {orders[selectedTab].map(o => (
+          <View key={o.id} style={styles.orderCard}>
+            <Text>Order #{o.id}</Text>
+            <TouchableOpacity onPress={() => setDetailsOrder(o)}>
+              <Text>Details</Text>
+            </TouchableOpacity>
+            {selectedTab === 'Processing' && (
+              <TouchableOpacity
+                onPress={() => {
+                  setCurrentOrderId(o.id)
+                  setShowCompleteModal(true)
+                }}
+              >
+                <Text>Complete</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))}
+        {loading && <Text>Loading more orders…</Text>}
       </ScrollView>
 
-      {showModal && (
+      {/* ─── COMPLETE ORDER MODAL ───────────── */}
+      <Modal visible={showCompleteModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Enter Tracking Number</Text>
+            <Text>Enter Tracking Number</Text>
             <TextInput
-              style={styles.modalInput}
               placeholder="Tracking Number"
               value={trackingNumber}
               onChangeText={setTrackingNumber}
+              style={styles.modalInput}
             />
-            <TouchableOpacity style={styles.modalButton} onPress={handleCompleteOrder}>
-              <Text style={styles.modalButtonText}>Complete Order</Text>
+            <TouchableOpacity onPress={handleComplete}>
+              <Text>Complete Order</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowModal(false)}>
-              <Text style={styles.modalCancel}>Cancel</Text>
+            <TouchableOpacity onPress={() => setShowCompleteModal(false)}>
+              <Text>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
-      )}
-      {selectedOrderDetails && (
-        <Modal
-            transparent
-            animationType="slide"
-         visible={!!selectedOrderDetails}
-         onRequestClose={() => setSelectedOrderDetails(null)}
-         >
-            <View style={styles.modalOverlay}>
-             <View style={styles.detailsModalBox}>
-              <Text style={styles.modalTitle}>Order #{selectedOrderDetails.id}</Text>
+      </Modal>
 
-              <Text style={styles.modalText}>
-               <Text style={styles.modalLabel}>Customer: </Text>
-               {selectedOrderDetails.user.first_name} {selectedOrderDetails.user.last_name}
-             </Text>
-
-             <Text style={styles.modalText}>
-               <Text style={styles.modalLabel}>Email: </Text>
-               {selectedOrderDetails.user.email}
-             </Text>
-
-             <Text style={styles.modalText}>
-               <Text style={styles.modalLabel}>Shipping Address:{"\n"}</Text>
-               {selectedOrderDetails.shipping_address}{"\n"}
-               {selectedOrderDetails.city}, {selectedOrderDetails.state} {selectedOrderDetails.zip_code}
-             </Text>
-
-             <Text style={styles.modalText}>
-               <Text style={styles.modalLabel}>Products:</Text>
+      {/* ─── DETAILS MODAL ──────────────────── */}
+      {detailsOrder && (
+        <Modal visible transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.detailsModalBox}>
+              <Text>Order #{detailsOrder.id}</Text>
+              <Text>
+                Customer: {detailsOrder.user.first_name} {detailsOrder.user.last_name}
               </Text>
-              {selectedOrderDetails.items.map((item, idx) => (
-                <Text key={idx} style={styles.modalText}>
-                  - {item.quantity}x {item.product_name} @ ${item.product_price}
-                </Text>
-              ))}
-
-             <Text style={styles.modalText}>
-               <Text style={styles.modalLabel}>Total: </Text>${Number(selectedOrderDetails.total_price).toFixed(2)}
-              </Text>
-
-              <Text style={styles.modalText}>
-                <Text style={styles.modalLabel}>Status: </Text>{selectedOrderDetails.status}
-               </Text>
-
-             <Text style={styles.modalText}>
-                <Text style={styles.modalLabel}>Order Date: </Text>
-                {new Date(selectedOrderDetails.created_at).toLocaleDateString()}
-               </Text>
-
-             <TouchableOpacity onPress={() => setSelectedOrderDetails(null)} style={styles.modalButton}>
-               <Text style={styles.modalButtonText}>Close</Text>
-             </TouchableOpacity>
+              {/* …and any other details you like… */}
+              <TouchableOpacity onPress={() => setDetailsOrder(null)}>
+                <Text>Close</Text>
+              </TouchableOpacity>
             </View>
-         </View>
-         </Modal>
-        )}
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
-  );
+  )
 }
+
+
+
 
 const styles = StyleSheet.create({
     container: {

@@ -30,6 +30,8 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+
+          tabBarAccessibilityLabel: 'Home',
         }}
       />
       
@@ -38,6 +40,8 @@ export default function TabLayout() {
         options={{
           title: 'Store',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="bag.fill" color={color} />,
+      
+          tabBarAccessibilityLabel: 'Store',
         }}
       />
 
@@ -46,6 +50,8 @@ export default function TabLayout() {
         options={{
           title: 'Social',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="message" color={color} />,
+      
+          tabBarAccessibilityLabel: 'Social',
         }}
       />
 
@@ -54,6 +60,8 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person" color={color} />,
+          
+          tabBarAccessibilityLabel: 'Profile',
         }}
       />
     </Tabs>

@@ -1,63 +1,165 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
-import Order from '../app/my-orders'; // adjust the import path as needed
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import Order from '../app/my-orders';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Mock the useRouter hook from expo-router
+// Mock expo-font to avoid loadedNativeFonts issue
+jest.mock('expo-font', () => ({
+  ...jest.requireActual('expo-font'),
+  isLoaded: () => true,
+  loadAsync: jest.fn(),
+}));
+
+// Mock vector icons: any import returns a simple View
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  return new Proxy(
+    {},
+    {
+      get: () => (props) => React.createElement('View', props),
+    }
+  );
+});
+
+// Mock expo-router
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
 }));
 
+// Stub useFocusEffect → run cb inside a real useEffect
+jest.mock('@react-navigation/native', () => {
+  const React = require('react');
+  return {
+    useFocusEffect: (cb: () => void) => {
+      React.useEffect(() => {
+        cb();
+      }, []);
+    },
+  };
+});
+
+// Mock AsyncStorage
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+}));
+
+// Global fetch stub
+(global.fetch as jest.Mock) = jest.fn();
+
 describe('Order Component', () => {
   const mockBack = jest.fn();
+  const dummyOrdersResponse = {
+    results: [
+      {
+        id: 1,
+        status: 'out_for_delivery',
+        created_at: '2022-11-03T12:00:00Z',
+        total_price: '10.00',
+        tracking_number: 'ABC',
+        items: [
+          { product_id: 101, product_name: 'Product A', product_price: '10.00', quantity: 1 },
+        ],
+        user: { first_name: 'John', last_name: 'Doe', email: 'john.doe@example.com' },
+      },
+      { id: 2, status: 'processing', created_at: '2022-11-02T12:00:00Z', total_price: '20.00', tracking_number: null, items: [], user: {} },
+      { id: 3, status: 'processing', created_at: '2022-11-01T12:00:00Z', total_price: '30.00', tracking_number: null, items: [], user: {} },
+      { id: 4, status: 'cancelled', created_at: '2021-02-13T12:00:00Z', total_price: '40.00', tracking_number: null, items: [], user: {} },
+    ],
+    next: null,
+  };
 
   beforeEach(() => {
-    mockBack.mockClear();
+    jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue({ back: mockBack });
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('dummyToken');
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => dummyOrdersResponse });
   });
 
-  it('renders header and tabs correctly', () => {
-    const { getByText, getByTestId, getAllByText } = render(<Order />);
-    expect(getByText('My order')).toBeTruthy();
+  it('renders header and tabs correctly', async () => {
+    const { getByText, getByTestId, findByText, findAllByText } = render(<Order />);
+    expect(getByText('My orders')).toBeTruthy();
     expect(getByTestId('back-button')).toBeTruthy();
-
-    // Use getAllByText and select the first occurrence for each tab.
-    expect(getAllByText('Delivered')[0]).toBeTruthy();
-    expect(getAllByText('Processing')[0]).toBeTruthy();
-    expect(getAllByText('Canceled')[0]).toBeTruthy();
+    expect(await findByText('Out for Delivery')).toBeTruthy();
+    expect(getByText('Processing')).toBeTruthy();
+    expect(getByText('Canceled')).toBeTruthy();
+    expect((await findAllByText('Details')).length).toBe(1);
   });
 
   it('calls router.back when back button is pressed', () => {
     const { getByTestId } = render(<Order />);
-    const backButton = getByTestId('back-button');
-    fireEvent.press(backButton);
+    fireEvent.press(getByTestId('back-button'));
     expect(mockBack).toHaveBeenCalled();
   });
 
-  it('displays Delivered orders by default', () => {
-    const { queryAllByText } = render(<Order />);
-    // "Detail" text is rendered in each order card.
-    // Delivered orders are expected to be 3.
-    expect(queryAllByText('Detail')).toHaveLength(3);
+  it('displays Out for Delivery orders by default', async () => {
+    const { findAllByText } = render(<Order />);
+    expect((await findAllByText('Details')).length).toBe(1);
   });
 
-  it('switches to Processing tab and displays Processing orders', () => {
-    const { getByText, queryAllByText } = render(<Order />);
-    // Press the Processing tab by its text.
+  it('switches to Processing tab and displays Processing orders', async () => {
+    const { getByText, findAllByText } = render(<Order />);
     fireEvent.press(getByText('Processing'));
-    // Processing orders should be 2 in number.
-    expect(queryAllByText('Detail')).toHaveLength(2);
-    // Optionally, check for a specific order detail.
-    expect(getByText('11/03/2022')).toBeTruthy();
+    expect((await findAllByText('Details')).length).toBe(2);
+    expect(getByText('11/2/2022')).toBeTruthy();
   });
 
-  it('switches to Canceled tab and displays Canceled orders', () => {
-    const { getByText, queryAllByText } = render(<Order />);
-    // Press the Canceled tab by its text.
+  it('switches to Canceled tab and displays Canceled orders', async () => {
+    const { getByText, findAllByText } = render(<Order />);
     fireEvent.press(getByText('Canceled'));
-    // Canceled orders should be 1 in number.
-    expect(queryAllByText('Detail')).toHaveLength(1);
-    // Optionally, check for a specific order detail.
-    expect(getByText('02/13/2021')).toBeTruthy();
+    expect((await findAllByText('Details')).length).toBe(1);
+    expect(getByText('2/13/2021')).toBeTruthy();
+  });
+
+  it('opens review modal when Review button is pressed', async () => {
+    const { findByText } = render(<Order />);
+    const reviewButton = await findByText('Review');
+    act(() => fireEvent.press(reviewButton));
+    expect(await findByText('Review Product')).toBeTruthy();
+  });
+
+  it('opens order details modal when Details button is pressed', async () => {
+    const { findByText, getByText } = render(<Order />);
+    const detailsButton = await findByText('Details');
+    act(() => fireEvent.press(detailsButton));
+    expect(getByText('Shipping Address:')).toBeTruthy();
+  });
+
+  it('loads more orders on scroll if hasNext is true', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({ ok: true, json: async () => dummyOrdersResponse })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [
+            {
+              id: 5,
+              status: 'out_for_delivery',
+              created_at: '2022-11-04T12:00:00Z',
+              total_price: '50.00',
+              tracking_number: 'DEF',
+              items: [],
+              user: {},
+            },
+          ],
+          next: null,
+        }),
+      });
+
+    const { getByTestId, findAllByText } = render(<Order />);
+    const scrollView = getByTestId('order-scroll-view');
+
+    await act(async () => {
+      fireEvent.scroll(scrollView, {
+        nativeEvent: {
+          layoutMeasurement: { height: 500 },
+          contentOffset: { y: 1000 },
+          contentSize: { height: 1500 },
+        },
+      });
+    });
+
+    expect((await findAllByText('Details')).length).toBeGreaterThan(1);
   });
 });

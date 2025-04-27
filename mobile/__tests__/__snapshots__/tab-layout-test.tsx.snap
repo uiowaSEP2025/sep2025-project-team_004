@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TabLayout matches snapshot with dark tint 1`] = `
+[
+  <View
+    accessibilityLabel="Home"
+    testID="screen-home"
+  />,
+  <View
+    accessibilityLabel="Store"
+    testID="screen-store"
+  />,
+  <View
+    accessibilityLabel="Social"
+    testID="screen-social"
+  />,
+  <View
+    accessibilityLabel="Profile"
+    testID="screen-profile"
+  />,
+]
+`;
+
+exports[`TabLayout matches snapshot with light tint 1`] = `
+[
+  <View
+    accessibilityLabel="Home"
+    testID="screen-home"
+  />,
+  <View
+    accessibilityLabel="Store"
+    testID="screen-store"
+  />,
+  <View
+    accessibilityLabel="Social"
+    testID="screen-social"
+  />,
+  <View
+    accessibilityLabel="Profile"
+    testID="screen-profile"
+  />,
+]
+`;

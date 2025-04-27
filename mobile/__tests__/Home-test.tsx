@@ -1,31 +1,78 @@
-import React from "react";
-import { render, fireEvent, waitFor } from "@testing-library/react-native";
-import WelcomePage from "../app/(tabs)/home";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Navigation from "@react-navigation/native";
 
+// 1) Stub victory-native
+jest.mock("victory-native", () => {
+  const React = require("react");
+  return {
+    __esModule: true,
+    VictoryChart: (props: any) => React.createElement(React.Fragment, props),
+    Line:         (props: any) => React.createElement(React.Fragment, props),
+    useChartPressState: () => [false, () => {}],
+  };
+});
+
+// 2) Stub react-native-skia
+jest.mock("@shopify/react-native-skia", () => {
+  const React = require("react");
+  return {
+    __esModule: true,
+    Circle:  (props: any) => React.createElement(React.Fragment, props),
+    useFont: () => null,
+  };
+});
+
+// 3) Stub our own children so they don’t drag in unexpected logic
+jest.mock("../app/SensorChart", () => {
+  const React = require("react");
+  const { View, Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({ title }: { title: string }) =>
+      React.createElement(View, null, React.createElement(Text, null, title)),
+  };
+});
+jest.mock("../app/SensorSelector", () => {
+  const React = require("react");
+  return { __esModule: true, default: () => React.createElement("View", null) };
+});
+jest.mock("../app/MapSection", () => {
+  const React = require("react");
+  return { __esModule: true, default: () => React.createElement("View", null) };
+});
+jest.mock("../app/NoSensorFallback", () => {
+  const React = require("react");
+  const { Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: () => React.createElement(Text, null, "No Sensors"),
+  };
+});
+
+// 4) Stub AsyncStorage
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(),
   setItem: jest.fn(),
 }));
 
+// 5) Stub navigation
 const resetMock = jest.fn();
 const navigateMock = jest.fn();
-
-const mockedNavigator = {
-  reset: resetMock,
-  navigate: navigateMock,
-};
-
 jest.mock("@react-navigation/native", () => ({
-  useNavigation: jest.fn(() => mockedNavigator),
+  useNavigation: jest.fn(),
 }));
 
-global.fetch = jest.fn();
+// 6) Global fetch mock
+(global.fetch as jest.Mock) = jest.fn();
 
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+// Now import under test
+import React from "react";
+import { render } from "@testing-library/react-native";
+import WelcomePage from "../app/(tabs)/home";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+
+//
+// Test data
+//
 const mockSensor = {
   id: "1",
   nickname: "Test Sensor",
@@ -34,13 +81,6 @@ const mockSensor = {
   latitude: "41.0",
   longitude: "-91.0",
 };
-const getItemMock = AsyncStorage.getItem as jest.Mock;
-getItemMock.mockImplementation((key: string) => {
-  if (key === "authToken") return Promise.resolve("fake_token");
-  if (key === "sensors") return Promise.resolve(JSON.stringify([mockSensor]));
-  return Promise.resolve(null);
-});
-
 const mockSensorData = {
   data: {
     points: [
@@ -54,12 +94,33 @@ const mockSensorData = {
   },
 };
 
-const setup = () => render(<WelcomePage />);
-
 describe("WelcomePage", () => {
-  const fetchMock = global.fetch as jest.Mock;
-  it("renders correctly", async () => {
-    fetchMock
+  const useNav = useNavigation as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // navigation
+    useNav.mockReturnValue({ reset: resetMock, navigate: navigateMock });
+
+    // AsyncStorage
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === "authToken") return Promise.resolve("fake_token");
+      if (key === "sensors") return Promise.resolve(JSON.stringify([mockSensor]));
+      return Promise.resolve(null);
+    });
+
+    // fetch
+    (global.fetch as jest.Mock).mockReset();
+  });
+
+  it("shows the loading indicator immediately", () => {
+    const { getByTestId } = render(<WelcomePage />);
+    expect(getByTestId("ActivityIndicator")).toBeTruthy();
+  });
+
+  it("renders toggle buttons once data loads", async () => {
+    (global.fetch as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => [mockSensor],
@@ -68,38 +129,14 @@ describe("WelcomePage", () => {
         text: async () => JSON.stringify(mockSensorData),
       });
 
-    const { findByText } = setup();
+    const { findByText } = render(<WelcomePage />);
     expect(await findByText("Today")).toBeTruthy();
     expect(await findByText("Past Week")).toBeTruthy();
     expect(await findByText("Past 30 Days")).toBeTruthy();
   });
 
-  it("shows activity indicator while loading", async () => {
-    getItemMock.mockResolvedValue("fake_token");
-
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [mockSensor],
-    });
-
-    fetchMock.mockResolvedValueOnce({
-      text: async () => JSON.stringify(mockSensorData),
-    });
-
-    const { getByTestId } = setup();
-    await waitFor(() => {
-      expect(getByTestId("ActivityIndicator")).toBeTruthy();
-    });
-  });
-
-  it("displays chart titles when data is loaded", async () => {
-    getItemMock.mockImplementation((key: string) => {
-      if (key === "authToken") return Promise.resolve("fake_token");
-      if (key === "sensors") return Promise.resolve(JSON.stringify([mockSensor]));
-      return Promise.resolve(null);
-    });
-  
-    fetchMock
+  it("displays chart titles when sensor data is ready", async () => {
+    (global.fetch as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => [mockSensor],
@@ -107,25 +144,26 @@ describe("WelcomePage", () => {
       .mockResolvedValueOnce({
         text: async () => JSON.stringify(mockSensorData),
       });
-  
-    const { findByText } = setup();
-  
-    await waitFor(async () => {
-      expect(await findByText("Temperature (°C)")).toBeTruthy();
-      expect(await findByText("Pressure (hPa)")).toBeTruthy();
-      expect(await findByText("Humidity (%)")).toBeTruthy();
-    });
+
+    const { findByText } = render(<WelcomePage />);
+    // SensorChart stub now renders <Text>{title}</Text>
+    expect(await findByText("Temperature (°C)")).toBeTruthy();
+    expect(await findByText("Pressure (hPa)")).toBeTruthy();
+    expect(await findByText("Humidity (%)")).toBeTruthy();
   });
 
-  it("calls navigation.reset if authToken is missing", async () => {
-    const spy = jest.fn();
-    mockedNavigator.reset = spy;
-  
-    getItemMock.mockResolvedValue(null);
-    setup();
-  
-    await waitFor(() => {
-      expect(spy).toHaveBeenCalled();
+  it("redirects to index screen if authToken is missing", async () => {
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      key === "authToken" ? Promise.resolve(null) : Promise.resolve(null)
+    );
+
+    render(<WelcomePage />);
+    // allow useEffect to run
+    await new Promise(process.nextTick);
+
+    expect(resetMock).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: "index" }],
     });
   });
-  });
+});

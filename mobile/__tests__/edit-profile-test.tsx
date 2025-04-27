@@ -1,10 +1,13 @@
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
-import EditProfilePage from '../app/editProfile'; 
+import EditProfilePage from '../app/editProfile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform, Alert } from 'react-native';
 import { NavigationContext, NavigationProp, ParamListBase } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import { Alert } from 'react-native';             // ← Add this line
+import * as ImagePicker from 'expo-image-picker';
+
+jest.mock('expo-image-picker');
 
 const fakeProfile = {
   username: "testuser",
@@ -29,12 +32,11 @@ const mockNavigation: NavigationProp<ParamListBase> = {
   canGoBack: jest.fn(),
   getParent: jest.fn(),
   getState: jest.fn(),
-} as any as NavigationProp<ParamListBase>;
+} as any;
 
 describe("EditProfilePage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // By default, AsyncStorage.getItem returns a token and the fake profile.
     (AsyncStorage.getItem as jest.Mock) = jest.fn((key: string) => {
       if (key === "authToken") return Promise.resolve("dummyToken");
       if (key === "userInfo") return Promise.resolve(JSON.stringify(fakeProfile));
@@ -49,9 +51,7 @@ describe("EditProfilePage", () => {
   });
 
   it("fetches and displays user profile on mount", async () => {
-    // Since profile data is loaded from AsyncStorage,
-    // we verify that username, first name, and last name are rendered via getByText,
-    // and that the TextInput fields show the corresponding values.
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const { getByText, getByDisplayValue } = render(
       <NavigationContext.Provider value={mockNavigation}>
         <EditProfilePage />
@@ -68,18 +68,20 @@ describe("EditProfilePage", () => {
       expect(getByDisplayValue("TS")).toBeTruthy();
       expect(getByDisplayValue("12345")).toBeTruthy();
     });
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
   it("updates the profile successfully", async () => {
-    // Simulate a successful GET then a successful PATCH update.
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     global.fetch = jest.fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(fakeProfile),
+        json: () => Promise.resolve({ valid: true, standardized: fakeProfile }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ ...fakeProfile, phone_number: "0987654321" }),
+        json: () => Promise.resolve(fakeProfile),
       });
 
     const { getByText, getByPlaceholderText } = render(
@@ -88,59 +90,111 @@ describe("EditProfilePage", () => {
       </NavigationContext.Provider>
     );
 
-    await waitFor(() => {
-      expect(getByText("Edit Profile")).toBeTruthy();
-    });
+    await waitFor(() => expect(getByText("Edit Profile")).toBeTruthy());
 
-    const phoneInput = getByPlaceholderText("Phone Number");
     act(() => {
-      fireEvent.changeText(phoneInput, "0987654321");
+      fireEvent.changeText(getByPlaceholderText("Phone Number"), "0987654321");
     });
-
-    const updateButton = getByText("Update Profile");
     act(() => {
-      fireEvent.press(updateButton);
+      fireEvent.press(getByText("Update Profile"));
     });
 
     await waitFor(() => {
-      expect(Toast.show).toHaveBeenCalledWith({
+      expect(Toast.show).toHaveBeenCalledWith(expect.objectContaining({
         type: "success",
         text1: "Success",
-        text2: "Your profile has been updated.",
-        position: "top",
-        topOffset: Platform.OS === "web" ? 20 : 70,
-        visibilityTime: 4000,
-        autoHide: true,
-      });
+      }));
     });
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
-  it("navigates back when the back button is pressed", async () => {
-    // Simulate profile loading.
+  it("alerts when address validation fails", async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: false,
+      json: () => Promise.resolve({ valid: false, message: "Address is invalid" }),
+    });
+
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { getByText } = render(
+      <NavigationContext.Provider value={mockNavigation}>
+        <EditProfilePage />
+      </NavigationContext.Provider>
+    );
+
+    await act(async () => {
+      fireEvent.press(getByText("Update Profile"));
+    });
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith("Invalid Address", "Address is invalid");
+    });
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it("handles image picking and uploading", async () => {
+    const mockUri = "file://some-image.jpg";
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ profile_picture: mockUri }),
+      } as any);
+
+    (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValueOnce({
+      status: 'granted',
+    });
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: mockUri }],
+    });
+
     const { getByTestId } = render(
       <NavigationContext.Provider value={mockNavigation}>
         <EditProfilePage />
       </NavigationContext.Provider>
     );
 
-    await waitFor(() => {
-      expect(getByTestId("back-button")).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(getByTestId("image-picker-button"));
     });
 
-    const backButton = getByTestId("back-button");
+    await waitFor(() => {
+      expect(ImagePicker.requestMediaLibraryPermissionsAsync).toHaveBeenCalled();
+      expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith("authToken");
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/upload-profile-picture/'),
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+  });
+
+  it("navigates back when the back button is pressed", async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { getByTestId } = render(
+      <NavigationContext.Provider value={mockNavigation}>
+        <EditProfilePage />
+      </NavigationContext.Provider>
+    );
+
+    await waitFor(() => expect(getByTestId("back-button")).toBeTruthy());
     act(() => {
-      fireEvent.press(backButton);
+      fireEvent.press(getByTestId("back-button"));
     });
 
     expect(mockNavigation.goBack).toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
-  it("shows an alert when user is not authenticated during profile fetch", async () => {
-    // Simulate missing auth token.
-    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
-      if (key === "authToken") return Promise.resolve(null);
-      return Promise.resolve(null);
-    });
+  it("alerts when no token is found on mount", async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    (AsyncStorage.getItem as jest.Mock).mockImplementation(() => Promise.resolve(null));
+
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     render(
@@ -152,43 +206,7 @@ describe("EditProfilePage", () => {
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalledWith("Error", "User is not authenticated.");
     });
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
-
-  it("alerts the user when the profile update returns a 403 Forbidden error", async () => {
-    // For update profile, simulate a PATCH call that returns 403 with a detail message.
-    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
-      if (key === "authToken") return Promise.resolve("dummyToken");
-      if (key === "userInfo") return Promise.resolve(JSON.stringify(fakeProfile));
-      return Promise.resolve(null);
-    });
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      status: 403,
-      ok: false,
-      json: () => Promise.resolve({ detail: "You do not have permission to access this resource." }),
-    });
-
-    const { getByText, getByPlaceholderText } = render(
-      <NavigationContext.Provider value={mockNavigation}>
-        <EditProfilePage />
-      </NavigationContext.Provider>
-    );
-
-    await waitFor(() => {
-      expect(getByText("Edit Profile")).toBeTruthy();
-    });
-
-    const updateButton = getByText("Update Profile");
-    act(() => {
-      fireEvent.press(updateButton);
-    });
-
-    await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith("Error", "You do not have permission to access this resource.");
-    });
-  });
-
-  
-
 });

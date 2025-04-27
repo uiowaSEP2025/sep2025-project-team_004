@@ -13,17 +13,20 @@ class TestPaymentViews:
     def setup_method(self):
         """Setup API client and test user before each test"""
         self.client = APIClient()
-        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="SecurePass123!")
+        self.user = User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="SecurePass123!"
+        )
         self.client.force_authenticate(user=self.user)
 
-        # Create a test payment method
+        # Create a test payment method (default)
         self.payment_method = PaymentMethod.objects.create(
             user=self.user,
-            card_number="4111111111111111",
+            last4="1111",
             expiration_date="12/25",
             card_type="visa",
-            cardholder_name= "Man man",
-            last4="1111",
+            cardholder_name="Man man",
             is_default=True
         )
 
@@ -48,8 +51,7 @@ class TestPaymentViews:
         }
         response = self.client.post(self.payment_url, data, format="json")
         assert response.status_code == status.HTTP_201_CREATED
-        assert PaymentMethod.objects.filter(user=self.user, card_type="mastercard").exists()
-
+        assert PaymentMethod.objects.filter(user=self.user, last4="2222").exists()
 
     def test_create_payment_method_invalid(self):
         """Test creating a payment method with missing data"""
@@ -60,10 +62,10 @@ class TestPaymentViews:
 
     def test_delete_payment_method_success(self):
         """Test deleting a non-default payment method"""
-        # Create a second payment method (which is not default)
+        # Create a second payment method (non-default), without card_number
         another_payment = PaymentMethod.objects.create(
             user=self.user,
-            card_number="1234123412341234",
+            last4="1234",
             expiration_date="06/27",
             card_type="amex",
             is_default=False
@@ -85,15 +87,20 @@ class TestPaymentViews:
 class TestPaymentSerializer:
     def setup_method(self):
         """Setup a test user and a payment method"""
-        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="SecurePass123!")
+        self.user = User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="SecurePass123!"
+        )
         self.payment_method = PaymentMethod.objects.create(
             user=self.user,
-            card_number="1234567812345678",
+            last4="5678",
             expiration_date="12/25",
             card_type="Visa",
             is_default=True
         )
         self.serializer = PaymentMethodSerializer()
+
     def test_validate_card_number_success(self):
         """Test that a valid 16-digit card number passes validation"""
         valid_card = "1234567812345678"
@@ -117,7 +124,5 @@ class TestPaymentSerializer:
         }
         serializer = PaymentMethodSerializer(data=data)
         assert serializer.is_valid(), serializer.errors
-
         saved_instance = serializer.save(user=self.user)
         assert saved_instance.last4 == "4321"
-        assert saved_instance.card_number == "************4321"

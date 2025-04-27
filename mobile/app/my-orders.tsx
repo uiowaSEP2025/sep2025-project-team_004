@@ -215,38 +215,47 @@ export default function Order() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.fixedHeader}>
-        <View style={styles.header}>
-          <TouchableOpacity testID="back-button" onPress={() => router.back()}>
-            <ImageBackground
-              style={styles.backIcon}
-              source={require('@/assets/images/back-arrow.png')}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            My orders
-          </Text>
-          <ImageBackground
-            style={styles.searchIcon}
-            source={{ uri: 'https://static.codia.ai/custom_image/2025-03-28/231016/search-icon.svg' }}
-            resizeMode="cover"
-          />
-        </View>
-        <View style={styles.orderTabs}>
-          {tabs.map(tab => (
-            <TouchableOpacity key={tab} onPress={() => setSelectedTab(tab)}>
-              <Text
-                style={selectedTab === tab ? styles.tabActive : styles.tabInactive}
-                numberOfLines={1}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <View style={[styles.tabIndicator, { marginLeft: indicatorLeft }]} />
-      </View>
-      <ScrollView style={styles.scrollContainer} contentInsetAdjustmentBehavior="automatic"
+     <View style={styles.fixedHeader}>
+  <View style={styles.header}>
+    <TouchableOpacity testID="back-button" onPress={() => router.back()}>
+      <ImageBackground
+        style={styles.backIcon}
+        source={require('@/assets/images/back-arrow.png')}
+        resizeMode="cover"
+      />
+    </TouchableOpacity>
+    <Text style={styles.headerTitle} numberOfLines={1}>
+      My orders
+    </Text>
+    <ImageBackground
+      style={styles.searchIcon}
+      source={{ uri: 'https://static.codia.ai/custom_image/2025-03-28/231016/search-icon.svg' }}
+      resizeMode="cover"
+    />
+  </View>
+
+  <View style={styles.orderTabs}>
+    {tabs.map(tab => (
+      <TouchableOpacity
+        key={tab}
+        testID={`tab-${tab.replace(/\s/g, '-')}`}
+        onPress={() => setSelectedTab(tab)}
+      >
+        <Text
+          style={selectedTab === tab ? styles.tabActive : styles.tabInactive}
+          numberOfLines={1}
+        >
+          {tab}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+
+  {/* 💡 Here was the missing bit */}
+  <View style={[styles.tabIndicator, { marginLeft: indicatorLeft }]} />
+</View>
+
+      <ScrollView testID="order-scroll-view" style={styles.scrollContainer} contentInsetAdjustmentBehavior="automatic"
       onScroll={({ nativeEvent }) => {
         const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
         const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
