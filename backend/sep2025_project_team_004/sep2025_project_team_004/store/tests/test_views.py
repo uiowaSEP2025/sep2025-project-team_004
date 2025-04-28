@@ -1,4 +1,3 @@
-import json
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -62,12 +61,18 @@ class ProductReviewsViewTests(TestCase):
         response = self.client.get(self.product_reviews_url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)  # We created 3 reviews
+        # Check that response is paginated
+        self.assertIn('results', response.data)
+        self.assertIn('count', response.data)
+        
+        # Check we have the right number of reviews in the results
+        self.assertEqual(len(response.data['results']), 3)  # We created 3 reviews
+        self.assertEqual(response.data['count'], 3)
         
         # Check that reviews are ordered by most recent first
-        self.assertEqual(response.data[0]['id'], self.review3.id)
-        self.assertEqual(response.data[1]['id'], self.review2.id)
-        self.assertEqual(response.data[2]['id'], self.review1.id)
+        self.assertEqual(response.data['results'][0]['id'], self.review3.id)
+        self.assertEqual(response.data['results'][1]['id'], self.review2.id)
+        self.assertEqual(response.data['results'][2]['id'], self.review1.id)
         
     def test_product_serializer_includes_review_data(self):
         """Test that the product serializer includes review data."""
@@ -94,7 +99,10 @@ class ProductReviewsViewTests(TestCase):
         response = self.client.get(non_existent_url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)  # Empty list, not an error
+        # Check we get an empty results list in the paginated response
+        self.assertIn('results', response.data)
+        self.assertEqual(len(response.data['results']), 0)  # Empty list, not an error
+        self.assertEqual(response.data['count'], 0)
         
     def test_create_review(self):
         """Test creating a new review."""
