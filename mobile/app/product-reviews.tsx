@@ -16,33 +16,80 @@ interface Review {
   created_at: string;
 }
 
+type SortOption = 'recent' | 'highest' | 'critical';
+
 export default function ProductReviewsScreen() {
   const router = useRouter();
   const { productId, productName } = useLocalSearchParams();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageNum, setPageNum] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [sortOption, setSortOption] = useState<SortOption>('recent');
 
-  useEffect(() => {
+  const fetchReviews = async (page = 1, sort: SortOption = 'recent') => {
     if (!productId) return;
     
     setLoading(true);
-    fetch(`${API_BASE_URL}/api/store/products/${productId}/reviews/`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch reviews');
-        }
-        return response.json();
-      })
-      .then(data => {
-        setReviews(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching reviews:', error);
-        setLoading(false);
-        setReviews([]);
-      });
-  }, [productId]);
+    
+    try {
+      let url = `${API_BASE_URL}/api/store/products/${productId}/reviews/?page=${page}`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch reviews');
+      }
+      
+      const data = await response.json();
+      
+      let sortedResults = [...(data.results || data)];
+      
+      if (sort === 'highest') {
+        sortedResults = sortedResults.sort((a, b) => b.rating - a.rating);
+      } else if (sort === 'critical') {
+        sortedResults = sortedResults.sort((a, b) => a.rating - b.rating);
+      }
+      
+      if (page === 1) {
+        setReviews(sortedResults);
+      } else {
+        setReviews(prev => [...prev, ...sortedResults]);
+      }
+      
+      // Set total count if available
+      if (data.count) {
+        setTotalReviews(data.count);
+      }
+      
+      if (data.next) {
+        setHasMore(true);
+        setPageNum(page);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      setReviews([]);
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews(1, sortOption);
+  }, [productId, sortOption]);
+
+  const handleSortChange = (option: SortOption) => {
+    if (option !== sortOption) {
+      setSortOption(option);
+      setPageNum(1);
+      setHasMore(true);
+    }
+  };
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -69,6 +116,12 @@ export default function ProductReviewsScreen() {
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
+  
+  const handleLoadMore = () => {
+    if (hasMore && !loading) {
+      fetchReviews(pageNum + 1, sortOption);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -78,8 +131,41 @@ export default function ProductReviewsScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{productName} - Reviews</Text>
       </View>
+      
+      <View style={styles.filterContainer}>
+        <TouchableOpacity 
+          style={[styles.filterButton, sortOption === 'recent' && styles.activeFilterButton]}
+          onPress={() => handleSortChange('recent')}
+        >
+          <Text style={[styles.filterButtonText, sortOption === 'recent' && styles.activeFilterText]}>
+            Most Recent
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.filterButton, sortOption === 'highest' && styles.activeFilterButton]}
+          onPress={() => handleSortChange('highest')}
+        >
+          <Text style={[styles.filterButtonText, sortOption === 'highest' && styles.activeFilterText]}>
+            Highest Rated
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.filterButton, sortOption === 'critical' && styles.activeFilterButton]}
+          onPress={() => handleSortChange('critical')}
+        >
+          <Text style={[styles.filterButtonText, sortOption === 'critical' && styles.activeFilterText]}>
+            Most Critical
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.paginationInfo}>
+        <Text>Showing {reviews.length} of {totalReviews} reviews</Text>
+      </View>
 
-      {loading ? (
+      {initialLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator testID="loading-indicator" size="large" color="#000" />
         </View>
@@ -102,6 +188,25 @@ export default function ProductReviewsScreen() {
             </View>
           )}
           contentContainerStyle={styles.reviewsList}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.2}
+          ListFooterComponent={() =>
+            loading && !initialLoading ? (
+              <View style={styles.footerLoading}>
+                <ActivityIndicator size="small" color="#000" />
+                <Text style={styles.footerText}>Loading more reviews...</Text>
+              </View>
+            ) : hasMore ? (
+              <TouchableOpacity 
+                style={styles.loadMoreButton}
+                onPress={() => fetchReviews(pageNum + 1, sortOption)}
+              >
+                <Text>Load More Reviews</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.noMoreReviews}>No more reviews to load</Text>
+            )
+          }
         />
       )}
     </View>
@@ -129,6 +234,40 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     flex: 1,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#f9f9f9',
+  },
+  filterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#eee',
+    minWidth: 105,
+    alignItems: 'center',
+  },
+  activeFilterButton: {
+    backgroundColor: '#007bff',
+  },
+  filterButtonText: {
+    fontSize: 12,
+    color: '#333',
+  },
+  activeFilterText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  paginationInfo: {
+    padding: 10,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   loadingContainer: {
     flex: 1,
@@ -173,5 +312,28 @@ const styles = StyleSheet.create({
   reviewComment: {
     fontSize: 14,
     color: '#333',
+  },
+  footerLoading: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  footerText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  loadMoreButton: {
+    padding: 15,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  noMoreReviews: {
+    textAlign: 'center',
+    padding: 15,
+    color: '#666',
   },
 }); 
