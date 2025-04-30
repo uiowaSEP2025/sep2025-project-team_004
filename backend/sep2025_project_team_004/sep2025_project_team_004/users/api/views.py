@@ -238,10 +238,16 @@ class ProfilePictureUploadView(APIView):
         try:
             if 'profile_picture' not in request.FILES:
                 return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            print("Received file:", request.FILES['profile_picture'].name)  # Debug log
+            print("File size:", request.FILES['profile_picture'].size)  # Debug log
                 
             user = request.user
             user.profile_picture = request.FILES['profile_picture']
             user.save()
+            
+            print("Profile picture saved. URL:", user.profile_picture.url)  # Debug log
+            print("Profile picture path:", user.profile_picture.path)  # Debug log
             
             # Return the URL to the uploaded image
             return Response({
@@ -249,4 +255,5 @@ class ProfilePictureUploadView(APIView):
                 "profile_picture": user.profile_picture.url if user.profile_picture else None
             }, status=status.HTTP_200_OK)
         except Exception as e:
+            print("Error uploading profile picture:", str(e))  # Debug log
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
