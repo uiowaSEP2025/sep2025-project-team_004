@@ -1,7 +1,20 @@
 from rest_framework import serializers
 from .models import Product, Order, OrderItem, Review
+from django.db.models import Avg
+
+class ReviewSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'product', 'product_name', 'rating', 'comment', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 class ProductSerializer(serializers.ModelSerializer):
+    average_rating = serializers.SerializerMethodField()
+    new_reviews = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Product
         fields = "__all__"
@@ -11,6 +24,17 @@ class ProductSerializer(serializers.ModelSerializer):
         if obj.image:
             return obj.image.url
         return None
+        
+    def get_average_rating(self, obj):
+        avg = obj.new_reviews.aggregate(Avg('rating'))['rating__avg']
+        return avg
+
+    def get_new_reviews(self, obj):
+        reviews = obj.new_reviews.all().order_by('-created_at')[:3]  # Get 3 most recent reviews
+        return ReviewSerializer(reviews, many=True).data
+        
+    def get_review_count(self, obj):
+        return obj.new_reviews.count()
 
     
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -55,16 +79,3 @@ class OrderSerializer(serializers.ModelSerializer):
         for item in items_data:
             OrderItem.objects.create(order=order, **item)
         return order
-
-
-from rest_framework import serializers
-from .models import Review
-
-
-class ReviewSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name', read_only=True)
-
-    class Meta:
-        model = Review
-        fields = ['id', 'product', 'product_name', 'rating', 'comment', 'created_at']
-        read_only_fields = ['id', 'created_at']
