@@ -21,6 +21,13 @@ interface Product {
   description: string;
   price: number;
   image?: string;
+  new_reviews?: {
+    rating: number;
+    comment: string;
+    created_at: string;
+  }[];
+  average_rating?: number;
+  review_count?: number;
 }
 
 export default function StoreScreen() {
@@ -77,6 +84,23 @@ export default function StoreScreen() {
     }
   };
   
+  // Render star ratings component
+  const renderStars = (rating: number = 0) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const halfStar = rating - fullStars >= 0.5;
+    
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        stars.push(<MaterialIcons key={i} name="star" size={16} color="gold" />);
+      } else if (i === fullStars + 1 && halfStar) {
+        stars.push(<MaterialIcons key={i} name="star-half" size={16} color="gold" />);
+      } else {
+        stars.push(<MaterialIcons key={i} name="star-outline" size={16} color="gold" />);
+      }
+    }
+    return stars;
+  };
 
   return (
     <View style={styles.container}>
@@ -117,9 +141,18 @@ export default function StoreScreen() {
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <View style={styles.productCard}>
-            <Image source={item.image ? { uri: item.image } : require("../../assets/images/react-logo.png")} style={styles.productImage} />
+            <TouchableOpacity onPress={() => openModal(item)}>
+              <Image 
+                testID={`product-image-${item.id}`}
+                source={item.image ? { uri: item.image } : require("../../assets/images/react-logo.png")} 
+                style={styles.productImage} 
+              />
+            </TouchableOpacity>
             <Text style={styles.productName}>{item.name}</Text>
             <Text style={styles.productPrice}>${Number(item.price).toFixed(2)}</Text>
+            <View style={styles.ratingContainer} testID={`rating-container-${item.id}`}>
+              {renderStars(item.average_rating || 0)}
+            </View>
             <TouchableOpacity
               testID={`cart-button-${item.id}`}
               style={styles.cartButton}
@@ -131,7 +164,7 @@ export default function StoreScreen() {
         )}
       />
       
-      {/* Add to Cart Modal */}
+      {/* Product Details Modal */}
       <Modal testID="product-modal" visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -139,6 +172,31 @@ export default function StoreScreen() {
               <>
                 <Image source={selectedProduct.image ? { uri: selectedProduct.image } : require("../../assets/images/react-logo.png")} style={styles.modalImage} />
                 <Text style={styles.modalTitle}>{selectedProduct.name}</Text>
+                <View style={styles.ratingRow}>
+                  {renderStars(selectedProduct.average_rating || 0)}
+                  <TouchableOpacity 
+                    testID="reviews-link"
+                    onPress={() => {
+                      setModalVisible(false);  // Close the modal first
+                      router.push({
+                        pathname: "/product-reviews" as any,
+                        params: { 
+                          productId: selectedProduct.id, 
+                          productName: selectedProduct.name 
+                        }
+                      });
+                    }}
+                  >
+                    <Text style={[styles.ratingText, styles.ratingLink]}>
+                      {selectedProduct.average_rating 
+                        ? `${selectedProduct.average_rating.toFixed(1)} (${selectedProduct.review_count || 0} reviews)` 
+                        : 'No ratings yet'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <Text style={styles.modalDescription}>{selectedProduct.description}</Text>
+                
                 <Text style={styles.modalPrice}>
                   ${(Number(selectedProduct.price) * quantity).toFixed(2)}
                 </Text>
@@ -243,6 +301,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "black",
   },
+  ratingContainer: {
+    flexDirection: "row",
+    marginTop: 4,
+  },
   cartButton: {
     position: "absolute",
     bottom: Platform.OS === "web" ? 10 :-5,
@@ -322,6 +384,27 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 5,
   },
+  modalDescription: {
+    fontSize: 14,
+    color: "#444",
+    textAlign: "center",
+    marginVertical: 10,
+    paddingHorizontal: 10,
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+  },
+  ratingText: {
+    fontSize: 12,
+    color: "#666",
+    marginLeft: 5,
+  },
+  ratingLink: {
+    color: "blue",
+    textDecorationLine: "underline",
+  },
   modalPrice: {
     fontSize: 16,
     color: "gray",
@@ -358,5 +441,4 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: "gray",
   },
-  
 });

@@ -1,4 +1,3 @@
-
 from typing import Any, Sequence  # Import Sequence from typing
 from factory import Faker, Sequence as FactorySequence, post_generation
 from factory.django import DjangoModelFactory
@@ -9,7 +8,8 @@ from sep2025_project_team_004.users.models import User
 class UserFactory(DjangoModelFactory[User]):
     username = FactorySequence(lambda n: f"user{n}")
     email = FactorySequence(lambda n: f"user{n}@example.com")
-    name = Faker("name")
+    first_name = Faker("first_name")
+    last_name = Faker("last_name")
 
     @post_generation
     def password(self, create: bool, extracted: Sequence[Any], **kwargs):  # noqa: FBT001

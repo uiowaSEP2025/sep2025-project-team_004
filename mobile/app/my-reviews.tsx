@@ -34,7 +34,7 @@ export default function MyReviewsScreen() {
   const [editComment, setEditComment] = useState(''); 
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { useToast } = showMessage();
 
   useEffect(() => {
@@ -42,25 +42,31 @@ export default function MyReviewsScreen() {
   }, []);
 
   const fetchReviews = async (pageNum = 1) => {
-    const token = await AsyncStorage.getItem('authToken');
-    setLoading(true);
-    const res = await fetch(`${API_BASE_URL}/api/store/reviews/my/?page=${pageNum}`, {
-      headers: { Authorization: `Token ${token}` },
-    });
-    const data = await res.json();
-    setLoading(false);
-  
-    if (pageNum === 1) {
-      setReviews(data.results);
-    } else {
-      setReviews((prev) => [...prev, ...data.results]);
-    }
-    if (data.next) {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/api/store/reviews/my/?page=${pageNum}`, {
+        headers: { Authorization: `Token ${token}` },
+      });
+      const data = await res.json();
+      
+      if (pageNum === 1) {
+        setReviews(data.results || []);
+      } else {
+        setReviews((prev) => [...prev, ...(data.results || [])]);
+      }
+      if (data.next) {
         setHasNext(true);
         setPage(pageNum);
       } else {
         setHasNext(false);
       }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderStars = (rating: number, onChange?: (value: number) => void) => (
@@ -114,52 +120,64 @@ export default function MyReviewsScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}
-      onScroll={({ nativeEvent }) => {
-        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-        const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
-      
-        if (isCloseToBottom && hasNext && !loading) {
-          fetchReviews(page + 1);
-        }
-      }}
-      scrollEventThrottle={400}
-      >
-        {reviews.map((review) => (
-          <View key={review.id} style={styles.card}>
-            <Text style={styles.productName}>Product name: {review.product_name}</Text>
-            {renderStars(review.rating)}
-            <Text style={styles.reviewDate}>
-                {new Date(review.created_at).toLocaleDateString()}
-            </Text>
-            <Text style={styles.comment}>{review.comment}</Text>
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.button}
-              onPress={() => {
-                setEditingReview(review);
-                setEditRating(review.rating);
-                setEditComment(review.comment);
-                setEditModalVisible(true);
-              }}
-              >
-                <Text style={styles.buttonText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: '#d9534f' }]}
-                onPress={() => handleDelete(review.id)}
-              >
-                <Text style={styles.buttonText}>Delete</Text>
-              </TouchableOpacity>
+      {loading && page === 1 ? (
+        <View style={styles.loadingContainer} testID="loading-indicator">
+          <Text>Loading reviews...</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+        
+          if (isCloseToBottom && hasNext && !loading) {
+            fetchReviews(page + 1);
+          }
+        }}
+        scrollEventThrottle={400}
+        >
+          {reviews && reviews.length > 0 ? (
+            reviews.map((review) => (
+              <View key={review.id} style={styles.card}>
+                <Text style={styles.productName}>Product name: {review.product_name}</Text>
+                {renderStars(review.rating)}
+                <Text style={styles.reviewDate}>
+                    {new Date(review.created_at).toLocaleDateString()}
+                </Text>
+                <Text style={styles.comment}>{review.comment}</Text>
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity style={styles.button}
+                  onPress={() => {
+                    setEditingReview(review);
+                    setEditRating(review.rating);
+                    setEditComment(review.comment);
+                    setEditModalVisible(true);
+                  }}
+                  >
+                    <Text style={styles.buttonText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#d9534f' }]}
+                    onPress={() => handleDelete(review.id)}
+                  >
+                    <Text style={styles.buttonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.divider} />
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No reviews found</Text>
             </View>
-            <View style={styles.divider} />
-          </View>
-        ))}
-        {loading && (
-            <View style={{ alignItems: 'center', marginVertical: 16 }}>
-                <Text style={{ color: '#888' }}>Loading more reviews...</Text>
-            </View>
-            )}
-      </ScrollView>
+          )}
+          {loading && page > 1 && (
+              <View style={{ alignItems: 'center', marginVertical: 16 }}>
+                  <Text style={{ color: '#888' }}>Loading more reviews...</Text>
+              </View>
+          )}
+        </ScrollView>
+      )}
       {editModalVisible && editingReview && (
   <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
     <KeyboardAvoidingView
@@ -323,5 +341,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#667',
     marginTop: 2,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
   },
 });

@@ -45,7 +45,10 @@ export default function PaymentMethod() {
   const loadCards = async () => {
     try {
       const authToken = await AsyncStorage.getItem("authToken");
-      if (!authToken) return;
+      if (!authToken) {
+        console.error("Error loading Stripe cards:", new Error("No authentication token found"));
+        return;
+      }
   
       const res = await fetch(`${API_BASE_URL}/api/payment/stripe-methods/`, {
         headers: {
@@ -69,14 +72,23 @@ export default function PaymentMethod() {
   );
 
   const deletePaymentMethod = async (stripeId: string) => {
-    const authToken = await AsyncStorage.getItem("authToken");
-    await fetch(`${API_BASE_URL}/api/payment/stripe/delete/${stripeId}/`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Token ${authToken}`,
-      },
-    });
-    loadCards();
+    try {
+      const authToken = await AsyncStorage.getItem("authToken");
+      if (!authToken) {
+        console.error("Error in delete payment method:", new Error("No authentication token found"));
+        return;
+      }
+      
+      await fetch(`${API_BASE_URL}/api/payment/stripe/delete/${stripeId}/`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Token ${authToken}`,
+        },
+      });
+      loadCards();
+    } catch (err) {
+      console.error("Error in delete payment method:", err);
+    }
   };
 
   const handleDeleteCard = async (cardId: string) => {

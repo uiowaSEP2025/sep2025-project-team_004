@@ -113,7 +113,7 @@ class UpdateOrderStatusView(APIView):
             return Response({"error": "Order not found"}, status=404)
         
 class ReviewPagination(PageNumberPagination):
-    page_size = 5
+    page_size = 20
 
 class MyReviewsPaginatedView(ListAPIView):
     serializer_class = ReviewSerializer
@@ -141,3 +141,13 @@ class ReviewUpdateView(RetrieveUpdateAPIView):
 
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)
+
+class ProductReviewsView(generics.ListAPIView):
+    """API endpoint for listing reviews for a specific product."""
+    serializer_class = ReviewSerializer
+    permission_classes = []
+    pagination_class = ReviewPagination
+    
+    def get_queryset(self):
+        product_id = self.kwargs.get('product_id')
+        return Review.objects.filter(product_id=product_id).order_by('-created_at')

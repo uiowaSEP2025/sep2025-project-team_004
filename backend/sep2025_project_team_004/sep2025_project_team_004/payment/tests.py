@@ -19,11 +19,10 @@ class TestPaymentViews:
         # Create a test payment method
         self.payment_method = PaymentMethod.objects.create(
             user=self.user,
-            card_number="4111111111111111",
+            last4="1111",
             expiration_date="12/25",
             card_type="visa",
-            cardholder_name= "Man man",
-            last4="1111",
+            cardholder_name="Man man",
             is_default=True
         )
 
@@ -63,7 +62,7 @@ class TestPaymentViews:
         # Create a second payment method (which is not default)
         another_payment = PaymentMethod.objects.create(
             user=self.user,
-            card_number="1234123412341234",
+            last4="1234",
             expiration_date="06/27",
             card_type="amex",
             is_default=False
@@ -88,7 +87,7 @@ class TestPaymentSerializer:
         self.user = User.objects.create_user(username="testuser", email="test@example.com", password="SecurePass123!")
         self.payment_method = PaymentMethod.objects.create(
             user=self.user,
-            card_number="1234567812345678",
+            last4="5678",
             expiration_date="12/25",
             card_type="Visa",
             is_default=True
@@ -120,4 +119,5 @@ class TestPaymentSerializer:
 
         saved_instance = serializer.save(user=self.user)
         assert saved_instance.last4 == "4321"
-        assert saved_instance.card_number == "************4321"
+        # Don't check for card_number as it's no longer stored in the model
+        assert saved_instance.card_type == "visa"

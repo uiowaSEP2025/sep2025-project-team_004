@@ -1,5 +1,6 @@
 // app/(tabs)/Profile.tsx
 import React, {useState, useCallback, useEffect } from 'react';
+// import { ensureHttps } from '../../utils/imageUtils';
 import {
   View,
   Text,
@@ -154,45 +155,6 @@ export default function Profile() {
           </View>
         </TouchableOpacity>
 
-        {/* List Items */}
-        <TouchableOpacity
-          style={styles.infoItem}
-          onPress={() => navigation.navigate("my-orders")}
-        >
-          <View style={styles.infoRow}>
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>My orders</Text>
-              <Text style={styles.infoSubtitle}>Already have x orders</Text>
-            </View>
-            <Image
-              style={styles.arrowIcon}
-              source={require('@/assets/images/forward-arrow.png')}
-              resizeMode="contain"
-            />
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.infoItem}
-          onPress={() => {
-            /* TODO: Shipping Addresses page */
-          }}
-        >
-          <View style={styles.infoRow}>
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>Shipping Addresses</Text>
-              <Text style={styles.infoSubtitle}>
-                1234 Main St, Springfield, IA
-              </Text>
-            </View>
-            <Image
-              style={styles.arrowIcon}
-              source={require('@/assets/images/forward-arrow.png')}
-              resizeMode="contain"
-            />
-          </View>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.infoItem}
           onPress={() => navigation.navigate("payment-method")}
@@ -205,6 +167,24 @@ export default function Profile() {
                   ? `${defaultCard.brand} ending in ${defaultCard.last4}`
                   : "No default payment set"}
               </Text>
+            </View>
+            <Image
+              style={styles.arrowIcon}
+              source={require('@/assets/images/forward-arrow.png')}
+              resizeMode="contain"
+            />
+          </View>
+        </TouchableOpacity>
+
+        {/* List Items */}
+        <TouchableOpacity
+          style={styles.infoItem}
+          onPress={() => navigation.navigate("my-orders")}
+        >
+          <View style={styles.infoRow}>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoTitle}>My orders</Text>
+              <Text style={styles.infoSubtitle}>Handle your orders</Text>
             </View>
             <Image
               style={styles.arrowIcon}
