@@ -1,8 +1,9 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import SensorViewSet
+from django.urls import path
+from .views import AddSensorView,ListMySensorsView, RegisterSensorView
 
-router = DefaultRouter()
-router.register(r"", SensorViewSet, basename="sensor")
 
-urlpatterns = router.urls
+urlpatterns = [
+    path('add/', AddSensorView.as_view(), name='add-sensor'),
+    path('my/', ListMySensorsView.as_view(), name='list-my-sensors'),
+    path('register/', RegisterSensorView.as_view(), name='register-sensor'),
+]

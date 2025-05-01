@@ -89,21 +89,29 @@ const WelcomePage: React.FC = () => {
 
   const fetchUserSensors = async (token: string): Promise<string | null> => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/sensors/`, {
+      const res = await fetch(`${API_BASE_URL}/api/sensors/my/`, {
         headers: { Authorization: `Token ${token}` },
       });
-
+  
       if (!res.ok) throw new Error(`Failed to fetch sensors: ${res.status}`);
-
+  
       const sensors = await res.json();
-      await AsyncStorage.setItem("sensors", JSON.stringify(sensors));
-
-      const defaultSensor = sensors.find((s: any) => s.is_default);
+  
+      // Normalize so we can safely use `sensor.id`
+      const normalized = sensors.map((s: any) => ({
+        ...s,
+        id: s.sensor_id,
+      }));
+  
+      // Store normalized sensors
+      await AsyncStorage.setItem("sensors", JSON.stringify(normalized));
+  
+      const defaultSensor = normalized.find((s: any) => s.is_default);
       if (!defaultSensor) {
         setHasNoSensors(true);
         return null;
       }
-
+  
       return defaultSensor.id;
     } catch (error) {
       console.error("Error fetching user sensors:", error);
