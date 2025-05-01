@@ -165,6 +165,7 @@ class UserDetailView(APIView):
         """
         user = request.user
         return Response({
+            "id": user.id,
             "first_name": user.first_name,
             "last_name": user.last_name,
             "email": user.email,
@@ -175,7 +176,8 @@ class UserDetailView(APIView):
             "state": user.state,
             "city": user.city,
             "role": user.role,
-            "profile_picture": user.profile_picture.url if user.profile_picture else None,    
+            "profile_picture": user.profile_picture.url if user.profile_picture else None,
+               
         })
         
 class SearchUsersView(APIView):

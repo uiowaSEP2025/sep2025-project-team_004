@@ -17,5 +17,6 @@ export type RootStackParamList = {
   "settings": undefined;
   "my-reviews": undefined;
   "admin-orders": undefined;
+  "Firebasescreentest": undefined;
   // Add other routes as needed
 };

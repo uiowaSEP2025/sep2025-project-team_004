@@ -2,8 +2,9 @@
   "expo": {
     "name": "Iowa-Sensors",
     "slug": "Iowa-Sensors",
+    "owner": "sep_team4", 
     "version": "1.0.0",
-    "owner": "sep_team4",
+
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",

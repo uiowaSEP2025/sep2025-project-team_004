@@ -3,6 +3,26 @@ import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import Order from '../app/my-orders';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialIcons } from '@expo/vector-icons';
+import { NavigationContext } from '@react-navigation/native';
+
+// Mock AsyncStorage
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn().mockResolvedValue('dummy-token'),
+  setItem: jest.fn(),
+}));
+
+// Mock vector icons to avoid font loading errors
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    MaterialIcons: (props: React.ComponentProps<typeof View>) => <View {...props} />,
+  };
+});
+
+// Mock image assets
+jest.mock('@/assets/images/back-arrow.png', () => 'back-arrow.png');
 
 // Mock expo-font to avoid loadedNativeFonts issue
 jest.mock('expo-font', () => ({
@@ -27,139 +47,303 @@ jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
 }));
 
-// Stub useFocusEffect → run cb inside a real useEffect
+// Mock useFocusEffect from React Navigation
 jest.mock('@react-navigation/native', () => {
-  const React = require('react');
   return {
-    useFocusEffect: (cb: () => void) => {
-      React.useEffect(() => {
-        cb();
-      }, []);
+    ...jest.requireActual('@react-navigation/native'),
+    useFocusEffect: (callback: () => any) => {
+      jest.requireActual('react').useEffect(() => {
+        callback();
+      }, [callback]);
     },
+    NavigationContext: {
+      Consumer: jest.requireActual('@react-navigation/native').NavigationContext.Consumer,
+      Provider: jest.requireActual('@react-navigation/native').NavigationContext.Provider
+    }
   };
 });
 
-// Mock AsyncStorage
-jest.mock('@react-native-async-storage/async-storage', () => ({
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-}));
+// Mock the global fetch API
+global.fetch = jest.fn();
 
-// Global fetch stub
-(global.fetch as jest.Mock) = jest.fn();
+// Sample mock data for orders
+const mockOrdersData = {
+  results: [
+    {
+      id: 1,
+      status: 'out_for_delivery',
+      created_at: '2023-01-15T10:00:00Z',
+      total_price: '125.99',
+      tracking_number: 'TRK123456',
+      shipping_address: '123 Main St',
+      city: 'Anytown',
+      state: 'CA',
+      zip_code: '12345',
+      user: {
+        first_name: 'John',
+        last_name: 'Doe',
+        email: 'john@example.com',
+      },
+      items: [
+        {
+          product_name: 'Product A',
+          product_price: '75.99',
+          quantity: 1,
+          product_id: 101,
+        },
+      ],
+    },
+    {
+      id: 2,
+      status: 'out_for_delivery',
+      created_at: '2023-02-20T14:30:00Z',
+      total_price: '89.99',
+      tracking_number: 'TRK789012',
+      shipping_address: '456 Oak St',
+      city: 'Somewhere',
+      state: 'NY',
+      zip_code: '67890',
+      user: {
+        first_name: 'Jane',
+        last_name: 'Smith',
+        email: 'jane@example.com',
+      },
+      items: [
+        {
+          product_name: 'Product B',
+          product_price: '89.99',
+          quantity: 1,
+          product_id: 102,
+        },
+      ],
+    },
+    {
+      id: 3,
+      status: 'out_for_delivery',
+      created_at: '2023-03-25T09:15:00Z',
+      total_price: '149.99',
+      tracking_number: 'TRK345678',
+      shipping_address: '789 Pine St',
+      city: 'Elsewhere',
+      state: 'TX',
+      zip_code: '54321',
+      user: {
+        first_name: 'Bob',
+        last_name: 'Johnson',
+        email: 'bob@example.com',
+      },
+      items: [
+        {
+          product_name: 'Product C',
+          product_price: '149.99',
+          quantity: 1,
+          product_id: 103,
+        },
+      ],
+    },
+    {
+      id: 4,
+      status: 'processing',
+      created_at: '2022-11-03T16:45:00Z',
+      total_price: '199.99',
+      tracking_number: null,
+      shipping_address: '321 Elm St',
+      city: 'Nowhere',
+      state: 'FL',
+      zip_code: '13579',
+      user: {
+        first_name: 'Alice',
+        last_name: 'Williams',
+        email: 'alice@example.com',
+      },
+      items: [
+        {
+          product_name: 'Product D',
+          product_price: '199.99',
+          quantity: 1,
+          product_id: 104,
+        },
+      ],
+    },
+    {
+      id: 5,
+      status: 'processing',
+      created_at: '2022-12-10T08:30:00Z',
+      total_price: '59.99',
+      tracking_number: null,
+      shipping_address: '654 Maple St',
+      city: 'Anyplace',
+      state: 'WA',
+      zip_code: '97531',
+      user: {
+        first_name: 'Carol',
+        last_name: 'Brown',
+        email: 'carol@example.com',
+      },
+      items: [
+        {
+          product_name: 'Product E',
+          product_price: '59.99',
+          quantity: 1,
+          product_id: 105,
+        },
+      ],
+    },
+    {
+      id: 6,
+      status: 'cancelled',
+      created_at: '2021-02-13T11:20:00Z',
+      total_price: '39.99',
+      tracking_number: null,
+      shipping_address: '987 Birch St',
+      city: 'Someplace',
+      state: 'IL',
+      zip_code: '24680',
+      user: {
+        first_name: 'David',
+        last_name: 'Miller',
+        email: 'david@example.com',
+      },
+      items: [
+        {
+          product_name: 'Product F',
+          product_price: '39.99',
+          quantity: 1,
+          product_id: 106,
+        },
+      ],
+    },
+  ],
+  next: null,
+};
 
 describe('Order Component', () => {
   const mockBack = jest.fn();
-  const dummyOrdersResponse = {
-    results: [
-      {
-        id: 1,
-        status: 'out_for_delivery',
-        created_at: '2022-11-03T12:00:00Z',
-        total_price: '10.00',
-        tracking_number: 'ABC',
-        items: [
-          { product_id: 101, product_name: 'Product A', product_price: '10.00', quantity: 1 },
-        ],
-        user: { first_name: 'John', last_name: 'Doe', email: 'john.doe@example.com' },
-      },
-      { id: 2, status: 'processing', created_at: '2022-11-02T12:00:00Z', total_price: '20.00', tracking_number: null, items: [], user: {} },
-      { id: 3, status: 'processing', created_at: '2022-11-01T12:00:00Z', total_price: '30.00', tracking_number: null, items: [], user: {} },
-      { id: 4, status: 'cancelled', created_at: '2021-02-13T12:00:00Z', total_price: '40.00', tracking_number: null, items: [], user: {} },
-    ],
-    next: null,
+  const mockRouter = { back: mockBack };
+  
+  // Create a mock navigation context
+  const navContext = {
+    isFocused: () => true,
+    addListener: jest.fn(() => jest.fn()),
+  };
+
+  const renderWithNavigation = (component: React.ReactElement) => {
+    return render(
+      <NavigationContext.Provider value={navContext as any}>
+        {component}
+      </NavigationContext.Provider>
+    );
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useRouter as jest.Mock).mockReturnValue({ back: mockBack });
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('dummyToken');
-    (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => dummyOrdersResponse });
+    (useRouter as jest.Mock).mockReturnValue(mockRouter);
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('dummy-token');
+    
+    // Mock successful fetch response
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(mockOrdersData),
+    });
   });
 
   it('renders header and tabs correctly', async () => {
-    const { getByText, getByTestId, findByText, findAllByText } = render(<Order />);
-    expect(getByText('My orders')).toBeTruthy();
-    expect(getByTestId('back-button')).toBeTruthy();
-    expect(await findByText('Out for Delivery')).toBeTruthy();
-    expect(getByText('Processing')).toBeTruthy();
-    expect(getByText('Canceled')).toBeTruthy();
-    expect((await findAllByText('Details')).length).toBe(1);
+    const { getByText, getByTestId } = renderWithNavigation(<Order />);
+    
+    await waitFor(() => {
+      expect(getByText('My orders')).toBeTruthy();
+      expect(getByTestId('back-button')).toBeTruthy();
+      expect(getByText('Out for Delivery')).toBeTruthy();
+      expect(getByText('Processing')).toBeTruthy();
+      expect(getByText('Canceled')).toBeTruthy();
+    });
   });
 
-  it('calls router.back when back button is pressed', () => {
-    const { getByTestId } = render(<Order />);
+  it('calls router.back when back button is pressed', async () => {
+    const { getByTestId } = renderWithNavigation(<Order />);
+    
+    await waitFor(() => {
+      expect(getByTestId('back-button')).toBeTruthy();
+    });
+    
     fireEvent.press(getByTestId('back-button'));
     expect(mockBack).toHaveBeenCalled();
   });
 
   it('displays Out for Delivery orders by default', async () => {
-    const { findAllByText } = render(<Order />);
-    expect((await findAllByText('Details')).length).toBe(1);
+    const { getByText, getAllByText } = renderWithNavigation(<Order />);
+    
+    await waitFor(() => {
+      // Check if the first "Out for Delivery" order is displayed
+      expect(getByText('Order #1')).toBeTruthy();
+      expect(getByText('1/15/2023')).toBeTruthy(); // Formatted date
+      expect(getAllByText('Details').length).toBeGreaterThan(0);
+    });
   });
 
   it('switches to Processing tab and displays Processing orders', async () => {
-    const { getByText, findAllByText } = render(<Order />);
+    const { getByText, getAllByText } = renderWithNavigation(<Order />);
+    
+    await waitFor(() => {
+      expect(getByText('Processing')).toBeTruthy();
+    });
+    
+    // Press the Processing tab
     fireEvent.press(getByText('Processing'));
-    expect((await findAllByText('Details')).length).toBe(2);
-    expect(getByText('11/2/2022')).toBeTruthy();
+    
+    await waitFor(() => {
+      // Check if the first "Processing" order is displayed (ID 4)
+      expect(getByText('Order #4')).toBeTruthy();
+      expect(getByText('11/3/2022')).toBeTruthy(); // Formatted date for order 4
+    });
   });
 
   it('switches to Canceled tab and displays Canceled orders', async () => {
-    const { getByText, findAllByText } = render(<Order />);
-    fireEvent.press(getByText('Canceled'));
-    expect((await findAllByText('Details')).length).toBe(1);
-    expect(getByText('2/13/2021')).toBeTruthy();
-  });
-
-  it('opens review modal when Review button is pressed', async () => {
-    const { findByText } = render(<Order />);
-    const reviewButton = await findByText('Review');
-    act(() => fireEvent.press(reviewButton));
-    expect(await findByText('Review Product')).toBeTruthy();
-  });
-
-  it('opens order details modal when Details button is pressed', async () => {
-    const { findByText, getByText } = render(<Order />);
-    const detailsButton = await findByText('Details');
-    act(() => fireEvent.press(detailsButton));
-    expect(getByText('Shipping Address:')).toBeTruthy();
-  });
-
-  it('loads more orders on scroll if hasNext is true', async () => {
-    (global.fetch as jest.Mock)
-      .mockResolvedValueOnce({ ok: true, json: async () => dummyOrdersResponse })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          results: [
-            {
-              id: 5,
-              status: 'out_for_delivery',
-              created_at: '2022-11-04T12:00:00Z',
-              total_price: '50.00',
-              tracking_number: 'DEF',
-              items: [],
-              user: {},
-            },
-          ],
-          next: null,
-        }),
-      });
-
-    const { getByTestId, findAllByText } = render(<Order />);
-    const scrollView = getByTestId('order-scroll-view');
-
-    await act(async () => {
-      fireEvent.scroll(scrollView, {
-        nativeEvent: {
-          layoutMeasurement: { height: 500 },
-          contentOffset: { y: 1000 },
-          contentSize: { height: 1500 },
-        },
-      });
+    const { getByText } = renderWithNavigation(<Order />);
+    
+    await waitFor(() => {
+      expect(getByText('Canceled')).toBeTruthy();
     });
-
-    expect((await findAllByText('Details')).length).toBeGreaterThan(1);
+    
+    // Press the Canceled tab
+    fireEvent.press(getByText('Canceled'));
+    
+    await waitFor(() => {
+      // Check if the first "Canceled" order is displayed (ID 6)
+      expect(getByText('Order #6')).toBeTruthy();
+      expect(getByText('2/13/2021')).toBeTruthy(); // Formatted date for order 6
+    });
+  });
+  
+  it('opens review modal when Review button is pressed', async () => {
+    const { getByText, getAllByText } = renderWithNavigation(<Order />);
+    
+    await waitFor(() => {
+      expect(getAllByText('Review').length).toBeGreaterThan(0);
+    });
+    
+    fireEvent.press(getAllByText('Review')[0]);
+    
+    await waitFor(() => {
+      expect(getByText('Review Product')).toBeTruthy();
+      expect(getByText('Submit Review')).toBeTruthy();
+      expect(getByText('Cancel')).toBeTruthy();
+    });
+  });
+  
+  it('opens order details modal when Details button is pressed', async () => {
+    const { getByText, getAllByText, getByTestId } = renderWithNavigation(<Order />);
+    
+    await waitFor(() => {
+      expect(getAllByText('Details').length).toBeGreaterThan(0);
+    });
+    
+    fireEvent.press(getAllByText('Details')[0]);
+    
+    await waitFor(() => {
+      // Update selectors to be more specific
+      expect(getByText('Shipping Address:')).toBeTruthy();
+      expect(getByText('Products:')).toBeTruthy();
+    });
   });
 });

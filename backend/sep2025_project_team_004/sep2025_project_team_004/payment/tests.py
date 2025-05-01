@@ -126,3 +126,5 @@ class TestPaymentSerializer:
         assert serializer.is_valid(), serializer.errors
         saved_instance = serializer.save(user=self.user)
         assert saved_instance.last4 == "4321"
+        # Don't check for card_number as it's no longer stored in the model
+        assert saved_instance.card_type == "visa"

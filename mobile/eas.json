@@ -18,14 +18,17 @@
     },
     "production": {
       "autoIncrement": true,
-      "env": {
-        "EXPO_PUBLIC_DEV_FLAG": "false" ,
-        "EXPO_PUBLIC_BACKEND_URL": "https://d2tedebo3dq0kj.cloudfront.net" ,
-        "EXPO_PUBLIC_SENSOR_DATA_URL": "https://d2tedebo3dq0kj.cloudfront.net/api/sensor_data/"
-      }
+      "environment": "production"
+
+      
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6743309326"
+      }
+
+    }
   }
 }

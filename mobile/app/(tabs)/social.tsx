@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,37 +9,34 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Alert,
 } from "react-native";
+import { firestore } from "../../_utlis/firebaseConfig";
+import { collection, addDoc, doc, setDoc, updateDoc, arrayUnion, serverTimestamp } from "firebase/firestore";
 import Icon from "react-native-vector-icons/Feather";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useInbox } from "../../hooks/useInbox";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
+import SocialSkeletonLoader from "@/components/skeletons/SocialSkeletonLoader";
+import { useRouter } from "expo-router";
+import { getOrCreateDM } from "../api/getorCreateDM";
+import Constants  from "expo-constants";
 
-const chats = [
-  { id: 1, name: "Daniel Atkins", lastMessage: "The weather will be perfect!", unread: 1 },
-  { id: 2, name: "Erin, Ursula, Matthew", lastMessage: "You: The store only has 2% milk!", unread: 2 },
-  { id: 3, name: "Photographers", lastMessage: "@Philippe: Hmm, are you sure?", unread: 10 },
-  { id: 4, name: "Regina Jones", lastMessage: "The class has open enrollment...", unread: 0 },
-  { id: 5, name: "Baker Hayfield", lastMessage: "Is Cleveland nice in October?", unread: 0 },
-  { id: 6, name: "Alex Johnson", lastMessage: "Just finished the project!", unread: 3 },
-  { id: 7, name: "Sarah Williams", lastMessage: "Dinner plans for tomorrow?", unread: 5 },
-  { id: 8, name: "Tech Gurus", lastMessage: "New AI breakthrough announced!", unread: 7 },
-  { id: 9, name: "Fitness Group", lastMessage: "Let's go for a morning run!", unread: 0 },
-  { id: 10, name: "Movie Club", lastMessage: "Next movie night: Inception!", unread: 4 },
-  { id: 11, name: "Gaming Squad", lastMessage: "Who's online tonight?", unread: 1 },
-  { id: 12, name: "Work Chat", lastMessage: "Meeting rescheduled to 2 PM.", unread: 0 },
-  { id: 13, name: "Michael Scott", lastMessage: "That's what she said!", unread: 6 },
-  { id: 14, name: "Coding Ninjas", lastMessage: "React Native vs Flutter?", unread: 9 },
-  { id: 15, name: "Crypto News", lastMessage: "Bitcoin just hit 50k!", unread: 0 },
-  { id: 16, name: "Anna Kendrick", lastMessage: "Loved the new album!", unread: 2 },
-  { id: 17, name: "The Boys", lastMessage: "Game night at my place!", unread: 0 },
-  { id: 18, name: "Design Team", lastMessage: "Check out the new UI update!", unread: 1 },
-  { id: 19, name: "Startup Hub", lastMessage: "Looking for co-founders!", unread: 0 },
-  { id: 20, name: "Travel Buddies", lastMessage: "Flights to Tokyo booked!", unread: 3 },
-  { id: 21, name: "Family Group", lastMessage: "Grandma's birthday is next week!", unread: 8 },
-  { id: 22, name: "The Office Fans", lastMessage: "Best episode ever?", unread: 5 },
-  { id: 23, name: "Debbie Thompson", lastMessage: "Lunch this weekend?", unread: 0 },
-  { id: 24, name: "Book Club", lastMessage: "New book suggestion: The Alchemist!", unread: 2 },
-];
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_DEV_FLAG === "true"
+    ? `http://${Constants.expoConfig?.hostUri?.split(":").shift() ?? "localhost"}:8000`
+    : process.env.EXPO_PUBLIC_BACKEND_URL;
+
+
+type FriendUser = {
+  id: number;
+  username: string;
+  profilePicture?: string;
+};
+
+
 
 
 export default function SocialScreen() {
@@ -47,12 +44,137 @@ export default function SocialScreen() {
   const { push } = require("expo-router").useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [composeVisible, setComposeVisible] = useState(false);
+  const [friends, setFriends] = useState<FriendUser[]>([]);
+  const [selectedFriends, setSelectedFriends] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<FriendUser | null>(null);
 
   // Detect Scroll Direction (Up or Down)
   scrollY.addListener(({ value }) => {
     setIsExpanded(value < 10); // Expand when near the top
   });
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userInfo = await AsyncStorage.getItem("userInfo");
+      const parsed = userInfo ? JSON.parse(userInfo) : null;
+      setCurrentUserId(parsed?.id || null);
+      if (parsed?.id && parsed?.username) {
+        setCurrentUser({
+          id: parsed.id,
+          username: parsed.username,
+          profilePicture: parsed.profilePicture || "",
+        });
+      }
+    };
+    const fetchFriends = async () => {
+      const token = await AsyncStorage.getItem("authToken");
+      const res = await fetch(`${API_BASE_URL}/api/friends/friends/`, {
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      });
+      const data = await res.json();
+      setFriends(data);
+    };
+    fetchUser();
+    fetchFriends();
+  }, []);
+
+  useEffect(() => {
+    if (currentUserId !== null && friends.length > 0) {
+      setLoading(false);
+    }
+  }, [currentUserId, friends]);
+
+  const inbox = useInbox(currentUserId);
+
+  const handleStartConversation = async () => {
+    if (selectedFriends.length === 1) {
+      const selected = friends.find(f => f.id === selectedFriends[0]);
+      if (!selected || currentUserId === null) return;
+  
+      const conversationId = await getOrCreateDM(currentUserId, selected.id);
+      router.push({
+        pathname: "/ChatDetail",
+        params: {
+          conversationId,
+          username: selected.username,
+          profilePicture: selected.profilePicture || "",
+        },
+      });
+    } else if (selectedFriends.length > 1 && currentUserId !== null) {
+      Alert.prompt("Group Name", "Enter a name for the group chat:", async (groupName) => {
+        if (!groupName) return;
+  
+        // 1. Create groupChat doc
+        const newGroupRef = await addDoc(collection(firestore, "groupChats"), {
+          name: groupName,
+          image: "", // optional
+          adminId: currentUserId,
+          membersArray: [...selectedFriends, currentUserId],
+          lastMessage: "",
+          lastUpdated: serverTimestamp(),
+          readCount: { [currentUserId]: 0 }
+        });
+  
+        // 2. Add members to subcollection
+        const allMembers: FriendUser[] = [
+          ...(selectedFriends.map(id => friends.find(f => f.id === id)).filter(Boolean) as FriendUser[]),
+          ...(currentUser ? [currentUser] : [])
+        ];
+        
+        await Promise.all(allMembers.map(member =>
+          setDoc(doc(firestore, `groupChats/${newGroupRef.id}/members/${member.id}`), {
+            username: member.username
+          })
+        ));
+  
+        // 3. Navigate
+        router.push({
+          pathname: "/GroupChatDetail",
+          params: {
+            groupId: newGroupRef.id,
+            groupName,
+            groupImage: "",
+            friends: JSON.stringify(friends),
+          },
+        });
+      });
+    }
+  
+    setComposeVisible(false);
+    setSelectedFriends([]);
+  };
+
+  const formatTime = (timestamp: string | null | undefined) => {
+    if (!timestamp) return "";
+  
+    const date = new Date(timestamp);
+    const now = new Date();
+  
+    const isToday = date.toDateString() === now.toDateString();
+  
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+  
+    if (isToday) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (isYesterday) {
+      return "Yesterday";
+    } else {
+      return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    }
+  };
+
+
+  if (loading) {
+    return <SocialSkeletonLoader />;
+  }
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -83,26 +205,91 @@ export default function SocialScreen() {
           { useNativeDriver: false }
         )}
       >
-        {chats.map((chat) => (
-          <TouchableOpacity key={chat.id} style={styles.chatItem} onPress={() => navigation.navigate("ChatDetail", { userId: chat.id })}>
-            <Image source={require("../../assets/images/avatar-placeholder.png")} style={styles.avatar} />
-            <View style={styles.chatInfo}>
-              <Text style={styles.chatName}>{chat.name}</Text>
-              <Text style={styles.chatMessage} numberOfLines={1}>{chat.lastMessage}</Text>
-            </View>
-            {/* Unread Message Count */}
-            {chat.unread > 0 && (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>{chat.unread}</Text>
-              </View>
-            )}
-            <Text style={styles.chatTime}>2:14 PM</Text>
-          </TouchableOpacity>
-        ))}
+        {inbox.map((chat) => {
+
+  return (
+    <TouchableOpacity
+      key={chat.id}
+      style={styles.chatItem}
+      onPress={() => {
+        if (chat.type === "groupChat") {
+          router.push({
+            pathname: "/GroupChatDetail",
+            params: {
+              groupId: chat.id,
+              groupName: chat.name,
+              groupImage: chat.profilePicture,
+              friends: JSON.stringify(friends),
+            },
+          });
+        } else {
+          router.push({
+            pathname: "/ChatDetail",
+            params: {
+              conversationId: chat.id,
+              username: chat.name,
+              profilePicture: chat.profilePicture,
+            },
+          });
+        }
+      }}
+    >
+      <Image source={require("../../assets/images/avatar-placeholder.png")} style={styles.avatar} />
+      <View style={styles.chatInfo}>
+        <Text style={styles.chatName}>{chat.name}</Text>
+        <Text style={styles.chatMessage} numberOfLines={1}>{chat.lastMessage}</Text>
+      </View>
+
+      {currentUserId !== null && chat.readCount && chat.readCount[currentUserId] > 0 ? (
+        <View style={styles.unreadBadge}>
+          <Text style={styles.unreadText}>{chat.readCount[currentUserId]}</Text>
+        </View>
+      ) : (
+        <Text style={styles.chatTime}>{formatTime(chat.lastUpdated)}</Text>
+      )}
+      </TouchableOpacity>
+    );
+  })}
       </Animated.ScrollView>
 
+      {composeVisible && (
+  <View style={styles.overlay}>
+    <View style={styles.popup}>
+      <Text style={styles.popupTitle}>Select friends to chat with</Text>
+      <ScrollView style={{ maxHeight: 400, marginTop: 20 }}>
+        {friends.map(friend => (
+          <TouchableOpacity
+            key={friend.id}
+            style={[
+              styles.friendOption,
+              selectedFriends.includes(friend.id) && styles.friendSelected
+            ]}
+            onPress={() =>
+              setSelectedFriends(prev =>
+                prev.includes(friend.id)
+                  ? prev.filter(id => id !== friend.id)
+                  : [...prev, friend.id]
+              )
+            }
+          >
+            <Text style={{ fontSize: 16 }}>{friend.username}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView >
+      <View style={styles.popupActions}>
+        <TouchableOpacity onPress={() => setComposeVisible(false)}>
+          <Text style={{ color: "#000" }}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleStartConversation()}>
+          <Text style={{ color: "#007AFF", fontWeight: "bold" }}>Start</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+)}
+
       {/* Floating Compose Button */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => setComposeVisible(true)}>
         <MaterialIcons name="edit" size={24} color="white" />
         {isExpanded && <Text style={styles.fabText}>Compose</Text>}
       </TouchableOpacity>
@@ -217,21 +404,62 @@ const styles = StyleSheet.create({
     alignItems: "center",
     position: "absolute",
     right: 20,
-    bottom: 30,
+    bottom: 10,
     backgroundColor: "#007AFF",
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 50,
-    elevation: 5, // Shadow for Android
+    elevation: 5, 
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    marginBottom: 100,
   },
   fabText: {
     color: "white",
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999,
+  },
+  popup: {
+    backgroundColor: "#fff",
+    padding: 24, 
+    borderRadius: 16, 
+    width: "85%",     
+    height: 400,
+    maxHeight: "90%", 
+  },
+  popupTitle: {
+    fontSize: 20,      
+    fontWeight: "700",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  friendOption: {
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderBottomColor: "#eee",
+    borderBottomWidth: 1,
+    borderRadius: 8,
+  },
+  friendSelected: {
+    backgroundColor: "#e0f0ff",
+  },
+  popupActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 24,
   },
 });
