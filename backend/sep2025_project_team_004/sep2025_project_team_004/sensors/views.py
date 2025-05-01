@@ -28,13 +28,14 @@ class AddSensorView(APIView):
         if Fav_Sensor.objects.filter(sensor_id=sensor_id, user=request.user, belongs_to=belongs.user).exists():
             return Response({"error": "You have already added this sensor."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # No sensor object anymore, just sensor_id
+        is_first = not Fav_Sensor.objects.filter(user=request.user).exists()
+
         Fav_Sensor.objects.create(
             sensor_id=sensor_id,
             user=request.user,
             belongs_to=belongs.user,
             nickname=nickname,
-            is_default=False
+            is_default=is_first
         )
 
         return Response({"message": "Sensor added successfully."}, status=status.HTTP_201_CREATED)
@@ -78,7 +79,7 @@ class RegisterSensorView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         sensor_id = serializer.validated_data["sensor_id"]
-        sensor_type = serializer.validated_data["sensor_type"]  # NEW
+        sensor_type = serializer.validated_data["sensor_type"]  
         nickname = serializer.validated_data.get("nickname", "")
         address_str = serializer.validated_data["address"]
 
@@ -112,7 +113,6 @@ class RegisterSensorView(APIView):
         except Exception as e:
             return Response({"error": f"Geocoding error: {str(e)}"}, status=500)
 
-        # Create new Belongs record (sensor_id now primary key)
         Belongs.objects.create(
             sensor_id=sensor_id,
             sensor_type=sensor_type,
@@ -122,13 +122,14 @@ class RegisterSensorView(APIView):
             longitude=longitude
         )
 
-        # Create Fav_Sensor entry
+        is_first = not Fav_Sensor.objects.filter(user=request.user).exists()
+
         Fav_Sensor.objects.create(
             sensor_id=sensor_id,
             user=request.user,
             belongs_to=request.user,
             nickname=nickname,
-            is_default=True
+            is_default=is_first
         )
 
         return Response({"message": "Sensor registered successfully."}, status=201)

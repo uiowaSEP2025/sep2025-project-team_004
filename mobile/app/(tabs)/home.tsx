@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../types";
@@ -19,6 +20,7 @@ import SensorChart from "../SensorChart";
 import MapSection from "../MapSection";
 import NoSensorFallbackView from "../NoSensorFallback";
 import HomeSkeletonLoader from "@/components/skeletons/HomeSkeletonLoader";
+import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 
 const chartCache: Record<string, any> = {};
 
@@ -29,6 +31,9 @@ const API_BASE_URL =
 
 const WelcomePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { refreshSensors } = useLocalSearchParams();
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
 
   const [showMap, setShowMap] = useState(false);
   const [defaultRegion, setDefaultRegion] = useState<any>(null);
@@ -42,80 +47,75 @@ const WelcomePage: React.FC = () => {
   const [selectedRange, setSelectedRange] = useState<"today" | "week" | "month">("today");
 
   const SENSOR_URL = process.env.EXPO_PUBLIC_SENSOR_DATA_URL;
+  
 
-  useEffect(() => {
-    const initialize = async () => {
-      try {
+  useFocusEffect(
+    useCallback(() => {
+      const refresh = async () => {
         const token = await AsyncStorage.getItem("authToken");
-        if (!token) {
-          navigation.reset({ index: 0, routes: [{ name: "index" }] });
+        if (!token) return;
+  
+        const sensors = await fetchUserSensors(token);
+        if (!sensors || sensors.length === 0) {
+          setHasNoSensors(true);
           return;
         }
-
-        const defaultSensorId = await fetchUserSensors(token);
-        if (!defaultSensorId) {
-          setLoading(false);
-          return;
+  
+        setUserSensors(sensors);
+        const defaultSensor = sensors.find((s: any) => s.is_default);
+        if (defaultSensor) {
+          setSelectedSensor(defaultSensor);
+          await fetchSensorData(defaultSensor.id);
+          setDefaultRegion({
+            latitude: parseFloat(defaultSensor.latitude),
+            longitude: parseFloat(defaultSensor.longitude),
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          });
         }
-
-        await fetchSensorData(defaultSensorId);
-
-        const storedSensors = await AsyncStorage.getItem("sensors");
-        if (storedSensors) {
-          const sensors = JSON.parse(storedSensors);
-          setUserSensors(sensors);
-
-          const defaultSensor = sensors.find((s: any) => s.is_default);
-          if (defaultSensor) setSelectedSensor(defaultSensor);
-
-          if (defaultSensor?.latitude && defaultSensor?.longitude) {
-            setDefaultRegion({
-              latitude: parseFloat(defaultSensor.latitude),
-              longitude: parseFloat(defaultSensor.longitude),
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Initialization error:", err);
-      }
-    };
-
-    initialize();
-  }, []);
+      };
+  
+      refresh();
+    }, [])
+  );
+  
 
   const isChartDataReady = sensorData.length > 0;
 
-  const fetchUserSensors = async (token: string): Promise<string | null> => {
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
+        const fetchedSensors = await fetchUserSensors(token);
+        if (fetchedSensors) {
+          setUserSensors(fetchedSensors);
+          const defaultSensor = fetchedSensors.find((s: any) => s.is_default);
+          if (defaultSensor) {
+            setSelectedSensor(defaultSensor);
+            await fetchSensorData(defaultSensor.id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Refresh error:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const fetchUserSensors = async (token: string): Promise<any[] | null> => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/sensors/my/`, {
         headers: { Authorization: `Token ${token}` },
       });
-  
       if (!res.ok) throw new Error(`Failed to fetch sensors: ${res.status}`);
-  
       const sensors = await res.json();
-  
-      // Normalize so we can safely use `sensor.id`
-      const normalized = sensors.map((s: any) => ({
-        ...s,
-        id: s.sensor_id,
-      }));
-  
-      // Store normalized sensors
+      const normalized = sensors.map((s: any) => ({ ...s, id: s.sensor_id }));
       await AsyncStorage.setItem("sensors", JSON.stringify(normalized));
-  
-      const defaultSensor = normalized.find((s: any) => s.is_default);
-      if (!defaultSensor) {
-        setHasNoSensors(true);
-        return null;
-      }
-  
-      return defaultSensor.id;
+      return normalized;
     } catch (error) {
-      console.error("Error fetching user sensors:", error);
-      setHasNoSensors(true);
+      console.error("Error fetching sensors:", error);
       return null;
     }
   };
@@ -252,7 +252,12 @@ const WelcomePage: React.FC = () => {
         {showMap && defaultRegion ? (
           <MapSection sensors={userSensors} defaultRegion={defaultRegion} />
         ) : (
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
+          >
             {!isChartDataReady ? (
               <ActivityIndicator size="large" color="#007bff" />
             ) : (

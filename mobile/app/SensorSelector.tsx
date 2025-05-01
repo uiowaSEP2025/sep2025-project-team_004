@@ -80,7 +80,7 @@ const SensorSelector: React.FC<Props> = ({
           <TouchableOpacity
             style={styles.addSensorButton}
             onPress={() => {
-              router.push('/first-look');
+              router.push('/AddSensors');
               setShowDropdown(false);
             }}
           >
