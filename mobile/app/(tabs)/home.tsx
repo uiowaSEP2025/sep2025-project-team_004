@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,6 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from "react-native";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../../types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 
@@ -20,7 +18,7 @@ import SensorChart from "../SensorChart";
 import MapSection from "../MapSection";
 import NoSensorFallbackView from "../NoSensorFallback";
 import HomeSkeletonLoader from "@/components/skeletons/HomeSkeletonLoader";
-import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 
 const chartCache: Record<string, any> = {};
 
@@ -30,9 +28,6 @@ const API_BASE_URL =
     : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const WelcomePage: React.FC = () => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const { refreshSensors } = useLocalSearchParams();
-  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
   const [showMap, setShowMap] = useState(false);
@@ -45,8 +40,21 @@ const WelcomePage: React.FC = () => {
   const [sensorData, setSensorData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState<"today" | "week" | "month">("today");
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   const SENSOR_URL = process.env.EXPO_PUBLIC_SENSOR_DATA_URL;
+
+  useEffect(() => {
+    const loadUserId = async () => {
+      const userInfo = await AsyncStorage.getItem("userInfo");
+      if (userInfo) {
+        const parsed = JSON.parse(userInfo);
+        setCurrentUserId(parsed.id);
+      }
+    };
+  
+    loadUserId();
+  }, []);
   
 
   useFocusEffect(
@@ -112,6 +120,7 @@ const WelcomePage: React.FC = () => {
       if (!res.ok) throw new Error(`Failed to fetch sensors: ${res.status}`);
       const sensors = await res.json();
       const normalized = sensors.map((s: any) => ({ ...s, id: s.sensor_id }));
+      console.log(normalized)
       await AsyncStorage.setItem("sensors", JSON.stringify(normalized));
       return normalized;
     } catch (error) {
@@ -223,6 +232,7 @@ const WelcomePage: React.FC = () => {
               await fetchSensorData(sensor.id);
             }
           }}
+          currentUserId={currentUserId}
         />
 
         {!showMap && (

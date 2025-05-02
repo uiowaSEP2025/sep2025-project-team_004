@@ -18,7 +18,7 @@ class SensorDetailSerializer(serializers.Serializer):
     sensor_id = serializers.CharField()
     nickname = serializers.CharField()
     is_default = serializers.BooleanField()
-    belongs_to = serializers.PrimaryKeyRelatedField(read_only=True)
+    belongs_to = serializers.IntegerField()
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     registered_at = serializers.DateTimeField()

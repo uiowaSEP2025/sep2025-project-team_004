@@ -55,7 +55,7 @@ class ListMySensorsView(APIView):
                     "sensor_id": fav.sensor_id,
                     "nickname": fav.nickname,
                     "is_default": fav.is_default,
-                    "belongs_to": fav.belongs_to,
+                    "belongs_to": fav.belongs_to.id,
                     "latitude": belongs.latitude,
                     "longitude": belongs.longitude,
                     "registered_at": belongs.registered_at,
@@ -133,3 +133,73 @@ class RegisterSensorView(APIView):
         )
 
         return Response({"message": "Sensor registered successfully."}, status=201)
+    
+
+class UpdateFavoriteSensorView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, sensor_id):
+        try:
+            fav = Fav_Sensor.objects.get(sensor_id=sensor_id, user=request.user)
+        except Fav_Sensor.DoesNotExist:
+            return Response({"error": "Sensor not found in your favorites."}, status=404)
+
+        nickname = request.data.get("nickname")
+        is_default = request.data.get("is_default")
+
+        if nickname is not None:
+            fav.nickname = nickname
+
+        if is_default:
+            # Set others to False
+            Fav_Sensor.objects.filter(user=request.user).update(is_default=False)
+            fav.is_default = True
+
+        fav.save()
+        return Response({"message": "Favorite updated."}, status=200)
+
+
+class UpdateBelongsSensorView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, sensor_id):
+        try:
+            belongs = Belongs.objects.get(sensor_id=sensor_id)
+        except Belongs.DoesNotExist:
+            return Response({"error": "Sensor not found."}, status=404)
+
+        if belongs.user != request.user:
+            return Response({"error": "You do not have permission to update this sensor."}, status=403)
+
+        address_str = request.data.get("address")
+        if not address_str:
+            return Response({"error": "Address is required."}, status=400)
+
+        SMARTY_AUTH_ID = os.getenv("SMARTY_AUTH_ID")
+        SMARTY_AUTH_TOKEN = os.getenv("SMARTY_AUTH_TOKEN")
+        params = {
+            "street": address_str,
+            "auth-id": SMARTY_AUTH_ID,
+            "auth-token": SMARTY_AUTH_TOKEN,
+        }
+
+        res = requests.get("https://us-street.api.smartystreets.com/street-address", params=params)
+        data = res.json()
+
+        if res.status_code != 200 or not data:
+            return Response({"error": "Invalid address or geocoding failed."}, status=400)
+
+        metadata = data[0].get("metadata", {})
+        full_address = data[0]["delivery_line_1"]
+        latitude = metadata.get("latitude")
+        longitude = metadata.get("longitude")
+
+        if latitude is None or longitude is None:
+            return Response({"error": "Geocoding failed to return coordinates."}, status=400)
+
+        belongs.address = full_address
+        belongs.latitude = latitude
+        belongs.longitude = longitude
+        belongs.save()
+
+        return Response({"message": "Sensor location updated."}, status=200)

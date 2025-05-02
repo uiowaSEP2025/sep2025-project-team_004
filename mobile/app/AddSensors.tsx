@@ -96,6 +96,7 @@ export default function AddRegisterSensor() {
             value={sensorId}
             onChangeText={setSensorId}
             placeholder="Enter sensor ID"
+            placeholderTextColor= '#667'
           />
 
           <Text style={styles.label}>Nickname</Text>
@@ -104,6 +105,7 @@ export default function AddRegisterSensor() {
             value={nickname}
             onChangeText={setNickname}
             placeholder="Optional nickname"
+            placeholderTextColor= '#667'
           />
 
           {mode === 'register' && (
@@ -138,6 +140,7 @@ export default function AddRegisterSensor() {
                 enablePoweredByContainer={false}
                 textInputProps={{
                   onChangeText: setAddress,
+                  placeholderTextColor: '#667',
                 }}
               />
             </>
