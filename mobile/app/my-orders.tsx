@@ -146,7 +146,12 @@ export default function Order() {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       stars.push(
-        <TouchableOpacity key={i} onPress={() => setRating(i)}>
+        <TouchableOpacity
+          key={i}
+          accessibilityRole="button"
+          accessibilityLabel={`star-${i}`}
+          onPress={() => setRating(i)}
+>
           <MaterialIcons
             name={i <= rating ? 'star' : 'star-border'}
             size={32}

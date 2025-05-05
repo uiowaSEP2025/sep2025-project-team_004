@@ -133,7 +133,7 @@ export default function FriendRequestsScreen() {
       {/* Header */}
       <View style={styles.header}>
         {/* Back Button on the Left */}
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} testID="back-button">
           <MaterialIcons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
 

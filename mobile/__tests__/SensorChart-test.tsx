@@ -9,8 +9,7 @@ jest.mock('@shopify/react-native-skia', () => {
   const React = require('react');
   const { View } = require('react-native');
   return {
-    Circle: (props: any) =>
-      React.createElement(View, { ...props, testID: 'circle' }),
+    Circle: (props: any) => React.createElement(View, { ...props, testID: 'circle' }),
     useFont: jest.fn(),
   };
 });
@@ -20,11 +19,11 @@ jest.mock('victory-native', () => {
   const { View } = require('react-native');
   return {
     CartesianChart: (props: any) => {
+      // supply dummy points so children render without error
       const fakePoints = { y: [{ x: 1, y: 2, position: 20 }] };
       return React.createElement(View, null, props.children({ points: fakePoints }));
     },
-    Line: (props: any) =>
-      React.createElement(View, { ...props, testID: 'line' }),
+    Line: (props: any) => React.createElement(View, { ...props, testID: 'line' }),
     useChartPressState: jest.fn(),
   };
 });
@@ -44,11 +43,12 @@ describe('SensorChart', () => {
   });
 
   it('returns null if font is not loaded yet', () => {
-    // simulate font loading pending
     (useFont as jest.Mock).mockReturnValue(null);
-    // stub chart state so destructuring won't throw
     (useChartPressState as jest.Mock).mockReturnValue({
-      state: { x: { position: 0 }, y: { y: { position: 0 } } },
+      state: {
+        x: { value: { value: undefined }, position: 0 },
+        y: { y: { value: { value: undefined }, position: 0 } },
+      },
       isActive: false,
     });
 
@@ -59,9 +59,12 @@ describe('SensorChart', () => {
   });
 
   it('renders title and Line but no Circle when inactive', () => {
-    (useFont as jest.Mock).mockReturnValue({}); // font is ready
+    (useFont as jest.Mock).mockReturnValue({});
     (useChartPressState as jest.Mock).mockReturnValue({
-      state: { x: { position: 5 }, y: { y: { position: 15 } } },
+      state: {
+        x: { value: { value: sampleData[0].x }, position: 5 },
+        y: { y: { value: { value: sampleData[0].y }, position: 15 } },
+      },
       isActive: false,
     });
 
@@ -77,7 +80,10 @@ describe('SensorChart', () => {
   it('renders a Circle when active', () => {
     (useFont as jest.Mock).mockReturnValue({});
     (useChartPressState as jest.Mock).mockReturnValue({
-      state: { x: { position: 5 }, y: { y: { position: 15 } } },
+      state: {
+        x: { value: { value: sampleData[0].x }, position: 5 },
+        y: { y: { value: { value: sampleData[0].y }, position: 15 } },
+      },
       isActive: true,
     });
 

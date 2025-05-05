@@ -1,0 +1,126 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TabLayout uses correct tabBarActiveTintColor from color scheme 1`] = `
+[
+  <Text>
+    home
+  </Text>,
+  <Text>
+    store
+  </Text>,
+  <Text>
+    social
+  </Text>,
+  <Text>
+    profile
+  </Text>,
+]
+`;
+
+exports[`TabLayout uses default styles when Platform.OS is android 1`] = `
+[
+  <Text>
+    home
+  </Text>,
+  <Text>
+    store
+  </Text>,
+  <Text>
+    social
+  </Text>,
+  <Text>
+    profile
+  </Text>,
+]
+`;
+
+exports[`TabLayout uses default tabBarStyle on Android 1`] = `
+[
+  <Text>
+    home
+  </Text>,
+  <Text
+    testID="icon-house.fill"
+  >
+    house.fill:28:mock-color
+  </Text>,
+  <Text>
+    store
+  </Text>,
+  <Text
+    testID="icon-bag.fill"
+  >
+    bag.fill:28:mock-color
+  </Text>,
+  <Text>
+    social
+  </Text>,
+  <Text
+    testID="icon-message"
+  >
+    message:28:mock-color
+  </Text>,
+  <Text>
+    profile
+  </Text>,
+  <Text
+    testID="icon-person"
+  >
+    person:28:mock-color
+  </Text>,
+]
+`;
+
+exports[`TabLayout uses iOS-specific styles when Platform.OS is ios 1`] = `
+[
+  <Text>
+    home
+  </Text>,
+  <Text>
+    store
+  </Text>,
+  <Text>
+    social
+  </Text>,
+  <Text>
+    profile
+  </Text>,
+]
+`;
+
+exports[`TabLayout uses iOS-specific tabBarStyle 1`] = `
+[
+  <Text>
+    home
+  </Text>,
+  <Text
+    testID="icon-house.fill"
+  >
+    house.fill:28:mock-color
+  </Text>,
+  <Text>
+    store
+  </Text>,
+  <Text
+    testID="icon-bag.fill"
+  >
+    bag.fill:28:mock-color
+  </Text>,
+  <Text>
+    social
+  </Text>,
+  <Text
+    testID="icon-message"
+  >
+    message:28:mock-color
+  </Text>,
+  <Text>
+    profile
+  </Text>,
+  <Text
+    testID="icon-person"
+  >
+    person:28:mock-color
+  </Text>,
+]
+`;

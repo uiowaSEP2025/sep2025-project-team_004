@@ -74,6 +74,7 @@ describe("EditProfilePage", () => {
 
   it("updates the profile successfully", async () => {
     // Simulate a successful address validation then a successful PATCH update.
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     global.fetch = jest.fn()
       .mockResolvedValueOnce({
         ok: true,

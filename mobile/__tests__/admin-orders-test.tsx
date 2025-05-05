@@ -1,58 +1,167 @@
-import React from 'react'
-import TestRenderer, { act } from 'react-test-renderer'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useAdminOrders } from '../hooks/useAdminOrders'
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import AdminOrders from '../app/admin-orders';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 
-beforeAll(() => {
-  global.fetch = jest.fn()
-})
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+);
+jest.mock('expo-router', () => ({ useRouter: jest.fn() }));
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: jest.fn(),
+}));
 
-describe('useAdminOrders', () => {
+global.fetch = jest.fn();
+
+const mockOrder = {
+  id: 1,
+  shipping_address: '123 Main St',
+  city: 'Anytown',
+  state: 'CA',
+  zip_code: '12345',
+  total_price: '20.00',
+  status: 'processing',
+  tracking_number: null,
+  created_at: '2025-05-01T10:00:00Z',
+  user: { first_name: 'John', last_name: 'Doe', email: 'john@example.com' },
+  items: [{ product_name: 'Widget', product_price: '10.00', quantity: 2 }],
+};
+
+// 🔁 Utility: Simulate sequential fetch responses
+function mockFetchSequence(responses: Array<() => Promise<any>>) {
+  let call = 0;
+  (global.fetch as jest.Mock).mockImplementation(() => {
+    const responseFn = responses[call++];
+    return responseFn
+      ? responseFn()
+      : Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [], next: null }) });
+  });
+}
+
+describe('AdminOrders', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-  })
+    (useRouter as jest.Mock).mockReturnValue({ back: jest.fn() });
+    (useFocusEffect as jest.Mock).mockImplementation(() => {}); // ❗ Prevent infinite loop
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('fake-token');
+  });
 
-  it('groups results when token present', async () => {
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('tok')
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        results: [
-          { id: 1, status: 'out_for_delivery', total_price:'5.00', created_at: new Date().toISOString(),
-            stripe_payment_method_id:null, shipping_address:'', city:'', state:'', zip_code:'', tracking_number:null,
-            user:{first_name:'',last_name:'',email:''}, items:[] },
-          { id: 2, status: 'cancelled', total_price:'7.00', created_at: new Date().toISOString(),
-            stripe_payment_method_id:null, shipping_address:'', city:'', state:'', zip_code:'', tracking_number:null,
-            user:{first_name:'',last_name:'',email:''}, items:[] },
-        ],
-        next: null,
-      }),
-    })
+  afterEach(() => jest.clearAllMocks());
 
-    let ordersRef: any = {}
-    let fetchOrdersRef: any
-    let hasNextRef: boolean = false
+  it('renders header and tabs', async () => {
+    mockFetchSequence([
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ results: [], next: null }),
+        }),
+    ]);
 
-    const TestComponent = () => {
-      const { fetchOrders, orders, hasNext } = useAdminOrders('http://api')
-      ordersRef = orders
-      fetchOrdersRef = fetchOrders
-      hasNextRef = hasNext
-      return null
-    }
+    const { getByText } = render(<AdminOrders />);
+    await waitFor(() => getByText('Admin Orders'));
 
-    await act(async () => {
-      TestRenderer.create(<TestComponent />)
-    })
+    ['Out for Delivery', 'Processing', 'Canceled'].forEach(tab =>
+      expect(getByText(tab)).toBeTruthy()
+    );
+  });
 
-    let data: any
-    await act(async () => {
-      data = await fetchOrdersRef(1)
-    })
+  it('loads and displays processing orders when tab pressed', async () => {
+    mockFetchSequence([
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ results: [mockOrder], next: null }),
+        }),
+    ]);
 
-    expect(data.next).toBeNull()
-    expect(ordersRef['Out for Delivery'].map(o => o.id)).toEqual([1])
-    expect(ordersRef['Canceled'].map(o => o.id)).toEqual([2])
-    expect(hasNextRef).toBe(false)
-  })
-})
+    const { getByText } = render(<AdminOrders />);
+    fireEvent.press(getByText('Processing'));
+
+    await waitFor(() => {
+      expect(getByText('Order #1')).toBeTruthy();
+      expect(getByText('$20.00')).toBeTruthy();
+    });
+  });
+
+  it('opens and closes the details modal', async () => {
+    mockFetchSequence([
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ results: [mockOrder], next: null }),
+        }),
+    ]);
+
+    const { getByText, queryByText } = render(<AdminOrders />);
+    fireEvent.press(getByText('Processing'));
+
+    await waitFor(() => getByText('Order #1'));
+
+    fireEvent.press(getByText('Details'));
+    expect(getByText('Customer: John Doe')).toBeTruthy();
+
+    fireEvent.press(getByText('Close'));
+    await waitFor(() => {
+      expect(queryByText('Customer: John Doe')).toBeNull();
+    });
+  });
+
+  it('handles empty order list gracefully', async () => {
+    mockFetchSequence([
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ results: [], next: null }),
+        }),
+    ]);
+
+    const { getByText } = render(<AdminOrders />);
+    fireEvent.press(getByText('Processing'));
+    await waitFor(() => getByText('Admin Orders'));
+  });
+
+  it('submits a tracking number and calls update API', async () => {
+    mockFetchSequence([
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ results: [mockOrder], next: null }),
+        }),
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockOrder,
+              status: 'out_for_delivery',
+              tracking_number: 'TRACK123',
+            }),
+        }),
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ results: [], next: null }),
+        }),
+    ]);
+
+    const { getByText, getByPlaceholderText } = render(<AdminOrders />);
+    fireEvent.press(getByText('Processing'));
+    await waitFor(() => getByText('Order #1'));
+
+    fireEvent.press(getByText('Complete'));
+    fireEvent.changeText(getByPlaceholderText('Tracking Number'), 'TRACK123');
+    fireEvent.press(getByText('Complete Order'));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(2);
+      const [url, opts] = (fetch as jest.Mock).mock.calls[1];
+      expect(url).toContain('/api/store/orders/update/1/');
+      expect(opts.method).toBe('POST');
+      expect(JSON.parse(opts.body)).toMatchObject({
+        status: 'out_for_delivery',
+        tracking_number: 'TRACK123',
+      });
+    });
+  });
+});

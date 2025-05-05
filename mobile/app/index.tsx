@@ -75,7 +75,7 @@ export default function HomeScreen() {
           await AsyncStorage.setItem("userInfo", JSON.stringify(userData));
           navigation.reset({
             index: 0,
-            routes: [{ name: "(tabs)", params: { screen: "home" } }],
+            routes: [{ name: '(tabs)', params: { screen: 'home' } }],
           });
         } else {
           setError("Failed to fetch user details. Please try again.");

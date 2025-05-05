@@ -198,7 +198,7 @@ export default function SocialScreen() {
       </View>
 
       {/* Chat List */}
-      <Animated.ScrollView
+      <Animated.ScrollView testID="chat-scrollview"
         contentContainerStyle={styles.chatList}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],

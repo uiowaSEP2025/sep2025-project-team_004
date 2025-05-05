@@ -81,6 +81,7 @@ export default function MyReviewsScreen() {
             name={i <= rating ? 'star' : 'star-border'}
             size={24}
             color="gold"
+            testID={i <= rating ? 'star-filled' : 'star-unfilled'}
           />
         </TouchableOpacity>
       ))}

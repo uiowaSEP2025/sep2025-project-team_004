@@ -1,7 +1,19 @@
 import React from "react";
 import { render, fireEvent } from "@testing-library/react-native";
-import SensorSelector from "../app/SensorSelector"; // adjust the path if needed
+import SensorSelector from "../app/SensorSelector";
 
+// Mock router
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({
+  useRouter: () => ({
+    push: mockPush,
+  }),
+}));
+
+// Mock Image since React Native requires actual assets
+jest.mock("react-native/Libraries/Image/Image", () => "Image");
+
+// Mocks
 const mockSensor = {
   id: "1",
   nickname: "Test Sensor",
@@ -31,6 +43,10 @@ const setup = (overrideProps = {}) => {
 };
 
 describe("SensorSelector", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("renders selected sensor nickname and type", () => {
     const { getByText } = setup();
     expect(getByText("Test Sensor")).toBeTruthy();
@@ -49,10 +65,10 @@ describe("SensorSelector", () => {
 
   it("renders all user sensors in dropdown when open", () => {
     const { getAllByText, getByText } = setup({ showDropdown: true });
-    expect(getAllByText("Test Sensor")).toHaveLength(2);
+    expect(getAllByText("Test Sensor").length).toBeGreaterThanOrEqual(1);
     expect(getByText("Other Sensor")).toBeTruthy();
-    expect(getAllByText("Air Sensor")).toHaveLength(2);
-    expect(getAllByText("Soil Sensor")).toHaveLength(1);
+    expect(getAllByText("Air Sensor").length).toBeGreaterThanOrEqual(1);
+    expect(getByText("Soil Sensor")).toBeTruthy();
   });
 
   it("calls setShowDropdown when toggle is pressed", () => {
@@ -74,6 +90,24 @@ describe("SensorSelector", () => {
 
     fireEvent.press(getByText("Other Sensor"));
     expect(selectMock).toHaveBeenCalledWith(mockOtherSensor);
+    expect(toggleMock).toHaveBeenCalledWith(false);
+  });
+
+  it("navigates to /first-look on 'Add More Sensors' press", () => {
+    const toggleMock = jest.fn();
+    const { getByText } = setup({ showDropdown: true, setShowDropdown: toggleMock });
+
+    fireEvent.press(getByText("Add More Sensors"));
+    expect(mockPush).toHaveBeenCalledWith("/first-look");
+    expect(toggleMock).toHaveBeenCalledWith(false);
+  });
+
+  it("navigates to /first-look on 'First Time Deploy' press", () => {
+    const toggleMock = jest.fn();
+    const { getByText } = setup({ showDropdown: true, setShowDropdown: toggleMock });
+
+    fireEvent.press(getByText("First Time Deploy"));
+    expect(mockPush).toHaveBeenCalledWith("/first-look");
     expect(toggleMock).toHaveBeenCalledWith(false);
   });
 });

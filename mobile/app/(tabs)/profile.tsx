@@ -79,7 +79,7 @@ export default function Profile() {
           setDefaultCard(found || null);
         } catch (err) {
           // normalized for tests:
-          console.error('Error fetching default payment method:', err);
+          console.error('Error fetching default Stripe card:', err)
         }
       })();
     }, [])
@@ -188,7 +188,7 @@ export default function Profile() {
               <Text style={styles.infoTitle}>Payment Information</Text>
               <Text style={styles.infoSubtitle}>
                 {defaultCard
-                  ? `${defaultCard.card_type} ending in ${defaultCard.last4}`
+                  ? `${defaultCard.brand} ending in ${defaultCard.last4}`
                   : 'No default payment set'}
               </Text>
             </View>

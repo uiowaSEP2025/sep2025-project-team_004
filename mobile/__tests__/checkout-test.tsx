@@ -1,256 +1,239 @@
 // __tests__/checkout-test.tsx
-import React from "react";
-import { render, fireEvent, waitFor } from "@testing-library/react-native";
-import CheckoutScreen from "../app/checkout";
-import Toast from "react-native-toast-message";
-import { NavigationContext } from "@react-navigation/native";
-import { useFocusEffect } from '@react-navigation/native';
 
-// 1. Stub expo-font so vector-icons think fonts are loaded
-jest.mock("expo-font", () => ({
-  ...jest.requireActual("expo-font"),
-  isLoaded: () => true,
-  loadAsync: jest.fn(),
-}));
+// 1) Mocks & stubs before any imports:
 
-jest.mock("@react-native-async-storage/async-storage", () => ({
-  getItem: jest.fn().mockImplementation((key) => {
-    if (key === 'authToken') return Promise.resolve('dummy-token');
-    if (key === 'userInfo') return Promise.resolve(JSON.stringify({
-      address: '123 Main St',
-      city: 'Iowa City',
-      state: 'IA',
-      zip_code: '52240'
-    }));
-    return Promise.resolve(null);
-  }),
-}));
+// Router mocks
+const mockBack = jest.fn()
+const mockPush = jest.fn()
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ back: mockBack, push: mockPush }),
+}))
 
-jest.mock("react-native-toast-message", () => ({
+// AsyncStorage
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(),
+}))
+
+// Expo constants
+jest.mock('expo-constants', () => ({
+  expoConfig: { hostUri: 'localhost:19000' },
+}))
+
+// Toast
+jest.mock('react-native-toast-message', () => ({
   show: jest.fn(),
-}));
+}))
 
-// Mock @react-navigation/native
-jest.mock("@react-navigation/native", () => {
-  const actualNav = jest.requireActual("@react-navigation/native");
-  return {
-    ...actualNav,
-    useNavigation: () => ({
-      goBack: jest.fn(),
-      navigate: jest.fn(),
-    }),
-    useFocusEffect: (callback: () => void) => {
-      const mockReact = require('react');
-      mockReact.useEffect(() => {
-        callback();
-      }, [callback]);
-    },
-    useRoute: () => ({
-      params: {},
-      name: 'MockedScreen',
-      key: 'mocked-screen-key'
-    }),
-  };
-});
-
-// Suppress Image require errors
-jest.mock("@/assets/images/card-logo/amex.png", () => 1);
-jest.mock("@/assets/images/card-logo/discover.png", () => 1);
-jest.mock("@/assets/images/card-logo/mastercard.png", () => 1);
-jest.mock("@/assets/images/card-logo/visa.png", () => 1);
-jest.mock("@/assets/images/card-brand.png", () => 1);
-
-// Mock GooglePlacesAutocomplete
+// GooglePlacesAutocomplete → render a real TextInput so testID works
 jest.mock('react-native-google-places-autocomplete', () => {
-  const React = require('react');
-  const { View, TextInput } = require('react-native');
-  
-  const MockedComponent = React.forwardRef((props: any, ref: any) => {
-    React.useImperativeHandle(ref, () => ({
-      setAddressText: jest.fn(),
-    }));
-    
-    return (
-      <View>
-        <TextInput
-          testID="address-input"
-          placeholder={props.placeholder}
-          onChangeText={(text: string) => {
-            if (props.onPress) {
-              props.onPress({
-                description: text,
-                structured_formatting: { main_text: text }
-              });
-            }
-          }}
-        />
-      </View>
-    );
-  });
-  
+  const React = require('react')
+  const { TextInput } = require('react-native')
   return {
-    GooglePlacesAutocomplete: MockedComponent,
-    PlaceType: {},
-  };
-});
+    GooglePlacesAutocomplete: ({ textInputProps }: any) =>
+      React.createElement(TextInput, textInputProps),
+  }
+})
 
-// Setup fetch mock globally
-global.fetch = jest.fn();
+// Vector icons stub
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react')
+  return {
+    MaterialIcons: (props: any) =>
+      React.createElement('MaterialIcons', props),
+  }
+})
 
-// Create a mock navigation context
-const navContext = {
-  isFocused: () => true,
-  addListener: jest.fn(() => jest.fn()),
-  navigate: jest.fn(),
-};
+// Stub useFocusEffect to run inside a useEffect hook
+jest.mock('@react-navigation/native', () => {
+  const { useEffect } = require('react')
+  return {
+    useFocusEffect: (fn: () => void) => useEffect(fn, []),
+  }
+})
 
-// Helper function to render with navigation context
-const renderWithNavigation = (component: React.ReactNode) => {
-  return render(
-    <NavigationContext.Provider value={navContext as any}>
-      {component}
-    </NavigationContext.Provider>
-  );
-};
+// 2) Now imports
+import React from 'react'
+import { render, fireEvent, waitFor } from '@testing-library/react-native'
+import { TextInput } from 'react-native'
+import CheckoutScreen from '../app/checkout'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import Toast from 'react-native-toast-message'
+import { CartContext } from '../app/context/CartContext'
 
-// Mock payment methods data that matches the expected structure
-const mockPaymentMethods = [
+// -- TEST DATA --
+const fakeCards = [
   {
-    id: 'pm_123456789',
-    brand: 'visa',
-    last4: '4242',
-    exp_month: 12,
-    exp_year: 2025,
+    id: '1',
+    brand: 'Visa',
+    last4: '1111',
     is_default: true,
-    cardholder_name: 'John Doe'
+    cardholder_name: 'A',
+    exp_month: 1,
+    exp_year: 2030,
   },
   {
-    id: 'pm_987654321',
-    brand: 'mastercard',
-    last4: '5555',
-    exp_month: 10,
-    exp_year: 2024,
+    id: '2',
+    brand: 'Amex',
+    last4: '2222',
     is_default: false,
-    cardholder_name: 'Jane Doe'
-  }
-];
+    cardholder_name: 'B',
+    exp_month: 2,
+    exp_year: 2031,
+  },
+]
 
-describe('Checkout Screen', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    
-    // Set up fetch mock for different requests
-    (global.fetch as jest.Mock).mockImplementation((url: string) => {
-      if (url.includes('stripe-methods')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve(mockPaymentMethods),
-        });
-      }
-      if (url.includes('validate')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ valid: true }),
-        });
-      }
-      if (url.includes('create')) {
-        return Promise.resolve({
-          ok: true,
-          status: 201,
-          json: () => Promise.resolve({ message: 'Order created successfully!' }),
-        });
-      }
-      return Promise.resolve({
+// -- SETUP & TEARDOWN --
+beforeEach(() => {
+  jest.clearAllMocks()
+
+  ;(AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+    if (key === 'authToken') return Promise.resolve('fake-token')
+    if (key === 'userInfo')
+      return Promise.resolve(
+        JSON.stringify({
+          address: '123 Main St',
+          city: 'Iowa City',
+          state: 'IA',
+          zip_code: '52240',
+        })
+      )
+    return Promise.resolve(null)
+  })
+
+  global.fetch = jest.fn()
+})
+
+afterAll(() => {
+  jest.restoreAllMocks()
+})
+
+describe('CheckoutScreen', () => {
+  it('renders header and back-button works', () => {
+    const { getByTestId, getByText } = render(<CheckoutScreen />)
+    expect(getByText('Checkout')).toBeTruthy()
+
+    fireEvent.press(getByTestId('back-button'))
+    expect(mockBack).toHaveBeenCalled()
+  })
+
+  it('disables Submit when no cards are returned', async () => {
+    // stripe-methods returns []
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    })
+
+    const { getByTestId } = render(<CheckoutScreen />)
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled())
+
+    // Check the accessibilityState disabled flag
+    const btn = getByTestId('submit-button')
+    expect(btn.props.accessibilityState.disabled).toBe(true)
+  })
+
+  it('fetches and displays card options, default selected', async () => {
+    ;(global.fetch as jest.Mock)
+      // First fetch: return fakeCards
+      .mockResolvedValueOnce({
         ok: true,
-        status: 200,
-        json: () => Promise.resolve({}),
-      });
-    });
+        json: () => Promise.resolve(fakeCards),
+      })
 
-    // Mock AsyncStorage.getItem for token
-    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
-      if (key === 'authToken' || key === 'token') {
-        return Promise.resolve('fake-token');
-      }
-      if (key === 'userInfo' || key === 'user_info') {
-        return Promise.resolve(JSON.stringify({
-          address: '123 Test St',
-          city: 'Test City',
-          state: 'Test State',
-          zip_code: '12345',
-          country: 'Test Country'
-        }));
-      }
-      return Promise.resolve(null);
-    });
-  });
+    const { getByTestId } = render(<CheckoutScreen />)
+    // wait for the first card option to render
+    await waitFor(() => getByTestId('card-option-1'))
 
-  it('renders checkout screen correctly', async () => {
-    const cart = [{ id: 1, name: 'Test Product', price: 50, quantity: 2 }];
-    const clearCart = jest.fn();
-    const addToCart = jest.fn();
-    const removeFromCart = jest.fn();
-    const updateCartQuantity = jest.fn();
+    // Assert default selection: style object contains our blue border
+    expect(getByTestId('card-option-1').props.style).toEqual(
+      expect.objectContaining({ borderColor: '#007AFF' })
+    )
 
-    const { getByText, getByTestId } = renderWithNavigation(
-      <CartContext.Provider value={{ 
-        cart, 
-        clearCart, 
-        addToCart,
-        removeFromCart,
-        updateCartQuantity
-      }}>
+    // Tap the second option and assert its style updates
+    fireEvent.press(getByTestId('card-option-2'))
+    expect(getByTestId('card-option-2').props.style).toEqual(
+      expect.objectContaining({ borderColor: '#007AFF' })
+    )
+  })
+
+  it('shows error Toast when address validation fails', async () => {
+    ;(global.fetch as jest.Mock)
+      // cards
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(fakeCards),
+      })
+      // validation
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ valid: false, message: 'Bad address' }),
+      })
+
+    const { getByTestId } = render(<CheckoutScreen />)
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled())
+
+    // Fill address & select card
+    fireEvent.changeText(getByTestId('address-input'), '123 Main St')
+    fireEvent.press(getByTestId('card-option-1'))
+    fireEvent.press(getByTestId('submit-button'))
+
+    await waitFor(() =>
+      expect(Toast.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          text1: 'Invalid Address',
+        })
+      )
+    )
+  })
+
+  it('completes checkout on valid flow', async () => {
+    ;(global.fetch as jest.Mock)
+      // cards
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(fakeCards),
+      })
+      // validation ok
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            valid: true,
+            standardized: {
+              address: '123 Main St',
+              city: 'Iowa City',
+              state: 'IA',
+              zip_code: '52240',
+            },
+          }),
+      })
+      // order creation ok
+      .mockResolvedValueOnce({ ok: true })
+
+    const cart = [{ id: 5, price: 10, quantity: 2 }]
+    const clearCart = jest.fn()
+
+    const { getByTestId } = render(
+      <CartContext.Provider value={{ cart, clearCart }}>
         <CheckoutScreen />
       </CartContext.Provider>
-    );
+    )
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled())
+
+    fireEvent.changeText(getByTestId('address-input'), '123 Main St')
+    fireEvent.press(getByTestId('card-option-1'))
+    fireEvent.press(getByTestId('submit-button'))
 
     await waitFor(() => {
-      expect(getByText('Checkout')).toBeTruthy();
-      expect(getByTestId('address-input')).toBeTruthy();
-      expect(getByText('Payment Method')).toBeTruthy();
-    }, { timeout: 5000 });
-  });
-
-  // Skip this test until we can properly inject the clearCart mock into the component
-  it.skip('submits the order and clears cart', async () => {
-    const cart = [{ id: 1, name: 'Test Product', price: 50, quantity: 2 }];
-    const clearCart = jest.fn();
-    const addToCart = jest.fn();
-    const removeFromCart = jest.fn();
-    const updateCartQuantity = jest.fn();
-
-    const { getByText, getByTestId, getAllByText } = renderWithNavigation(
-      <CartContext.Provider value={{ 
-        cart, 
-        clearCart, 
-        addToCart,
-        removeFromCart,
-        updateCartQuantity
-      }}>
-        <CheckoutScreen />
-      </CartContext.Provider>
-    );
-
-    // Wait for component to load payment methods
-    await waitFor(() => {
-      expect(getByText('VISA ending in 4242 * 12/2025')).toBeTruthy();
-    }, { timeout: 10000 });
-
-    // Select a payment method
-    fireEvent.press(getByText('VISA ending in 4242 * 12/2025'));
-
-    // Fill the address input
-    fireEvent.changeText(getByTestId('address-input'), '123 Main St, Iowa City, IA 52240');
-
-    // Submit the order
-    fireEvent.press(getByText('SUBMIT ORDER'));
-
-    await waitFor(() => {
-      expect(clearCart).toHaveBeenCalled();
-      expect(Toast.show).toHaveBeenCalledWith({ type: "success", text1: "Order placed!" });
-    }, { timeout: 10000 });
-  }, 15000);
-});
-  
+      expect(clearCart).toHaveBeenCalled()
+      expect(Toast.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'success',
+          text1: 'Order placed!',
+        })
+      )
+      expect(mockPush).toHaveBeenCalledWith('/store')
+    })
+  })
+})

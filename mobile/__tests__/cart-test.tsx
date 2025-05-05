@@ -1,4 +1,3 @@
-// __tests__/cart-test.tsx
 import React from 'react';
 import {
   render,
@@ -7,31 +6,42 @@ import {
   act,
   cleanup,
 } from '@testing-library/react-native';
-import { TouchableOpacity } from 'react-native';
-import CartScreen from '../app/cart'; // Adjust the path as needed
+import CartScreen from '../app/cart';
 import { CartContext } from '../app/context/CartContext';
 
-// --- Mock expo-router ---
+// --- Mocks --- //
 jest.mock('expo-router', () => {
   const backMock = jest.fn();
   return {
     useRouter: () => ({
       back: backMock,
+      push: jest.fn(),
     }),
     __backMock: backMock,
   };
 });
 const backMock = (jest.requireMock('expo-router') as { __backMock: jest.Mock }).__backMock;
 
-  
-  jest.mock('expo-font', () => ({
-    loadAsync: jest.fn(() => Promise.resolve()),
-    useFonts: () => [true],
-    isLoaded: jest.fn(() => true),
-  }));
-  
+jest.mock('expo-font', () => ({
+  loadAsync: jest.fn(() => Promise.resolve()),
+  useFonts: () => [true, null],
+}));
 
-// --- Fake Cart Data ---
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return new Proxy({}, {
+    get: (_, name) =>
+      (props: any) =>
+        React.createElement(View, { ...props, testID: `icon-${name}` }),
+  });
+});
+
+jest.mock('react-native-toast-message', () => ({
+  show: jest.fn(),
+}));
+
+// --- Fake Cart Data --- //
 const fakeCart = [
   {
     id: 1,
@@ -49,7 +59,7 @@ const fakeCart = [
   },
 ];
 
-// --- Mock CartContext Values ---
+// --- Mock CartContext Values --- //
 const emptyCartContext = {
   cart: [],
   addToCart: jest.fn(),
@@ -66,7 +76,7 @@ const filledCartContext = {
   clearCart: jest.fn(),
 };
 
-// --- Setup Helper ---
+// --- Setup Helper --- //
 const setup = (contextValue: any) => {
   return render(
     <CartContext.Provider value={contextValue}>
@@ -80,6 +90,7 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
+// --- Test Suite --- //
 describe('CartScreen', () => {
   it('renders empty cart message when cart is empty', () => {
     const { getByText } = setup(emptyCartContext);
@@ -100,32 +111,27 @@ describe('CartScreen', () => {
     });
     expect(backMock).toHaveBeenCalled();
   });
-  
 
   it('calls updateCartQuantity when quantity buttons are pressed', () => {
     const { getAllByText } = setup(filledCartContext);
-    // The quantity controls display "-" and "+" texts.
     const minusButtons = getAllByText('-');
     const plusButtons = getAllByText('+');
-    // For Product 1 (id: 1) quantity is initially 2.
+
     act(() => {
       fireEvent.press(minusButtons[0]);
     });
-    // Expected new quantity for Product 1: Math.max(1, 2 - 1) === 1
     expect(filledCartContext.updateCartQuantity).toHaveBeenCalledWith(1, 1);
 
     act(() => {
       fireEvent.press(plusButtons[0]);
     });
-    // Expected new quantity for Product 1: 2 + 1 === 3
     expect(filledCartContext.updateCartQuantity).toHaveBeenCalledWith(1, 3);
   });
 
   it('calls removeFromCart when Remove is pressed', () => {
     const { getAllByText } = setup(filledCartContext);
-    // "Remove" appears for each cart item.
     const removeButtons = getAllByText('Remove');
-    // Simulate pressing the remove button for the first product.
+
     act(() => {
       fireEvent.press(removeButtons[0]);
     });
@@ -134,7 +140,19 @@ describe('CartScreen', () => {
 
   it('displays correct checkout total', () => {
     const { getByText } = setup(filledCartContext);
-    // Total: Product 1: 10 * 2 = 20, Product 2: 20 * 1 = 20, so overall total = 40
     expect(getByText('Checkout ($40.00)')).toBeTruthy();
+  });
+
+  it('shows toast when trying to checkout with empty cart', () => {
+    const toast = require('react-native-toast-message');
+    const { getByText } = setup(emptyCartContext);
+
+    fireEvent.press(getByText(/checkout/i));
+    expect(toast.show).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'error',
+        text1: 'Cart is empty',
+      })
+    );
   });
 });
