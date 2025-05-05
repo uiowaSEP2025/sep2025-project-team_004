@@ -94,6 +94,22 @@ const formatAverageTimestamp = (utcString: string): string => {
   return d.toISOString().replace('T', ' ').substring(0, 19);
 };
 
+const formatAverageValue = (value: any): string => {
+    const num = Number(value);
+    if (value === null || value === undefined || isNaN(num)) {
+        return 'N/A';
+    }
+    // Round to 2 decimal places
+    return num.toFixed(2);
+};
+
+const AVERAGE_VALUE_COLUMNS = [
+    'avg_temperature',
+    'avg_pressure',
+    'avg_humidity',
+    'avg_vcc',
+];
+
 export default function FirstLook() {
   const [sensorId, setSensorId] = useState("usda-air-w06");
   const [loading, setLoading] = useState(false);
@@ -320,7 +336,9 @@ export default function FirstLook() {
                                     <Text style={styles.cell} key={c}>
                                         {c === 'calculation_timestamp'
                                             ? formatAverageTimestamp(item[c as keyof AveragePoint] as string)
-                                            : String(item[c as keyof AveragePoint] ?? 'N/A')}
+                                            : AVERAGE_VALUE_COLUMNS.includes(c)
+                                                ? formatAverageValue(item[c as keyof AveragePoint])
+                                                : String(item[c as keyof AveragePoint] ?? 'N/A')}
                                     </Text>
                                 ))}
                             </View>
@@ -395,7 +413,6 @@ const styles = StyleSheet.create({
       fontSize: 16,
       fontWeight: 'bold',
       marginBottom: 8,
-      textAlign: 'center',
   },
   header: { backgroundColor: "#f3f4f6" },
   headerText: { fontWeight: "600" },
