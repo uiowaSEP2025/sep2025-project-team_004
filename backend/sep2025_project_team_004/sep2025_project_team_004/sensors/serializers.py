@@ -48,3 +48,39 @@ class SensorHomeSerializer(serializers.ModelSerializer):
             if default_sensor:
                 return str(default_sensor.id) == str(obj.sensor.id)
         return False
+    
+
+from rest_framework import serializers
+from .models import Sensor
+
+class AggregatedSensorSerializer(serializers.ModelSerializer):
+    nickname    = serializers.SerializerMethodField()
+    latitude    = serializers.SerializerMethodField()
+    longitude   = serializers.SerializerMethodField()
+    is_default  = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = Sensor
+        # Make sure the return structure is consistent with the old version
+        fields = (
+            "id", "sensor_type",
+            "nickname", "latitude", "longitude",
+            "is_default"
+        )
+
+    def get_nickname(self, obj):
+        user = self.context["request"].user
+        fav   = getattr(obj, "fav_match", None)
+        return fav.nickname if fav else None
+
+    def get_latitude(self, obj):
+        b = getattr(obj, "belongs_info", None)
+        return b.latitude if b else None
+
+    def get_longitude(self, obj):
+        b = getattr(obj, "belongs_info", None)
+        return b.longitude if b else None
+
+    def get_is_default(self, obj):
+        user = self.context["request"].user
+        return user.default_sensor_id == obj.id

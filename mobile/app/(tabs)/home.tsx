@@ -89,7 +89,8 @@ const WelcomePage: React.FC = () => {
 
   const fetchUserSensors = async (token: string): Promise<string | null> => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/sensors/`, {
+      const res = await fetch(`${API_BASE_URL}/api/my-sensors/`, {
+      //const res = await fetch(`${API_BASE_URL}/api/sensors/`, {
         headers: { Authorization: `Token ${token}` },
       });
 
