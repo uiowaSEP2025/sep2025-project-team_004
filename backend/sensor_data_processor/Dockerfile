@@ -9,10 +9,11 @@ ENV PYTHONUNBUFFERED 1
 # Install system dependencies
 # - supervisor: to run multiple processes (worker and beat)
 # - libpq-dev & build-essential: needed for psycopg2 build
-RUN apt-get update && apt-get install -y --no-install-recommends \\
-    supervisor \\
-    libpq-dev \\
-    build-essential \\
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    supervisor \
+    libpq-dev \
+    build-essential \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a directory for the supervisor log files if needed,
@@ -34,7 +35,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/
 
 # Expose ports if your application listens on any (not needed for celery worker/beat)
-# EXPOSE 8000
+EXPOSE 8000
 
 # Run supervisord
 # -n flag means it stays in the foreground, which Docker requires
