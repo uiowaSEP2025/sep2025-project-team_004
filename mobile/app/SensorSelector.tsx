@@ -1,14 +1,25 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+} from "react-native";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import SensorSettingsModal from "./SensorSettingsModal";
 
 interface Sensor {
   id: string;
+  sensor_id?: string;
   nickname: string;
   sensor_type: "air" | "soil";
   latitude: number;
   longitude: number;
   is_default?: boolean;
+  belongs_to?: number;
+  address?: string;
 }
 
 interface Props {
@@ -17,6 +28,7 @@ interface Props {
   showDropdown: boolean;
   setShowDropdown: (val: boolean) => void;
   onSelect: (sensor: Sensor) => void;
+  currentUserId: number | null;
 }
 
 const SensorSelector: React.FC<Props> = ({
@@ -25,8 +37,20 @@ const SensorSelector: React.FC<Props> = ({
   showDropdown,
   setShowDropdown,
   onSelect,
+  currentUserId,
 }) => {
   const router = useRouter();
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [activeSensor, setActiveSensor] = useState<Sensor | null>(null);
+
+  const openSettings = (sensor: Sensor) => {
+    setActiveSensor(sensor);
+    setSettingsModalVisible(true);
+  };
+
+  const handleUpdate = () => {
+    setShowDropdown(false);
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -41,7 +65,9 @@ const SensorSelector: React.FC<Props> = ({
         />
         <View style={styles.info}>
           <Text style={styles.nickname}>{selectedSensor.nickname || "Unnamed Sensor"}</Text>
-          <Text style={styles.type}>{selectedSensor.sensor_type === "air" ? "Air Sensor" : "Soil Sensor"}</Text>
+          <Text style={styles.type}>
+            {selectedSensor.sensor_type === "air" ? "Air Sensor" : "Soil Sensor"}
+          </Text>
         </View>
         <Text style={styles.arrow}>{showDropdown ? "▲" : "▼"}</Text>
       </TouchableOpacity>
@@ -49,38 +75,41 @@ const SensorSelector: React.FC<Props> = ({
       {showDropdown && (
         <View style={styles.dropdown}>
           {userSensors.map((sensor) => (
-            <TouchableOpacity
-              key={sensor.id}
-              style={styles.dropdownItem}
-              onPress={() => {
-                onSelect(sensor);
-                setShowDropdown(false);
-              }}
-            >
-              <Image
-                source={
-                  sensor.sensor_type === "air"
-                    ? require("../assets/images/air-sensor.png")
-                    : require("../assets/images/soil-sensor.png")
-                }
-                style={styles.smallIcon}
-              />
-              <View style={styles.dropdownInfo}>
-                <Text style={styles.dropdownNickname}>{sensor.nickname}</Text>
-                <Text style={styles.dropdownType}>
-                  {sensor.sensor_type === "air" ? "Air Sensor" : "Soil Sensor"}
-                </Text>
-              </View>
-              <Image
-                source={require("../assets/images/settingsIcon.png")}
-                style={styles.settingsIcon}
-              />
-            </TouchableOpacity>
+            <View key={sensor.id} style={styles.dropdownItem}>
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
+                onPress={() => {
+                  onSelect(sensor);
+                  setShowDropdown(false);
+                }}
+              >
+                <Image
+                  source={
+                    sensor.sensor_type === "air"
+                      ? require("../assets/images/air-sensor.png")
+                      : require("../assets/images/soil-sensor.png")
+                  }
+                  style={styles.smallIcon}
+                />
+                <View style={styles.dropdownInfo}>
+                  <Text style={styles.dropdownNickname}>{sensor.nickname}</Text>
+                  <Text style={styles.dropdownType}>
+                    {sensor.sensor_type === "air" ? "Air Sensor" : "Soil Sensor"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => openSettings(sensor)}>
+                <Image
+                  source={require("../assets/images/settingsIcon.png")}
+                  style={styles.settingsIcon}
+                />
+              </TouchableOpacity>
+            </View>
           ))}
           <TouchableOpacity
             style={styles.addSensorButton}
             onPress={() => {
-              router.push('/first-look');
+              router.push("/AddSensors");
               setShowDropdown(false);
             }}
           >
@@ -89,13 +118,23 @@ const SensorSelector: React.FC<Props> = ({
           <TouchableOpacity
             style={styles.deployButton}
             onPress={() => {
-              router.push('/first-look');
+              router.push("/first-look");
               setShowDropdown(false);
             }}
           >
             <Text style={styles.deployButtonText}>First Time Deploy</Text>
           </TouchableOpacity>
         </View>
+      )}
+
+      {activeSensor && (
+        <SensorSettingsModal
+          visible={settingsModalVisible}
+          onClose={() => setSettingsModalVisible(false)}
+          sensor={activeSensor}
+          currentUserId={currentUserId}
+          onUpdate={handleUpdate}
+        />
       )}
     </View>
   );
@@ -170,32 +209,32 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   addSensorButton: {
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: 5,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
     marginHorizontal: 0,
   },
   addSensorButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   deployButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: 5,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
     marginHorizontal: 0,
   },
   deployButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

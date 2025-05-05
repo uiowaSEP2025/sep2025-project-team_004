@@ -18,5 +18,7 @@ export type RootStackParamList = {
   "my-reviews": undefined;
   "admin-orders": undefined;
   "Firebasescreentest": undefined;
+  "AddSensors": undefined;
+  '(tabs)/home': { refreshSensors?: string };
   // Add other routes as needed
 };
