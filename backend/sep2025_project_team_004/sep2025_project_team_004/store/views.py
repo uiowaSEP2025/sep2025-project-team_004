@@ -150,4 +150,4 @@ class ProductReviewsView(generics.ListAPIView):
     
     def get_queryset(self):
         product_id = self.kwargs.get('product_id')
-        return Review.objects.filter(product_id=product_id).order_by('-created_at')
+        return Review.objects.filter(product_id=product_id).order_by('-created_at', '-id')
