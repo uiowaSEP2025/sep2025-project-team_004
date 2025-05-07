@@ -15,6 +15,7 @@
   },
   "jest": {
     "preset": "jest-expo",
+    "testEnvironment": "jsdom",
     "setupFilesAfterEnv": [
       "@testing-library/jest-native/extend-expect",
       "<rootDir>/jest.setup.js",

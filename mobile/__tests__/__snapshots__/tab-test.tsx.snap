@@ -1,39 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`TabLayout uses correct tabBarActiveTintColor from color scheme 1`] = `
-[
-  <Text>
-    home
-  </Text>,
-  <Text>
-    store
-  </Text>,
-  <Text>
-    social
-  </Text>,
-  <Text>
-    profile
-  </Text>,
-]
-`;
-
-exports[`TabLayout uses default styles when Platform.OS is android 1`] = `
-[
-  <Text>
-    home
-  </Text>,
-  <Text>
-    store
-  </Text>,
-  <Text>
-    social
-  </Text>,
-  <Text>
-    profile
-  </Text>,
-]
-`;
-
 exports[`TabLayout uses default tabBarStyle on Android 1`] = `
 [
   <Text>
@@ -67,23 +33,6 @@ exports[`TabLayout uses default tabBarStyle on Android 1`] = `
     testID="icon-person"
   >
     person:28:mock-color
-  </Text>,
-]
-`;
-
-exports[`TabLayout uses iOS-specific styles when Platform.OS is ios 1`] = `
-[
-  <Text>
-    home
-  </Text>,
-  <Text>
-    store
-  </Text>,
-  <Text>
-    social
-  </Text>,
-  <Text>
-    profile
   </Text>,
 ]
 `;

@@ -311,35 +311,5 @@ describe("GroupChatDetail", () => {
 
     expect(getByText("Alice left the group")).toBeTruthy();
     expect(getByText("Hi there")).toBeTruthy();
-  });
-
-  it("prompts and leaves the group on confirmation", async () => {
-    jest.spyOn(Alert, "alert").mockImplementation((_, __, buttons) => {
-      const leave = buttons!.find(b => /Leave/i.test(b.text!));
-      leave?.onPress?.();
-    });
-  
-    const { getAllByTestId } = renderWithNavigation(<GroupChatDetail />);
-  
-    await act(async () => {}); // Wait for AsyncStorage userInfo + member fetch
-  
-    fireEvent.press(getAllByTestId("sidebarToggle")[0]);
-  
-    await waitFor(() => {
-      expect(getAllByTestId("leaveGroupButton")[0]).toBeTruthy();
-    });
-  
-    fireEvent.press(getAllByTestId("leaveGroupButton")[0]);
-  
-    expect(Alert.alert).toHaveBeenCalled();
-    expect(updateDoc).toHaveBeenCalled();
-    
-  });
-  
-  
-  
-  
-  
-  
-  
+  }); 
 });

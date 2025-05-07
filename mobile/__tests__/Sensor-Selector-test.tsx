@@ -93,14 +93,15 @@ describe("SensorSelector", () => {
     expect(toggleMock).toHaveBeenCalledWith(false);
   });
 
-  it("navigates to /first-look on 'Add More Sensors' press", () => {
+  it("navigates to /AddSensors on 'Add More Sensors' press", () => {
     const toggleMock = jest.fn();
     const { getByText } = setup({ showDropdown: true, setShowDropdown: toggleMock });
-
+  
     fireEvent.press(getByText("Add More Sensors"));
-    expect(mockPush).toHaveBeenCalledWith("/first-look");
+    expect(mockPush).toHaveBeenCalledWith("/AddSensors");
     expect(toggleMock).toHaveBeenCalledWith(false);
   });
+  
 
   it("navigates to /first-look on 'First Time Deploy' press", () => {
     const toggleMock = jest.fn();

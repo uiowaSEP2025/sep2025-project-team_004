@@ -18,7 +18,8 @@ import SensorChart from "../SensorChart";
 import MapSection from "../MapSection";
 import NoSensorFallbackView from "../NoSensorFallback";
 import HomeSkeletonLoader from "@/components/skeletons/HomeSkeletonLoader";
-import { useFocusEffect } from 'expo-router';
+
+import { useFocusEffect } from '@react-navigation/native';
 
 const chartCache: Record<string, any> = {};
 

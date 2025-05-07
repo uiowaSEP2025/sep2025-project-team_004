@@ -61,7 +61,9 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 }));
 
 // ===== MOCK FIREBASE =====
-
+import 'react-native-gesture-handler/jestSetup';
+jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
 jest.mock('firebase/app', () => ({
   initializeApp: jest.fn(),
   getApp: jest.fn(() => ({})),

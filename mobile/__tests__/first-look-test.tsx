@@ -21,7 +21,7 @@ describe('FirstLook Component', () => {
 
   it('renders input and search button correctly', () => {
     const { getByPlaceholderText, getByText } = render(<FirstLook />);
-    expect(getByPlaceholderText('sensor_id, e.b. usda-air-w06')).toBeTruthy();
+    expect(getByPlaceholderText('sensor_id, e.g. usda-air-w06')).toBeTruthy();
     expect(getByText('Search')).toBeTruthy();
   });
 
@@ -50,7 +50,7 @@ describe('FirstLook Component', () => {
 
     const { getByPlaceholderText, getByText, queryByText } = render(<FirstLook />);
 
-    fireEvent.changeText(getByPlaceholderText('sensor_id, e.b. usda-air-w06'), 'usda-air-w06');
+    fireEvent.changeText(getByPlaceholderText('sensor_id, e.g. usda-air-w06'), 'usda-air-w06');
 
     await act(async () => {
       fireEvent.press(getByText('Search'));
@@ -74,7 +74,7 @@ describe('FirstLook Component', () => {
 
     const { getByPlaceholderText, getByText, queryByText } = render(<FirstLook />);
 
-    fireEvent.changeText(getByPlaceholderText('sensor_id, e.b. usda-air-w06'), 'usda-air-w06');
+    fireEvent.changeText(getByPlaceholderText('sensor_id, e.g. usda-air-w06'), 'usda-air-w06');
 
     await act(async () => {
       fireEvent.press(getByText('Search'));
@@ -90,7 +90,7 @@ describe('FirstLook Component', () => {
 
     const { getByPlaceholderText, getByText, queryByText } = render(<FirstLook />);
 
-    fireEvent.changeText(getByPlaceholderText('sensor_id, e.b. usda-air-w06'), 'usda-air-w06');
+    fireEvent.changeText(getByPlaceholderText('sensor_id, e.g. usda-air-w06'), 'usda-air-w06');
 
     await act(async () => {
       fireEvent.press(getByText('Search'));
@@ -113,16 +113,15 @@ describe('FirstLook Component', () => {
       json: async () => mockData,
     });
 
-    const { getByPlaceholderText, getByText, queryByText } = render(<FirstLook />);
+    const { getByPlaceholderText, getByText, findByText } = render(<FirstLook />);
 
-    fireEvent.changeText(getByPlaceholderText('sensor_id, e.b. usda-air-w06'), 'usda-air-w06');
+    fireEvent.changeText(getByPlaceholderText('sensor_id, e.g. usda-air-w06'), 'usda-air-w06');
 
     await act(async () => {
       fireEvent.press(getByText('Search'));
     });
 
-    await waitFor(() => {
-      expect(queryByText('No data points returned')).toBeTruthy();
-    });
+    const errorMessage = await findByText('No real-time data points returned');
+    expect(errorMessage).toBeTruthy();
   });
 });
