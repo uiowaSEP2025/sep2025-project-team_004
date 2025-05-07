@@ -20,6 +20,12 @@ const NoSensorFallbackView: React.FC = () => {
       >
         <Text style={styles.buttonText}>Go to Store</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+      onPress={() => navigation.navigate("AddSensors")}
+      style={[styles.button, { marginTop: 12, backgroundColor: "#34C759" }]}
+    >
+      <Text style={styles.buttonText}>Add/Register Sensor</Text>
+    </TouchableOpacity>
     </View>
   );
 };

@@ -1,53 +1,29 @@
-import "react-native-gesture-handler/jestSetup";
+// Set up global mocks for Jest tests
 
-// Mocking Expo Vector Icons to prevent rendering errors
-jest.mock("@expo/vector-icons", () => ({
-  MaterialIcons: "MockMaterialIcons",
-  Feather: "MockFeather",
-  Ionicons: "MockIonicons",
-}));
-
-// Properly Mock expo-font to prevent forEach error
-jest.mock("expo-font", () => ({
-  loadAsync: jest.fn(),
-  isLoaded: jest.fn(() => true),
-  processFontFamily: jest.fn((font) => font),
-}));
-
-jest.mock('../assets/images/avatar-placeholder.png', () => 'avatar-placeholder.png');
-
-
-// Mocking React Navigation (if used)
-jest.mock("@react-navigation/native", () => ({
-  useNavigation: () => ({
-    navigate: jest.fn(),
-  }),
-}));
-
-// Mocking SafeAreaView for React Native Screens
-jest.mock("react-native-safe-area-context", () => ({
-  useSafeAreaInsets: () => ({
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-  }),
-}));
-
-// Mocking AsyncStorage (if used in the app)
-jest.mock("@react-native-async-storage/async-storage", () => ({
-  setItem: jest.fn(),
+// Mock AsyncStorage
+jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(),
+  setItem: jest.fn(),
   removeItem: jest.fn(),
+  clear: jest.fn(),
 }));
 
+// Mock expo constants
+jest.mock('expo-constants', () => ({
+  expoConfig: {
+    hostUri: 'localhost:8081',
+  },
+}));
 
-jest.mock("expo-router", () => ({
-  useRouter: () => ({
+// Mock expo-router
+jest.mock('expo-router', () => ({
+  useLocalSearchParams: jest.fn().mockReturnValue({}),
+  useRouter: jest.fn().mockReturnValue({
     push: jest.fn(),
     replace: jest.fn(),
     back: jest.fn(),
   }),
+  Link: () => 'Link',
 }));
 
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
@@ -127,6 +103,70 @@ global.fetch = jest.fn(() =>
 );
 
 
+// Mock @expo/vector-icons
+jest.mock('@expo/vector-icons', () => ({
+  MaterialIcons: () => 'MaterialIcons',
+  Feather: () => 'Feather',
+  AntDesign: () => 'AntDesign',
+  FontAwesome: () => 'FontAwesome',
+  FontAwesome5: () => 'FontAwesome5',
+  Ionicons: () => 'Ionicons',
+}));
 
-// Fix Jest warnings related to timers
-jest.useFakeTimers();
+// Mock for navigation
+jest.mock('@react-navigation/native', () => {
+  const actualNav = jest.requireActual('@react-navigation/native');
+  return {
+    ...actualNav,
+    useNavigation: () => ({
+      navigate: jest.fn(),
+      goBack: jest.fn(),
+      reset: jest.fn(),
+      canGoBack: jest.fn().mockReturnValue(true),
+    }),
+    useFocusEffect: jest.fn((callback) => callback()),
+  };
+});
+
+// Setup for Platform
+const Platform = require('react-native/Libraries/Utilities/Platform');
+Platform.OS = 'web'; // Default to web for tests
+
+// Mock react-native-reanimated
+jest.mock('react-native-reanimated', () => {
+  const Reanimated = require('react-native-reanimated/mock');
+  Reanimated.default.call = () => {};
+  return Reanimated;
+});
+
+// Mock window.matchMedia
+if (typeof window !== 'undefined') {
+  window.matchMedia = jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+}
+
+// Suppress expected console errors in tests
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  // Filter out specific warning messages or pass through to original console.error
+  if (args[0]?.includes?.('Warning:')) {
+    return;
+  }
+  originalConsoleError(...args);
+};
+
+// Mock fetch
+global.fetch = jest.fn(() => 
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({}),
+  })
+); 

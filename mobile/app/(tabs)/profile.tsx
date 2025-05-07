@@ -199,7 +199,24 @@ export default function Profile() {
           </View>
         </TouchableOpacity>
 
-        {/* My Reviews */}
+        {/* List Items */}
+        <TouchableOpacity
+          style={styles.infoItem}
+          onPress={() => navigation.navigate("my-orders")}
+        >
+          <View style={styles.infoRow}>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoTitle}>My orders</Text>
+              <Text style={styles.infoSubtitle}>Handle your orders</Text>
+            </View>
+            <Image
+              style={styles.arrowIcon}
+              source={require('@/assets/images/forward-arrow.png')}
+              resizeMode="contain"
+            />
+          </View>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.infoItem}
           onPress={() => navigation.navigate('my-reviews')}
