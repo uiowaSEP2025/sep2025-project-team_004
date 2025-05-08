@@ -34,8 +34,8 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("api/store/", include("sep2025_project_team_004.store.urls")),
     path("api/payment/", include("sep2025_project_team_004.payment.urls")),
-    path("api/friends/", include("sep2025_project_team_004.friends.urls")),
-    path("api/sensors/", include("sep2025_project_team_004.sensors.urls")),
+    path("api/friends/", include(("sep2025_project_team_004.friends.urls", "friends"), namespace="friends")),
+    path("api/sensors/", include(("sep2025_project_team_004.sensors.urls", "sensors"), namespace="sensors")),
     path("api/sensor_data/", include("sep2025_project_team_004.sensor_data.urls")),
 
 
