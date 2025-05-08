@@ -1,3 +1,5 @@
+# payment/serializers.py
+
 from rest_framework import serializers
 from .models import PaymentMethod
 
@@ -17,8 +19,7 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
         }
 
     def validate_card_number(self, value):
-        """Ensure card number is exactly 16 digits."""
-        if not value.isdigit() or len(value) != 16:
+        if not (value.isdigit() and len(value) == 16):
             raise serializers.ValidationError("Card number must be 16 digits.")
         return value
 

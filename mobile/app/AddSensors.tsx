@@ -16,10 +16,7 @@ import { GooglePlacesAutocomplete, GooglePlacesAutocompleteRef } from 'react-nat
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
-    ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost'}:8000`
-    : process.env.EXPO_PUBLIC_BACKEND_URL;
+
 
 export default function AddRegisterSensor() {
   const [mode, setMode] = useState<'add' | 'register'>('add');
@@ -33,13 +30,18 @@ export default function AddRegisterSensor() {
   const handleSubmit = async () => {
     const token = await AsyncStorage.getItem('authToken');
     if (!token) return;
-
+  
+    const API_BASE_URL =
+      process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
+        ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost'}:8000`
+        : process.env.EXPO_PUBLIC_BACKEND_URL;
+  
     const payload: any = { sensor_id: sensorId, nickname };
     if (mode === 'register') {
       payload.sensor_type = sensorType;
       payload.address = address;
     }
-
+  
     const endpoint = mode === 'add' ? '/api/sensors/add/' : '/api/sensors/register/';
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
@@ -49,7 +51,7 @@ export default function AddRegisterSensor() {
       },
       body: JSON.stringify(payload),
     });
-
+  
     const json = await res.json();
     if (!res.ok) {
       alert(json.error || 'Something went wrong');
@@ -58,7 +60,7 @@ export default function AddRegisterSensor() {
       setSensorId('');
       setNickname('');
       setAddress('');
-
+  
       navigation.reset({
         index: 0,
         routes: [{ name: "(tabs)", params: { screen: "home" } }],

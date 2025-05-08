@@ -270,6 +270,7 @@ export default function ChatDetail() {
   />
 </View>
       <FlatList
+        testID="flatlist" 
         inverted
         ref={flatListRef}
         data={messages}

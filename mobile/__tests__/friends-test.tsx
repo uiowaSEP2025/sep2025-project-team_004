@@ -172,6 +172,35 @@ describe("FriendRequestsScreen", () => {
     expect(getByText("Friend request accepted!")).toBeTruthy();
   });
 
+
+  it("displays error modal when rejecting friend request fails", async () => {
+    const errorMessage = "Failed to reject friend request.";
+    (api.rejectFriendRequest as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
+  
+    const { getByText } = renderWithNavigation(<FriendRequestsScreen />);
+    await waitFor(() => getByText("alice"));
+  
+    fireEvent.press(getByText("Reject"));
+  
+    await waitFor(() => {
+      expect(getByText(errorMessage)).toBeTruthy();
+    });
+  });
+
+  it("displays error modal when accepting friend request fails", async () => {
+    const errorMessage = "Failed to accept request.";
+    (api.acceptFriendRequest as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
+  
+    const { getByText } = renderWithNavigation(<FriendRequestsScreen />);
+    await waitFor(() => getByText("alice"));
+  
+    fireEvent.press(getByText("Accept"));
+  
+    await waitFor(() => {
+      expect(getByText(errorMessage)).toBeTruthy();
+    });
+  });
+
   it("calls rejectFriendRequest and updates list", async () => {
     (api.rejectFriendRequest as jest.Mock).mockResolvedValueOnce({});
 
@@ -190,3 +219,5 @@ describe("FriendRequestsScreen", () => {
     expect(getByText("Friend request rejected!")).toBeTruthy();
   });
 });
+
+

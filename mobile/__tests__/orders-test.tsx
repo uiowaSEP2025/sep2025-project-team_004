@@ -7,7 +7,7 @@ import {
   cleanup,
 } from "@testing-library/react-native";
 import MyReviewsScreen from "../app/my-reviews";
-import { Alert, TouchableOpacity } from "react-native";
+import { Alert, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -74,6 +74,108 @@ describe("MyReviewsScreen", () => {
       expect(getByText("Desc 1")).toBeTruthy();
     });
   });
+  it("handles fetchReviews error gracefully", async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error("Network Error"));
+  
+    const { getByText } = render(<MyReviewsScreen />);
+  
+    await waitFor(() => {
+      expect(getByText("No reviews found")).toBeTruthy();
+    });
+  });
+
+  it("renders correct number of filled and unfilled stars", () => {
+    const { getAllByTestId } = render(
+      <View>{renderStars(3)}</View>
+    );
+  
+    const filledStars = getAllByTestId("star-filled");
+    const unfilledStars = getAllByTestId("star-unfilled");
+  
+    expect(filledStars.length).toBe(3);
+    expect(unfilledStars.length).toBe(2);
+  });
+
+  it("updates comment in edit modal", async () => {
+    const fakeReviews = {
+      results: [
+        { id: 1, product_name: "Product 1", comment: "Original comment", rating: 3, created_at: "2023-04-01", product: 1 },
+      ],
+      next: null
+    };
+  
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => fakeReviews,
+    });
+  
+    const { getByText, getByPlaceholderText } = render(<MyReviewsScreen />);
+  
+    await waitFor(() => {
+      expect(getByText("Product name: Product 1")).toBeTruthy();
+    });
+  
+    fireEvent.press(getByText("Edit"));
+  
+    await waitFor(() => {
+      expect(getByText("Edit Review")).toBeTruthy();
+    });
+  
+    const commentInput = getByPlaceholderText("Update your comment");
+    fireEvent.changeText(commentInput, "Updated comment");
+  
+    expect(commentInput.props.value).toBe("Updated comment");
+  });
+  
+  it("handles delete review error gracefully", async () => {
+    const fakeReviews = {
+      results: [
+        { id: 1, product_name: "Product 1", comment: "Desc", rating: 4, created_at: "2023-04-01" },
+      ],
+      next: null
+    };
+  
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => fakeReviews,
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+      });
+  
+    const alertSpy = jest.spyOn(Alert, "alert");
+  
+    const { getByText } = render(<MyReviewsScreen />);
+  
+    await waitFor(() => {
+      expect(getByText("Product name: Product 1")).toBeTruthy();
+    });
+  
+    fireEvent.press(getByText("Delete"));
+  
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Confirm Delete',
+        'Are you sure you want to delete this review?',
+        expect.any(Array)
+      );
+    });
+  
+    // Simulate pressing the 'Delete' button in the alert
+    const deleteButton = alertSpy.mock.calls[0][2][1];
+    await act(async () => {
+      deleteButton.onPress();
+    });
+  
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith('Error', 'Failed to delete review.');
+    });
+  
+    alertSpy.mockRestore();
+  });
+  
+  
 
   it("navigates back when back button is pressed", async () => {
     const fakeReviews = {
@@ -287,3 +389,19 @@ describe("MyReviewsScreen", () => {
     });
   });
 });
+function renderStars(count: number) {
+  const stars = [];
+  for (let i = 0; i < 5; i++) {
+    stars.push(
+      <MaterialIcons
+        key={i}
+        name={i < count ? "star" : "star-border"}
+        testID={i < count ? "star-filled" : "star-unfilled"}
+        size={24}
+        color="gold"
+      />
+    );
+  }
+  return stars;
+}
+

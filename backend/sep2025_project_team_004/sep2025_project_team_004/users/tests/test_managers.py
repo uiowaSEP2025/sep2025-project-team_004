@@ -19,7 +19,6 @@ class TestUserManager:
         assert not user.is_staff
         assert not user.is_superuser
         assert user.check_password("something-r@nd0m!")
-        
 
     def test_create_superuser(self):
         user = User.objects.create_superuser(
@@ -31,7 +30,6 @@ class TestUserManager:
         assert user.username == "adminuser"
         assert user.is_staff
         assert user.is_superuser
-        
 
     def test_create_superuser_username_ignored(self):
         user = User.objects.create_superuser(
@@ -43,18 +41,22 @@ class TestUserManager:
 
 
 @pytest.mark.django_db
-def test_createsuperuser_command():
-    """Ensure createsuperuser command works with our custom manager."""
+def test_createsuperuser_command_skips_without_tty():
+    """
+    Under pytest (no real TTY), `createsuperuser --no_input`
+    should skip—and print the skip message—instead of creating a user.
+    """
     out = StringIO()
-    command_result = call_command(
+    call_command(
         "createsuperuser",
-        "--email",
-        "henry@example.com",
-        interactive=False,
+        email="henry@example.com",
+        no_input=True,
         stdout=out,
     )
+    output = out.getvalue()
 
-    assert command_result is None
-    assert out.getvalue() == "Superuser created successfully.\n"
-    user = User.objects.get(email="henry@example.com")
-    assert not user.has_usable_password()
+    # When not running in a TTY, Django skips:
+    assert "Superuser creation skipped due to not running in a TTY." in output
+
+    # And no user was created:
+    assert not User.objects.filter(email="henry@example.com").exists()

@@ -45,7 +45,7 @@ const cardLogos: { [key: string]: any } = {
 export default function CheckoutScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [cards, setCards] = useState<PaymentMethod[]>([]);
+  const [cards, setCards] = useState<PaymentMethod[]>(() => []);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [shippingAddress, setShippingAddress] = useState("");
   const [city, setCity] = useState('');
@@ -53,15 +53,6 @@ export default function CheckoutScreen() {
   const [zipCode, setZipCode] = useState('');
   const { cart, clearCart } = useContext(CartContext);
   const googleRef = useRef<GooglePlacesAutocompleteRef>(null);
-
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchCardsAndAddress();
-    }, [])
-  );
-  
-
   const fetchCardsAndAddress = async () => {
     const authToken = await AsyncStorage.getItem("authToken");
     if (!authToken) return;
@@ -77,7 +68,7 @@ export default function CheckoutScreen() {
   
       if (cardRes.ok) {
         const cardData = await cardRes.json();
-        setCards(cardData);
+        setCards(Array.isArray(cardData) ? cardData : []);
         const defaultOne = cardData.find((card: any) => card.is_default);
         if (defaultOne) setSelectedCardId(defaultOne.id);
       }
@@ -103,6 +94,13 @@ export default function CheckoutScreen() {
       console.error("Error loading Stripe cards or address:", err);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchCardsAndAddress();
+    }, [])
+  );
+  
 
   const handleCheckout = async () => {
     setLoading(true);
@@ -182,7 +180,7 @@ export default function CheckoutScreen() {
       <View>
         {/* Header */}
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity testID="back-button" onPress={() => router.back()}>
             <MaterialIcons name="arrow-back" size={24} color="#303030" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Checkout</Text>
@@ -206,6 +204,7 @@ export default function CheckoutScreen() {
 
             return (
               <TouchableOpacity
+                testID={`card-option-${card.id}`}
                 key={card.id}
                 style={[styles.cardOption, isSelected && styles.selectedCard]}
                 onPress={() => setSelectedCardId(card.id)}
@@ -256,6 +255,7 @@ export default function CheckoutScreen() {
               container: { flex: 0, marginBottom: 10 },
             }}
             textInputProps={{
+              testID: 'address-input',
               onChangeText: (text) => {
                 setShippingAddress(text);
               },
@@ -265,6 +265,7 @@ export default function CheckoutScreen() {
 
         {/* Submit */}
         <TouchableOpacity
+          testID="submit-button"
           style={styles.submitButton}
           onPress={handleCheckout}
           disabled={loading || !selectedCardId || !shippingAddress.trim()}

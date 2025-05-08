@@ -67,3 +67,19 @@ class User(AbstractUser):
     def is_friends_with(self, user):
         """Checks if the user is friends with another user."""
         return self.friends.filter(id=user.id).exists()
+
+    @property
+    def name(self) -> str:
+        """Concatenate first and last name for backward‐compatibility."""
+        full = f"{self.first_name or ''} {self.last_name or ''}".strip()
+        return full
+
+    @name.setter
+    def name(self, value: str) -> None:
+        """
+        Allow setting name="First Last" (or single token) for tests and factories.
+        Splits on first space.
+        """
+        parts = value.split(" ", 1)
+        self.first_name = parts[0]
+        self.last_name = parts[1] if len(parts) > 1 else ""

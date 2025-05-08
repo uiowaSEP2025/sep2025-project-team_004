@@ -68,13 +68,6 @@ export default function AdminOrders() {
 
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetail | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      setPage(1);
-      fetchOrders(1);
-    }, [])
-  );
-  
   const fetchOrders = async (pageNum = 1) => {
     const token = await AsyncStorage.getItem('authToken');
     if (!token) return;
@@ -118,6 +111,12 @@ export default function AdminOrders() {
     }
     setHasNext(!!data.next);
   };
+  useFocusEffect(
+    useCallback(() => {
+      setPage(1);
+      fetchOrders(1);
+    }, [])
+  );
 
   const handleCompleteOrder = async () => {
     if (!selectedOrderId) return;
@@ -176,7 +175,11 @@ export default function AdminOrders() {
 
         <View style={styles.orderTabs}>
           {tabs.map(tab => (
-            <TouchableOpacity key={tab} onPress={() => setSelectedTab(tab)}>
+            <TouchableOpacity key={tab} onPress={() => {
+              setSelectedTab(tab);
+              setPage(1);
+              fetchOrders(1);
+            }}>
               <Text style={selectedTab === tab ? styles.tabActive : styles.tabInactive}>{tab}</Text>
             </TouchableOpacity>
           ))}
@@ -184,7 +187,7 @@ export default function AdminOrders() {
         <View style={[styles.tabIndicator, { marginLeft: indicatorLeft }]} />
       </View>
 
-      <ScrollView style={styles.scrollContainer} 
+      <ScrollView testID="scrollView" style={styles.scrollContainer} 
       onScroll={({ nativeEvent }) => {
         const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
         const isCloseToBottom =

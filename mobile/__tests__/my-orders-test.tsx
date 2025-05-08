@@ -24,7 +24,25 @@ jest.mock('@expo/vector-icons', () => {
 // Mock image assets
 jest.mock('@/assets/images/back-arrow.png', () => 'back-arrow.png');
 
-// Mock the useRouter hook from expo-router
+// Mock expo-font to avoid loadedNativeFonts issue
+jest.mock('expo-font', () => ({
+  ...jest.requireActual('expo-font'),
+  isLoaded: () => true,
+  loadAsync: jest.fn(),
+}));
+
+// Mock vector icons: any import returns a simple View
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  return new Proxy(
+    {},
+    {
+      get: () => (props) => React.createElement('View', props),
+    }
+  );
+});
+
+// Mock expo-router
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
 }));
@@ -312,6 +330,75 @@ describe('Order Component', () => {
       expect(getByText('Cancel')).toBeTruthy();
     });
   });
+  it('submits a review successfully', async () => {
+    const mockSubmit = {
+      ok: true,
+      json: async () => ({}),
+    };
+  
+    (fetch as jest.Mock)
+      .mockResolvedValueOnce({ ok: true, json: async () => mockOrdersData }) // fetch orders
+      .mockResolvedValueOnce(mockSubmit); // submit review
+  
+    const { getAllByText, getByText, getByPlaceholderText, getAllByRole } = renderWithNavigation(<Order />);
+  
+    await waitFor(() => getAllByText('Review')[0]);
+    fireEvent.press(getAllByText('Review')[0]);
+  
+    await waitFor(() => getByText('Review Product'));
+  
+    
+    fireEvent.press(getAllByRole('button')[0]); // Assuming star buttons are accessible
+  
+    fireEvent.changeText(getByPlaceholderText('Write your review (max 255 characters)'), 'Great product!');
+    fireEvent.press(getByText('Submit Review'));
+  
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
+  
+  it('renders empty state when no orders returned', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ results: [], next: null }),
+    });
+  
+    const { getByText } = renderWithNavigation(<Order />);
+    await waitFor(() => {
+      expect(getByText('My orders')).toBeTruthy();
+    });
+  });
+
+  it('fetches next page when scrolled to bottom', async () => {
+    const mockFetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOrdersData,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockOrdersData,
+      });
+  
+    (fetch as jest.Mock).mockImplementation(mockFetch);
+  
+    const { getByTestId } = renderWithNavigation(<Order />);
+    const scrollView = getByTestId('order-scroll-view');
+  
+    fireEvent.scroll(scrollView, {
+      nativeEvent: {
+        contentOffset: { y: 1000 },
+        layoutMeasurement: { height: 400 },
+        contentSize: { height: 1300 },
+      },
+    });
+  
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
+  
   
   it('opens order details modal when Details button is pressed', async () => {
     const { getByText, getAllByText, getByTestId } = renderWithNavigation(<Order />);

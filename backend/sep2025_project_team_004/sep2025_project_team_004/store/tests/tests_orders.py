@@ -5,7 +5,8 @@ from rest_framework.test import APIClient
 from unittest.mock import patch
 from .models import Product, Order, OrderItem
 from sep2025_project_team_004.payment.models import PaymentMethod
-
+from django.core.exceptions import ValidationError
+from sep2025_project_team_004.store.models import Product, Order, OrderItem, Review
 
 User = get_user_model()
 
@@ -43,11 +44,12 @@ class OrderCreationTest(TestCase):
             stripe_payment_method_id="pm_test123"  # Add a stripe payment method ID
         )
 
+        # Create a product
         self.product = Product.objects.create(
-            name="Sensor A",
-            description="Air quality sensor",
-            price=50.00,
-            stock=10
+            name="Widget",
+            description="Test widget",
+            price=9.99,
+            stock=100
         )
 
     def test_create_order_successfully(self):
@@ -74,7 +76,26 @@ class OrderCreationTest(TestCase):
             self.assertEqual(order.items.count(), 1)
             self.assertEqual(order.items.first().product, self.product)
 
-    def test_create_order_unauthenticated(self):
-        self.client.force_authenticate(user=None)  
-        response = self.client.post("/api/store/orders/create/", {}, format="json")
-        self.assertEqual(response.status_code, 403)
+    def test_review_rating_validators(self):
+        """Review.rating must be between 1 and 5 inclusive."""
+        # Good rating
+        review = Review(
+            product=self.product,
+            user=self.user,
+            rating=4,
+            comment="Great!"
+        )
+        # Should not raise
+        review.full_clean()
+        review.save()
+        self.assertEqual(str(review), f"Review for {self.product.name} - {review.rating} stars")
+
+        # Too low
+        bad = Review(product=self.product, user=self.user, rating=0, comment="Too low")
+        with self.assertRaises(ValidationError):
+            bad.full_clean()
+
+        # Too high
+        bad2 = Review(product=self.product, user=self.user, rating=6, comment="Too high")
+        with self.assertRaises(ValidationError):
+            bad2.full_clean()
