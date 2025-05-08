@@ -1,26 +1,20 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 
-// 🧠 Patch to disable reanimated's state-triggering behavior
 jest.mock('react-native-reanimated', () => {
+  const actual = jest.requireActual('react-native-reanimated/mock');
   return {
-    ...jest.requireActual('react-native-reanimated/mock'),
-    useDerivedValue: jest.fn(() => undefined),
+    ...actual,
+    useDerivedValue: jest.fn(), // Controlled in test
     runOnJS: (fn: any) => fn,
   };
 });
 
-// ✅ Stable mocks with default values
-let mockUseFont = jest.fn(() => ({}));
-let mockUseChartPressState = jest.fn(() => ({
-  state: {
-    x: { value: { value: 'A' }, position: 5 },
-    y: { y: { value: { value: 10 }, position: 15 } },
-  },
-  isActive: false,
-}));
+import { useDerivedValue } from 'react-native-reanimated';
 
-// 🧪 Mock Skia
+let mockUseFont = jest.fn(() => ({}));
+let mockUseChartPressState = jest.fn();
+
 jest.mock('@shopify/react-native-skia', () => {
   const React = require('react');
   const { View } = require('react-native');
@@ -30,7 +24,6 @@ jest.mock('@shopify/react-native-skia', () => {
   };
 });
 
-// 🧪 Mock Victory Native
 jest.mock('victory-native', () => {
   const React = require('react');
   const { View } = require('react-native');
@@ -52,20 +45,26 @@ describe('SensorChart', () => {
     { x: 'B', y: 20 },
   ];
 
+  let callback: () => void;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseFont = jest.fn(() => ({})); // default: font is loaded
-    mockUseChartPressState = jest.fn(() => ({
-      state: {
-        x: { value: { value: sampleData[0].x }, position: 5 },
-        y: { y: { value: sampleData[0].y }, position: 15 },
-      },
-      isActive: false,
-    }));
+    mockUseFont = jest.fn(() => ({}));
+
+    (useDerivedValue as jest.Mock).mockImplementation((cb) => {
+      callback = cb;
+    });
   });
 
   it('returns null if font is not loaded yet', () => {
     mockUseFont = jest.fn(() => null);
+    mockUseChartPressState = jest.fn(() => ({
+      state: {
+        x: { value: { value: 'X' }, position: 0 },
+        y: { y: { value: { value: 0 } }, position: 0 },
+      },
+      isActive: false,
+    }));
 
     const { toJSON } = render(
       <SensorChart title="Loading" data={sampleData} color="blue" />
@@ -74,6 +73,14 @@ describe('SensorChart', () => {
   });
 
   it('renders title and Line but no Circle when inactive', () => {
+    mockUseChartPressState = jest.fn(() => ({
+      state: {
+        x: { value: { value: sampleData[0].x }, position: 5 },
+        y: { y: { value: { value: sampleData[0].y } }, position: 15 },
+      },
+      isActive: false,
+    }));
+
     const { getByText, queryByTestId } = render(
       <SensorChart title="My Chart" data={sampleData} color="green" />
     );
@@ -97,5 +104,66 @@ describe('SensorChart', () => {
     );
 
     expect(queryByTestId('circle')).toBeTruthy();
+  });
+
+  describe('tooltip behavior', () => {
+    it('shows tooltip when active with valid values', async () => {
+      mockUseChartPressState = jest.fn(() => ({
+        state: {
+          x: { value: { value: 'A' }, position: 5 },
+          y: { y: { value: { value: 10 } }, position: 15 },
+        },
+        isActive: true,
+      }));
+
+      const { getByText } = render(
+        <SensorChart title="Temp" data={sampleData} color="blue" />
+      );
+
+      // Wait for the render to complete before calling the callback
+      await waitFor(() => {
+        callback(); // Simulate chart press state update
+        expect(getByText(/Time: A/)).toBeTruthy();
+        expect(getByText(/Temp: 10.0/)).toBeTruthy();
+      });
+    });
+
+    it('hides tooltip when active but values undefined', async () => {
+      mockUseChartPressState = jest.fn(() => ({
+        state: {
+          x: { value: { value: undefined }, position: 5 },
+          y: { y: { value: { value: undefined } }, position: 15 },
+        },
+        isActive: true,
+      }));
+
+      const { queryByText } = render(
+        <SensorChart title="Temp" data={sampleData} color="blue" />
+      );
+
+      await waitFor(() => {
+        callback();
+        expect(queryByText(/Time:/)).toBeNull();
+      });
+    });
+
+    it('hides tooltip when inactive', async () => {
+      mockUseChartPressState = jest.fn(() => ({
+        state: {
+          x: { value: { value: 'B' }, position: 5 },
+          y: { y: { value: { value: 20 } }, position: 15 },
+        },
+        isActive: false,
+      }));
+
+      const { queryByText } = render(
+        <SensorChart title="Temp" data={sampleData} color="blue" />
+      );
+
+      await waitFor(() => {
+        callback();
+        expect(queryByText(/Time:/)).toBeNull();
+      });
+    });
   });
 });

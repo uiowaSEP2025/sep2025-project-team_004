@@ -281,12 +281,13 @@ const WelcomePage: React.FC = () => {
           </ScrollView>
         )}
 
-        <TouchableOpacity
-          style={styles.mapToggleButton}
-          onPress={() => setShowMap((prev) => !prev)}
-        >
-          <Text style={styles.mapToggleText}>{showMap ? "↩" : "🗺"}</Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  testID="ToggleMapButton"
+  style={styles.mapToggleButton}
+  onPress={() => setShowMap((prev) => !prev)}
+>
+  <Text style={styles.mapToggleText}>{showMap ? "↩" : "🗺"}</Text>
+</TouchableOpacity>
       </View>
     </TouchableWithoutFeedback>
   );

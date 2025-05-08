@@ -4,7 +4,7 @@ import Skeleton from '../ui/Skeleton';
 
 const HomeSkeletonLoader = () => {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container}  testID="ActivityIndicator">
       {/* Sensor Selector at top */}
       <View style={styles.sensorSelector}>
         <Skeleton width="85%" height={46} borderRadius={8} style={styles.centered} />

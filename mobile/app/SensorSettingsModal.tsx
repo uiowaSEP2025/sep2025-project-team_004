@@ -16,10 +16,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types";
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
-    ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost'}:8000`
-    : process.env.EXPO_PUBLIC_BACKEND_URL;
 
 interface Props {
   visible: boolean;
@@ -46,6 +42,11 @@ const SensorSettingsModal: React.FC<Props> = ({ visible, onClose, sensor, curren
   }, [sensor, currentUserId]);
 
   const handleSave = async () => {
+    const API_BASE_URL =
+      process.env.EXPO_PUBLIC_DEV_FLAG === 'true'
+        ? `http://${Constants.expoConfig?.hostUri?.split(':').shift() ?? 'localhost'}:8000`
+        : process.env.EXPO_PUBLIC_BACKEND_URL;
+  
     const token = await AsyncStorage.getItem('authToken');
     if (!token) return;
   
@@ -98,6 +99,7 @@ const SensorSettingsModal: React.FC<Props> = ({ visible, onClose, sensor, curren
       alert(err.message || 'Something went wrong.');
     }
   };
+  
 
   return (
     <Modal visible={visible} animationType="slide" transparent>

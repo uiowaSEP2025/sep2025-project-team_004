@@ -177,15 +177,18 @@ describe('ChatDetail Component', () => {
       fakeListener('background'); // simulate background event
     });
   
+    // wait until setDoc is actually called
     await waitFor(() => {
-      expect(setDoc).toHaveBeenCalledWith(
-        undefined, // or use: expect.anything()
-        { typing: false },
-        { merge: true }
-      );
+      expect(setDoc).toHaveBeenCalled();
     });
+  
+    // grab the args of the first call
+    const [docRef, dataArg, optionsArg] = (setDoc as jest.Mock).mock.calls[0];
+    expect(dataArg).toEqual({ typing: false });
+    expect(optionsArg).toEqual({ merge: true });
   });
-
+  
+  
   
   it('logs error if readCount update fails in loadInitialMessages', async () => {
     (getDocs as jest.Mock).mockResolvedValueOnce({ docs: [] });

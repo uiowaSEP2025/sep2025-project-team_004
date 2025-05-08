@@ -8,7 +8,7 @@ const NoSensorFallbackView: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
+      <Text testID="NoSensorText" style={styles.title}>
         You must buy a sensor before you can view any data!
       </Text>
       <Text style={styles.message}>

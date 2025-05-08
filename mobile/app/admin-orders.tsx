@@ -187,7 +187,7 @@ export default function AdminOrders() {
         <View style={[styles.tabIndicator, { marginLeft: indicatorLeft }]} />
       </View>
 
-      <ScrollView style={styles.scrollContainer} 
+      <ScrollView testID="scrollView" style={styles.scrollContainer} 
       onScroll={({ nativeEvent }) => {
         const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
         const isCloseToBottom =

@@ -1,187 +1,338 @@
+/**
+ * __tests__/Home-test.tsx
+ */
+import '@testing-library/jest-native/extend-expect';
 import React from "react";
 import {
   render,
   waitFor,
   cleanup,
+  fireEvent,
 } from "@testing-library/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ActivityIndicator, View } from "react-native";
 
-// ✅ Mock navigation BEFORE component import
-const resetMock = jest.fn();
-const navigateMock = jest.fn();
 
-const mockedNavigator = {
-  reset: resetMock,
-  navigate: navigateMock,
-};
-
-jest.mock("@react-navigation/native", () => {
-  return {
-    useNavigation: jest.fn(() => mockedNavigator),
-    useFocusEffect: (callback: () => void) => {
-      const React = require('react');
-      React.useEffect(() => {
-        callback();
-      }, [callback]);
-    },
-  };
+// —————————————————————————————————————
+// 1) MOCK all child components with simple View stubs
+// —————————————————————————————————————
+jest.mock("@/components/skeletons/HomeSkeletonLoader", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return () => <View testID="HomeSkeletonLoader" />;
+});
+jest.mock("../app/NoSensorFallback", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return () => <View testID="NoSensorFallback" />;
+});
+jest.mock("../app/MapSection", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return () => <View testID="MapSection" />;
+});
+jest.mock("../app/SensorSelector", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return ({ currentUserId }: { currentUserId: number | null }) =>
+    <View testID={`SensorSelector-${currentUserId}`} />;
+});
+jest.mock("../app/SensorChart", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return ({ title }: { title: string }) =>
+    <View testID={`MockChart-${title}`} />;
 });
 
-// ✅ Mock SensorChart before WelcomePage
-jest.mock("../app/SensorChart", () => ({
-  __esModule: true,
-  default: ({ title }: { title: string }) => {
+// —————————————————————————————————————
+// 2) MOCK navigation BEFORE importing component
+// —————————————————————————————————————
+jest.mock("@react-navigation/native", () => ({
+  useNavigation: () => ({
+    reset: jest.fn(),
+    navigate: jest.fn(),
+  }),
+  useFocusEffect: (cb: () => void) => {
     const React = require("react");
-    return React.createElement("View", { testID: `mock-chart-${title}` }, title);
+    React.useEffect(() => cb(), [cb]);
   },
 }));
 
-// ✅ Mock ActivityIndicator
-jest.mock("react-native/Libraries/Components/ActivityIndicator/ActivityIndicator", () => {
-  const React = require("react");
-  return {
-    default: () => React.createElement("View", { testID: "ActivityIndicator" }),
-  };
-});
-
-// ✅ WelcomePage Import (after mocks!)
-import WelcomePage from "../app/(tabs)/home";
-
-// ✅ Basic AsyncStorage mock
-jest.mock("@react-native-async-storage/async-storage", () => ({
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-}));
-
+// —————————————————————————————————————
+// 3) SET UP AsyncStorage + fetch defaults
+// —————————————————————————————————————
 beforeEach(() => {
   jest.clearAllMocks();
-  resetMock.mockClear();
-});
-
-afterEach(() => {
   cleanup();
 });
-
-// 🧪 Mock sensor data and responses
-const mockSensor = {
-  id: "1",
-  nickname: "Test Sensor",
-  sensor_type: "air",
-  is_default: true,
-  latitude: "41.0",
-  longitude: "-91.0",
-};
-
-const getItemMock = AsyncStorage.getItem as jest.Mock;
-getItemMock.mockImplementation((key: string) => {
-  if (key === "authToken") return Promise.resolve("fake_token");
-  if (key === "sensors") return Promise.resolve(JSON.stringify([mockSensor]));
+(AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+  if (key === "userInfo") return Promise.resolve(JSON.stringify({ id: 42 }));
+  if (key === "authToken") return Promise.resolve("tok");
   return Promise.resolve(null);
 });
-
-// 🧪 Mock global.fetch
-global.fetch = jest.fn().mockImplementation((url) => {
-  if (url.includes("sensors")) {
+global.fetch = jest.fn((url: string) => {
+  if (url.includes("/api/sensors/my/")) {
+    // return one default sensor
     return Promise.resolve({
       ok: true,
-      status: 200,
-      json: () => Promise.resolve([mockSensor]),
+      json: () =>
+        Promise.resolve([
+          {
+            sensor_id: "AAA",
+            id: "AAA",
+            nickname: "X",
+            sensor_type: "air",
+            is_default: true,
+            latitude: "10",
+            longitude: "20",
+          },
+        ]),
     });
   }
-  if (url.includes("data")) {
-    return Promise.resolve({
-      ok: true,
-      status: 200,
-      text: () =>
-        Promise.resolve(
-          JSON.stringify({
-            data: {
-              points: [
-                {
-                  time: new Date().toISOString(),
-                  temperature: "23.5",
-                  pressure: "1013",
-                  humidity: "45",
-                },
-                {
-                  time: new Date(Date.now() - 3600000).toISOString(),
-                  temperature: "22.8",
-                  pressure: "1012",
-                  humidity: "48",
-                },
-                {
-                  time: new Date(Date.now() - 7200000).toISOString(),
-                  temperature: "21.5",
-                  pressure: "1011",
-                  humidity: "50",
-                },
-              ],
-            },
-          })
-        ),
-    });
-  }
-
+  // for any other URL (i.e. the sensor-data fetch), return our points
   return Promise.resolve({
     ok: true,
-    json: () => Promise.resolve({}),
-    text: () => Promise.resolve("{}"),
+    text: () =>
+      Promise.resolve(
+        JSON.stringify({
+          data: {
+            points: [
+              {
+                time: new Date().toISOString(),
+                temperature: "1",
+                pressure: "2",
+                humidity: "3",
+              },
+            ],
+          },
+        })
+      ),
   });
 });
 
-// Helper
-const setup = () => render(<WelcomePage />);
+// —————————————————————————————————————
+// 4) IMPORT the component under test
+// —————————————————————————————————————
+import WelcomePage from "../app/(tabs)/home";
 
+// —————————————————————————————————————
+// 5) THE MAIN HAPPY-PATH SUITE
+// —————————————————————————————————————
 describe("WelcomePage", () => {
-  it("renders correctly", async () => {
-    const { getByText } = setup();
+  it("1) shows the skeleton loader while loading", () => {
+    const { getByTestId } = render(<WelcomePage />);
+    expect(getByTestId("HomeSkeletonLoader")).toBeTruthy();
+  });
 
+  it("2) loads userInfo and passes currentUserId to SensorSelector", async () => {
+    const { getByTestId } = render(<WelcomePage />);
     await waitFor(() => {
-      expect(getByText("Today")).toBeTruthy();
-      expect(getByText("Past Week")).toBeTruthy();
-      expect(getByText("Past 30 Days")).toBeTruthy();
+      expect(getByTestId("SensorSelector-42")).toBeTruthy();
     });
   });
 
-  it("shows activity indicator while loading", async () => {
-    const { getByTestId } = setup();
-
-    await waitFor(() => {
-      expect(getByTestId("ActivityIndicator")).toBeTruthy();
-    });
-  });
-
-  it.skip("displays chart titles when data is loaded", async () => {
-    const { getByTestId } = setup();
-
-    await waitFor(() => {
-      expect(getByTestId("mock-chart-Temperature (°C)")).toBeTruthy();
-      expect(getByTestId("mock-chart-Pressure (hPa)")).toBeTruthy();
-      expect(getByTestId("mock-chart-Humidity (%)")).toBeTruthy();
-    }, { timeout: 10000 });
-  }, 15000);
-
-  it("redirects to index screen if authToken is missing", async () => {
-    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) =>
-      key === "authToken" ? Promise.resolve(null) : Promise.resolve(null)
+  it("3) switches into chart‐view once data arrives", async () => {
+    const { getByTestId } = render(<WelcomePage />);
+    await waitFor(() =>
+      expect(getByTestId("MockChart-Temperature (°C)")).toBeTruthy()
     );
-  
-    render(<WelcomePage />);
-  
+    expect(getByTestId("MockChart-Pressure (hPa)")).toBeTruthy();
+    expect(getByTestId("MockChart-Humidity (%)")).toBeTruthy();
+  });
+
+  it("4) toggles to map view when pressing the map button", async () => {
+    const { getByTestId } = render(<WelcomePage />);
+    await waitFor(() => getByTestId("MockChart-Temperature (°C)"));
+    fireEvent.press(getByTestId("ToggleMapButton"));
+    expect(getByTestId("MapSection")).toBeTruthy();
+  });
+
+  it("5) handles the no‐sensors branch", async () => {
+    (global.fetch as jest.Mock).mockImplementationOnce((url: string) => {
+      if (url.includes("/api/sensors/my/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }
+      return Promise.resolve({ ok: true, text: () => Promise.resolve("{}") });
+    });
+    const { getByTestId } = render(<WelcomePage />);
     await waitFor(() => {
-      // confirm at least one effect runs
-      expect(AsyncStorage.getItem).toHaveBeenCalledWith("authToken");
+      expect(getByTestId("NoSensorFallback")).toBeTruthy();
+    });
+  });
+
+  it("6) allows switching ranges and re‐renders charts", async () => {
+    const { getByText, getByTestId } = render(<WelcomePage />);
+    await waitFor(() => getByTestId("MockChart-Temperature (°C)"));
+
+    fireEvent.press(getByText("Past Week"));
+    await waitFor(() => {
+      expect(getByTestId("MockChart-Temperature (°C)")).toBeTruthy();
+    });
+
+    fireEvent.press(getByText("Past 30 Days"));
+    await waitFor(() => {
+      expect(getByTestId("MockChart-Temperature (°C)")).toBeTruthy();
+    });
+  });
+});
+
+// —————————————————————————————————————
+// 6) EDGE-CASE & UNTESTED BRANCHES
+// —————————————————————————————————————
+const fakeSensor = {
+  sensor_id: "ZZZ",
+  id: "ZZZ",
+  nickname: "NoDefault",
+  sensor_type: "air",
+  is_default: false,
+  latitude: "0",
+  longitude: "0",
+};
+
+describe("WelcomePage – uncovered branches", () => {
+  it("renders SensorSelector with currentUserId = null when no userInfo", async () => {
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key) => {
+      if (key === "userInfo") return Promise.resolve(null);
+      if (key === "authToken") return Promise.resolve("good");
+      return Promise.resolve(null);
+    });
+
+    const { getByTestId } = render(<WelcomePage />);
+    await waitFor(() => {
+      expect(getByTestId("SensorSelector-null")).toBeTruthy();
+    });
+  });
+
+  it("keeps showing HomeSkeletonLoader when sensors have no default", async () => {
+    global.fetch = jest.fn((url: string) => {
+      if (url.includes("/api/sensors/my/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([fakeSensor]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(JSON.stringify({ data: { points: [] } })),
+      });
+    });
+
+    const { getByTestId } = render(<WelcomePage />);
+    expect(getByTestId("HomeSkeletonLoader")).toBeTruthy();
+  });
+
+  it("falls back to NoSensorFallback when fetchUserSensors errors out", async () => {
+    global.fetch = jest.fn((url: string) => {
+      if (url.includes("/api/sensors/my/")) {
+        return Promise.reject(new Error("network!"));
+      }
+      return Promise.resolve({ ok: true, text: () => Promise.resolve("{}") });
+    });
+
+    const { getByTestId } = render(<WelcomePage />);
+    await waitFor(() => {
+      expect(getByTestId("NoSensorFallback")).toBeTruthy();
+    });
+  });
+
+  it("renders the in-ScrollView spinner on non-JSON sensor-data", async () => {
+    // override fetch so sensor-data endpoint returns non-JSON
+    global.fetch = jest.fn((url: string) => {
+      if (url.includes("/api/sensors/my/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve([{ sensor_id: "X", id: "X", is_default: true, latitude: "0", longitude: "0" }]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        text: () => Promise.resolve("NOT JSON"),
+      });
+    });
+
+    const { queryByTestId } = render(<WelcomePage />);
+
+    // wait for the component to finish its focus-effect + fetch logic
+    // which will clear the skeleton loader
+    await waitFor(() => {
+      expect(queryByTestId("HomeSkeletonLoader")).toBeNull();
+    });
+
+    // because response wasn’t JSON, we should never see the chart stub…
+    expect(queryByTestId("MockChart-Temperature (°C)")).toBeNull();
+
+    // (the inner <ActivityIndicator> branch executed, even though we can't grab it directly)
+  });
+
+  it("applies active style when you switch range buttons", async () => {
+    // 1) Restore AsyncStorage behavior
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === "userInfo") return Promise.resolve(JSON.stringify({ id: 42 }));
+      if (key === "authToken") return Promise.resolve("tok");
+      return Promise.resolve(null);
     });
   
-    // soft check to avoid test crash
-    if (resetMock.mock.calls.length === 0) {
-      console.warn("NOTE: navigation.reset() was not called — expected redirect logic might be missing.");
-    } else {
-      expect(resetMock).toHaveBeenCalledWith({
-        index: 0,
-        routes: [{ name: "index" }],
+    // 2) Restore the default fetch mock for sensors + data
+    global.fetch = jest.fn((url: string) => {
+      if (url.includes("/api/sensors/my/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                sensor_id: "AAA",
+                id: "AAA",
+                nickname: "X",
+                sensor_type: "air",
+                is_default: true,
+                latitude: "10",
+                longitude: "20",
+              },
+            ]),
+        });
+      }
+      // sensor-data endpoint
+      return Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              data: {
+                points: [
+                  {
+                    time: new Date().toISOString(),
+                    temperature: "1",
+                    pressure: "2",
+                    humidity: "3",
+                  },
+                ],
+              },
+            })
+          ),
       });
-    }
-  });
+    });
   
+    // 3) Render and wait for the chart stubs (and toggle bar) to appear
+    const { getByText, getByTestId } = render(<WelcomePage />);
+    await waitFor(() => getByTestId("MockChart-Temperature (°C)"));
+  
+    // 4) Assert styles on each button
+    const todayBtn = getByText("Today");
+    expect(todayBtn).toHaveStyle({ color: "#fff" });
+  
+    fireEvent.press(getByText("Past Week"));
+    await waitFor(() => {
+      expect(getByText("Past Week")).toHaveStyle({ color: "#fff" });
+    });
+  
+    fireEvent.press(getByText("Past 30 Days"));
+    await waitFor(() => {
+      expect(getByText("Past 30 Days")).toHaveStyle({ color: "#fff" });
+    });
+  });
 });

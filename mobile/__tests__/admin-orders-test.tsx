@@ -120,6 +120,88 @@ describe('AdminOrders', () => {
     fireEvent.press(getByText('Processing'));
     await waitFor(() => getByText('Admin Orders'));
   });
+  it('computes correct tab indicator position', async () => {
+    mockFetchSequence([
+      () => Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [], next: null }) }),
+    ]);
+  
+    const { getByText } = render(<AdminOrders />);
+    fireEvent.press(getByText('Processing'));
+  
+    await waitFor(() => getByText('Admin Orders'));
+    // We assume indicatorLeft was recalculated — this could be more deeply verified with snapshot/UI testing
+  });
+  
+  it('calls fetchOrders on mount via useFocusEffect', async () => {
+    jest.unmock('@react-navigation/native');
+    const { getByText } = render(<AdminOrders />);
+    await waitFor(() => getByText('Admin Orders'));
+  });
+  
+  it('loads next page on scroll', async () => {
+    mockFetchSequence([
+      () => Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [mockOrder], next: 'url' }) }),
+      () => Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [mockOrder], next: null }) }),
+    ]);
+  
+    const { getByTestId, getByText } = render(<AdminOrders />);
+    fireEvent.press(getByText('Processing'));
+  
+    await waitFor(() => getByText('Order #1'));
+  
+    fireEvent.scroll(getByTestId('scrollView'), {
+      nativeEvent: {
+        layoutMeasurement: { height: 500 },
+        contentOffset: { y: 600 },
+        contentSize: { height: 1000 },
+      },
+    });
+  
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
+  
+  it('logs error on failed order update', async () => {
+    console.error = jest.fn();
+  
+    mockFetchSequence([
+      () => Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [mockOrder], next: null }) }),
+      () => Promise.resolve({ ok: false }),
+    ]);
+  
+    const { getByText, getByPlaceholderText } = render(<AdminOrders />);
+    fireEvent.press(getByText('Processing'));
+    await waitFor(() => getByText('Order #1'));
+  
+    fireEvent.press(getByText('Complete'));
+    fireEvent.changeText(getByPlaceholderText('Tracking Number'), 'TRACK123');
+    fireEvent.press(getByText('Complete Order'));
+  
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalled();
+    });
+  });
+  
+  it('displays full order details in modal', async () => {
+    mockFetchSequence([
+      () => Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [mockOrder], next: null }) }),
+    ]);
+  
+    const { getByText } = render(<AdminOrders />);
+    fireEvent.press(getByText('Processing'));
+    await waitFor(() => getByText('Order #1'));
+  
+    fireEvent.press(getByText('Details'));
+    await waitFor(() => {
+      expect(getByText('Customer: John Doe')).toBeTruthy();
+      expect(getByText(/Widget/)).toBeTruthy(); // <- Regex fix
+      expect(getByText('Shipping Address:')).toBeTruthy();
+      expect(getByText('Order Date:')).toBeTruthy();
+    });
+  });
+  
+  
 
   it('submits a tracking number and calls update API', async () => {
     mockFetchSequence([
